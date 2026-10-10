@@ -276,6 +276,8 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-10-09` — page-pass (`/administration/usage/reconciliation`; type: list, admin): own agent surface `matrx-admin/hard-cost-reconciliation` (newest run per window and provider as one bundle; before, the page borrowed the usage explorer's surface and an agent read nothing true); a failed read shows the shared read-failure with retry. Route map entry lives in the chat package (aidream commit ca996316b8): needs a chat package publish before the mapping is live.
+
 - `2026-10-08` — AI spend health board (admin + org admin) and conversation cost on the agent run page (`features/admin/agent-spend/`). Visibility only.
 
 - `2026-09-30` — `/administration/usage` became a thin mount of the shared `DrillExplorer` (lane DRILL-EXPLORER); `UsageSavedViews.tsx` removed (the explorer's `DrillSavedViews` keeps surface `drill/ai_usage`).

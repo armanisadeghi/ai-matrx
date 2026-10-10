@@ -121,6 +121,8 @@ via `<Cost>`/`useCostDisplay` (`components/cost/`, points for everyone); never `
 
 ## Change log
 
+- `2026-10-09` — page-pass (research Social tab, Sources filtered to Social, intake; types: tab of a single record, form; posture sharp after Linear): unreadable scraper names fall back to the handle, Posts has its own icon, voice stage reads as words, a social source row never repeats an unreported count as a dash; the intake shows three platform fields plus filled ones (rest one click away) and tells the AI keyword suggester the person's cap so review no longer opens as a red over-limit error. Gated-capture dialogs (`features/marketing/social/gated/`) are finger-sized and the Add login form never opens as nothing. Open: the topic surface (`matrx-user/research`) does not yet declare the Social tab's profiles and posts.
+
 - `2026-10-09` — Scopes cutover (lane SCOPES-WEB-CONSUMERS): association results use `AssociationsRpcResult` from `@ai-matrx/associations` (was `ScopesRpcResult`).
 
 - 2026-09-29 — Keyword source previews show a stable canonical loaded-row receipt; their fade clears the footer while Show all/less and source doors remain unchanged.
