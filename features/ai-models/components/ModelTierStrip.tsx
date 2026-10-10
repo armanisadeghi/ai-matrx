@@ -20,6 +20,7 @@ import { hasHeldTierChange, isMaxTier, tierMismatch, tierMismatchText } from "..
 import { MaxTierBadge } from "./CostRatingCell";
 import type { AiModel, CostRatingChange } from "../types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function ratingText(rating: number | null): string {
   return costRatingTier(rating) ?? "none";
 }
@@ -105,7 +106,7 @@ export default function ModelTierStrip({
       {open && (
         <div className="max-h-40 overflow-auto border-t px-3 py-1.5">
           {historyError ? (
-            <span className="text-destructive">{historyError}</span>
+            <span className="text-destructive">{historyError}<ErrorAlchemyMenu error={historyError} /></span>
           ) : history === null ? (
             <span className="text-muted-foreground">Loading rating history</span>
           ) : history.length === 0 ? (

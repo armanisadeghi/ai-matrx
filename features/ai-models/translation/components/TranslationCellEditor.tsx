@@ -46,6 +46,7 @@ import { CellStateBadge, ConflictBadge } from "./CellStateBadge";
 import RuleFields from "./RuleFields";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export type EditorTarget = {
   layer: CellLayer;
   ownerId: string;
@@ -334,6 +335,9 @@ export default function TranslationCellEditor({
               {issues.map((issue) => (
                 <li key={issue}>{issue}</li>
               ))}
+              <li className="list-none">
+                <ErrorAlchemyMenu error={issues.join(" ")} />
+              </li>
             </ul>
           ) : null}
 

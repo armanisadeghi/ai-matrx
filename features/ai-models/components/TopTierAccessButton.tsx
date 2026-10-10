@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { extractErrorMessage } from "@/utils/errors";
 import { listTopTierHolders, type TopTierHolder } from "../topTierAccess";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function when(iso: string | null): string {
   return iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—";
 }
@@ -43,7 +44,7 @@ export default function TopTierAccessButton() {
       <PopoverContent /* sizing: fixed — a fixed-measure panel on purpose; its rows truncate inside the box */ align="end" className="w-80 p-2 text-xs">
         <div className="mb-1 font-medium">MAX models — allowed accounts</div>
         {error ? (
-          <div role="alert" className="text-destructive-ink">{error}</div>
+          <div role="alert" className="text-destructive-ink">{error}<ErrorAlchemyMenu error={error} /></div>
         ) : !holders ? (
           <div className="text-muted-foreground">Loading…</div>
         ) : holders.length === 0 ? (
