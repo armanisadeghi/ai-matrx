@@ -104,6 +104,7 @@ export function SpokespeoplePanel({
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Reading spokespeople
         </p>
       ) : null}
+      {/* read-gate-exempt: linked stays null when the read fails; the failure shows above */}
       {linked?.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">No spokesperson linked.</p> : null}
       <ul className="mt-2 divide-y divide-border">
         {(linked ?? []).map((row) => (

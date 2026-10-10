@@ -163,6 +163,14 @@ export const selectMermaidPreferences = createSelector(
   (state): MermaidPreferences => state.mermaid,
 );
 
+const EMPTY_DISMISSED_PROMPT_FIXES: Record<string, string[]> = {};
+
+/** Dismissed prompt-fix suggestions by text key (rich-editor PromptFixReview). */
+export const selectDismissedPromptFixes = createSelector(
+  selectUserPreferences,
+  (state): Record<string, string[]> => state.prompts.dismissedPromptFixes ?? EMPTY_DISMISSED_PROMPT_FIXES,
+);
+
 export const selectMediaDevicePreferences = createSelector(
   selectUserPreferences,
   (state): MediaDevicePreferences => state.mediaDevices,

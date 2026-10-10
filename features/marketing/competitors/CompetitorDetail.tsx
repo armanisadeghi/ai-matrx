@@ -69,6 +69,7 @@ export function CompetitorDetail({
             <ExternalLink className="h-3 w-3" />
           </a>
         ) : (
+          // read-gate-exempt: the website comes from the competitor record in props, not from a read
           <p className="text-muted-foreground">No website on file</p>
         )}
       </header>

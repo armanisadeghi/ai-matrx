@@ -481,6 +481,7 @@ export function AutomationCostTable({
           }
           isLoading={loading}
           defaultSort={{ id: "cost_total", direction: "desc" }}
+          read={readOf({ loading, error }, { what: "automations" })}
           emptyState={{ title: "No automations" }}
           toolbar={{
             search: true,

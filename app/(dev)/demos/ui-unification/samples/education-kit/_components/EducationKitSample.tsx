@@ -38,6 +38,7 @@ export function EducationKitSample() {
     let active = true;
     listKits()
       .then((rows) => active && setKits(rows))
+      // read-gate-exempt: dev sample only: the kit list feeds a breadcrumb option list, and the sample page itself reads nothing from it
       .catch((error) => console.error("[kit sample] kit list read failed:", error));
     return () => {
       active = false;

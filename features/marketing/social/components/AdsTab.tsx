@@ -11,6 +11,7 @@
  * country the provider applied is shown with the results, never silent.
  */
 
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Radar, RefreshCw, Search } from "lucide-react";
@@ -378,6 +379,7 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
             setSort={setSort}
           />
           {shown.length === 0 ? (
+            // read-gate-exempt: shown is the filtered list of ads already loaded by the search
             <p className="p-3 text-xs text-muted-foreground">No active ads in these results</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
@@ -640,6 +642,8 @@ function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser;
 
       {adsQuery.isPending ? (
         <RegionSkeleton shape="cards" count={4} />
+      ) : adsQuery.isError ? (
+        <ReadFailure error={adsQuery.error} what="this advertiser's ads" onRetry={() => void adsQuery.refetch()} />
       ) : list.length === 0 ? (
         <div className="flex min-h-[30vh] items-center justify-center">
           <EmptyState icon={<Radar className="h-5 w-5" />} title="No ads yet" line="Look again to fetch this advertiser's ads" />

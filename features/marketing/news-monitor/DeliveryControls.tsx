@@ -206,6 +206,7 @@ export function DeliveryControls({
             className="w-64"
             aria-label="Slack channel"
           >
+            {/* read-gate-exempt: select placeholder; a failed Vault read shows vaultError below */}
             <SelectValue placeholder={slackItems ? "No Slack" : "Loading…"} />
           </SelectTrigger>
           <SelectContent>
@@ -217,7 +218,7 @@ export function DeliveryControls({
             ))}
           </SelectContent>
         </Select>
-        {slackItems && slackItems.length === 0 ? (
+        {slackItems && slackItems.length === 0 && !vaultError ? (
           <span className="text-muted-foreground">
             This organization has no Slack incoming webhook in its Vault yet.{" "}
             <Link href="/vault" className="text-primary">

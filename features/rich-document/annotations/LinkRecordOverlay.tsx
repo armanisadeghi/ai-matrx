@@ -66,6 +66,7 @@ export function LinkRecordOverlay({ target, onClose }: { target: LinkRecordTarge
         if (!live) return;
         setAttached((prev) => new Set([...prev, ...links.flatMap((l) => (l.link ? [attachedKey(l.link.token, l.link.id)] : []))]));
       })
+      // read-gate-exempt: attached marks are enrichment on the picker; a failed attach write reports its own error
       .catch(() => {
         // The picker still works without the attached marks; a failed write says why.
       });
