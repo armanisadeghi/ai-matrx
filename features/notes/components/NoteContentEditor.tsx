@@ -101,6 +101,7 @@ import { authoredBy } from "@ai-matrx/rich-content/levels/prose/remote-image-pol
 import { insertAtRichCaret } from "@ai-matrx/rich-editor/editor/caretInsert";
 import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface NoteContentEditorProps {
   noteId: string;
   /**
@@ -647,7 +648,7 @@ export function NoteContentEditor({
               Retry
             </button>
           </div>
-        </div>
+        <ErrorAlchemyMenu /></div>
       );
     }
     if (contentLoadStatus !== "error") {
