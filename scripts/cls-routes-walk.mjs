@@ -19,6 +19,22 @@ const chatMode = opt("chat", "default");
 const MAX = Number(opt("max", "0.01"));
 const NAV_RUNS = Number(opt("nav-runs", "5"));
 const verbose = args.includes("--verbose");
+// A timed load must END on its target. The preview's pause page (/__dev-walk, "Resume this preview") is not the
+// target: click Resume, load the target again, and only then count the run. A run that never reaches the target throws,
+// which fails the walk (it is never a zero).
+async function gotoTarget(page, href) {
+  const want = new URL(href).pathname;
+  for (let i = 0; i < 4; i++) {
+    await page.goto(href, { timeout: 240_000 });
+    const paused = page.url().includes("__dev-walk") || (await page.getByText("Resume this preview").count()) > 0;
+    if (!paused && new URL(page.url()).pathname.startsWith(want)) return;
+    if (paused) {
+      await page.getByRole("button", { name: "Resume this preview" }).click({ timeout: 30_000 }).catch(() => {});
+      await page.waitForURL((u) => !u.href.includes("__dev-walk"), { timeout: 180_000 }).catch(() => {});
+    }
+  }
+  throw new Error(`never reached ${want} (ended on ${page.url()})`);
+}
 const browser = await chromium.launch({ headless: true });
 let bad = false;
 for (const seat of seats) {
@@ -61,9 +77,11 @@ for (const seat of seats) {
       // A dev server that recompiles mid-load reloads the page: a run that lost its context is retried.
       for (let attempt = 0; ; attempt++) {
         try {
-          await page.goto(`${origin}${route}`, { timeout: 240_000 });
+          await gotoTarget(page, `${origin}${route}`);
           await page.waitForTimeout(9000);
-          out.push(await page.evaluate(() => ({ cls: window.__cls, shifts: window.__shifts, url: location.pathname })));
+          const r = await page.evaluate(() => ({ cls: window.__cls, shifts: window.__shifts, url: location.pathname, paused: document.body.innerText.includes("Resume this preview") }));
+          if (r.paused || r.url.includes("__dev-walk")) throw new Error(`${route} paused mid-run (ended on ${r.url})`);
+          out.push(r);
           break;
         } catch (e) {
           if (attempt >= 2) throw e;
@@ -98,7 +116,7 @@ for (const seat of ["admin", "member"].filter((x) => seats.includes(x))) {
   for (let run = 0; run < NAV_RUNS; run++) for (let attempt = 0; attempt < 3; attempt++) try {
     const ctx = await browser.newContext({ viewport: { width, height: 900 }, storageState: state });
     const page = await ctx.newPage();
-    await page.goto(`${origin}/chat/new`, { timeout: 240_000 });
+    await gotoTarget(page, `${origin}/chat/new`);
     await page.waitForTimeout(6000);
     await page.evaluate(() => {
       window.__cls = 0; window.__shifts = [];
