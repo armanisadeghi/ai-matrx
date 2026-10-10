@@ -66,6 +66,7 @@ import { COMPETITOR_SOCIAL_PLATFORMS } from "./social-links";
 import { SocialAccountField } from "@/features/marketing/social/components/SocialAccountInput";
 import { parseSocialAccount } from "@/features/marketing/social/link";
 import type { SocialPlatform } from "@/features/marketing/social/types";
+import { useCanEditSocial } from "@/features/marketing/social/useCanEditSocial";
 import { CompetitorDetail } from "./CompetitorDetail";
 import { compactCount as compact, PLATFORM_LABEL, rowsToSearch } from "./competitor-detail";
 import { foundKey, useCompetitorSocialActions, useFoundSocials, type FoundSocials } from "./useCompetitorSocials";
@@ -81,9 +82,6 @@ const CORE_PLATFORMS = ["instagram", "tiktok", "youtube"];
 
 function accountsOn(row: BrandCompetitor, platform: string): CompetitorAccount[] {
   return row.accounts.filter((a) => a.platform === platform);
-}
-function totalFollowers(row: BrandCompetitor): number {
-  return row.accounts.reduce((sum, a) => sum + (a.followers ?? 0), 0);
 }
 function postsTracked(row: BrandCompetitor): number {
   return row.accounts.reduce((sum, a) => sum + a.postsTracked, 0);
@@ -102,7 +100,8 @@ function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: s
   const found = useFoundSocials(brand.id, row.key);
   const { find, track } = useCompetitorSocialActions(brand);
   const { pointsText } = useSocialSpend(brand.organizationId);
-  if (row.progress) return null;
+  const canEdit = useCanEditSocial(undefined, brand.id);
+  if (row.progress || !canEdit) return null;
   const busy = found?.status === "finding" || found?.status === "tracking";
   return (
     <span className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -146,6 +145,7 @@ function RowSocialActions({ row, brand }: { row: BrandCompetitor; brand: { id: s
 export function BrandCompetitorDirectory() {
   const brand = useMarketingBrand();
   const rivals = brandKindCopy(brand).rivals;
+  const canEdit = useCanEditSocial(undefined, brand.id);
   const sites = useBrandSites(brand.id);
   const siteIds = useMemo(() => (sites.data ?? []).map((s) => s.id), [sites.data]);
   const [addOpen, setAddOpen] = useState(false);
@@ -292,37 +292,53 @@ export function BrandCompetitorDirectory() {
   const columns = useMemo<MatrxColumnDef<BrandCompetitor>[]>(() => {
     const cols: MatrxColumnDef<BrandCompetitor>[] = [
       {
+        // Name, website and any in-flight status share one cell: three columns of short text cost more width than they say.
         id: "name",
         header: rivals.one,
-        accessorFn: (row) => row.name,
+        accessorFn: (row) => `${row.name} ${row.domain ?? ""}`.trim(),
         cell: (row) => (
-          <span className="block max-w-full truncate font-medium" title={row.name}>
-            {row.name}
+          <span className="flex min-w-0 flex-col">
+            <span className="block max-w-full truncate font-medium" title={row.name}>
+              {row.name}
+            </span>
+            {row.progress ? (
+              <span className="flex flex-col text-xs">
+                <span className="text-muted-foreground">{row.websiteTracking}</span>
+                {row.progress.map((p) =>
+                  p.state === "failed" || p.message ? (
+                    <ErrorNotice
+                      key={p.platform}
+                      error={`${PLATFORM_LABEL[p.platform] ?? p.platform} was not saved — ${p.message ?? "rejected"}`}
+                      operation={`Track ${PLATFORM_LABEL[p.platform] ?? p.platform}`}
+                    />
+                  ) : (
+                    <span key={p.platform} className="text-muted-foreground">
+                      {PLATFORM_LABEL[p.platform] ?? p.platform}: {p.state === "tracking" ? "tracking…" : "tracking"}
+                    </span>
+                  ),
+                )}
+                {row.websiteTracking === "Needs attention" ? (
+                  <Button variant="quiet" onClick={() => dismissJob(row.key)}>
+                    Dismiss
+                  </Button>
+                ) : null}
+              </span>
+            ) : row.domain && !sameAsName(row.name, row.domain) ? (
+              <a
+                href={`https://${row.domain}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="matrx-tap-area inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground hover:underline"
+                data-clickable=""
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="truncate">{row.domain}</span>
+                <ExternalLink className="h-3 w-3 shrink-0" aria-label="Opens in a new tab" />
+              </a>
+            ) : null}
           </span>
         ),
-        width: 260,
-      },
-      {
-        id: "domain",
-        header: "Website",
-        accessorFn: (row) => row.domain ?? "",
-        cell: (row) =>
-          row.domain ? (
-            <a
-              href={`https://${row.domain}`}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex min-w-0 items-center gap-1 hover:underline"
-              data-clickable=""
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="truncate">{row.domain}</span>
-              <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" aria-label="Opens in a new tab" />
-            </a>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          ),
-        width: 170,
+        width: 220,
       },
     ];
     for (const platform of platforms) {
@@ -339,40 +355,30 @@ export function BrandCompetitorDirectory() {
                 <Link
                   key={a.trackedAccountId}
                   href={`/marketing/${brand.seg}/socials/${a.platform}/${a.profileId}`}
-                  className="whitespace-nowrap hover:underline"
+                  className="matrx-tap-area flex min-w-0 items-baseline gap-1 hover:underline"
                   title={formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}
                 >
-                  {compact(a.followers)}
-                  <span className="ml-1 text-[11px] text-muted-foreground">{formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}</span>
+                  <span className="shrink-0">{compact(a.followers)}</span>
+                  <span className="truncate text-[11px] text-muted-foreground">{formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}</span>
                 </Link>
               ))}
             </span>
           );
         },
-        width: 150,
-      });
-    }
-    // One platform column already is the total; a second "Followers" column would only repeat it.
-    if (platforms.length > 1) {
-      cols.push({
-        id: "followers_total",
-        header: "Followers",
-        accessorFn: (row) => totalFollowers(row),
-        cell: (row) => (row.accounts.length ? compact(totalFollowers(row)) : "—"),
-        width: 100,
+        width: 130,
       });
     }
     cols.push(
       {
         id: "posts",
-        header: "Posts tracked",
+        header: "Posts",
         accessorFn: (row) => postsTracked(row),
         cell: (row) => (row.accounts.length ? postsTracked(row).toLocaleString() : "—"),
-        width: 110,
+        width: 80,
       },
       {
         id: "outlier",
-        header: "Top outlier 30d",
+        header: "Top 30d",
         accessorFn: (row) => bestOutlier(row)?.score ?? 0,
         cell: (row) => {
           const best = bestOutlier(row);
@@ -389,39 +395,7 @@ export function BrandCompetitorDirectory() {
             </Link>
           );
         },
-        width: 140,
-      },
-      {
-        id: "status",
-        header: "Status",
-        accessorFn: (row) => row.websiteTracking ?? (row.accounts.length ? "social only" : ""),
-        cell: (row) =>
-          row.progress ? (
-            <span className="flex flex-col text-xs">
-              <span className="text-muted-foreground">{row.websiteTracking}</span>
-              {row.progress.map((p) =>
-                p.state === "failed" || p.message ? (
-                  <ErrorNotice
-                    key={p.platform}
-                    error={`${PLATFORM_LABEL[p.platform] ?? p.platform} was not saved — ${p.message ?? "rejected"}`}
-                    operation={`Track ${PLATFORM_LABEL[p.platform] ?? p.platform}`}
-                  />
-                ) : (
-                  <span key={p.platform} className="text-muted-foreground">
-                    {PLATFORM_LABEL[p.platform] ?? p.platform}: {p.state === "tracking" ? "tracking…" : "tracking"}
-                  </span>
-                ),
-              )}
-              {row.websiteTracking === "Needs attention" ? (
-                <Button variant="quiet" onClick={() => dismissJob(row.key)}>
-                  Dismiss
-                </Button>
-              ) : null}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">{row.websiteTracking ?? "Social only"}</span>
-          ),
-        width: 170,
+        width: 110,
       },
       {
         id: "socials-actions",
@@ -429,13 +403,9 @@ export function BrandCompetitorDirectory() {
         sortable: false,
         filter: false,
         customActions: (row) => <RowSocialActions row={row} brand={{ id: brand.id, organizationId: brand.organizationId }} />,
-        width: 240,
+        width: 200,
       },
     );
-    // Status sits right after the name: a wide table scrolls sideways and must never hide it.
-    const statusAt = cols.findIndex((c) => c.id === "status");
-    const [status] = cols.splice(statusAt, 1);
-    cols.splice(1, 0, status);
     return cols;
   }, [platforms, brand.seg, brand.id, brand.organizationId, rivals.one]);
 
@@ -555,7 +525,7 @@ export function BrandCompetitorDirectory() {
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1.5">
           <h2 className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-muted-foreground">{rivals.title}</h2>
           <div className="flex flex-wrap items-center gap-2">
-            {toSearch.length > 0 || bulk ? (
+            {canEdit && (toSearch.length > 0 || bulk) ? (
               <Button
                 variant="outline"
                 disabled={Boolean(bulk)}
@@ -565,9 +535,11 @@ export function BrandCompetitorDirectory() {
                 {bulk ? `Reading websites ${bulk.done} of ${bulk.total}` : `Find socials for all (${toSearch.length})`}
               </Button>
             ) : null}
-            <Button variant="primary" icon={<Plus />} onClick={() => setAddOpen(true)}>
-              {rivals.add}
-            </Button>
+            {canEdit ? (
+              <Button variant="primary" icon={<Plus />} onClick={() => setAddOpen(true)}>
+                {rivals.add}
+              </Button>
+            ) : null}
           </div>
         </div>
         {list.isError && jobs.length === 0 ? (
@@ -593,7 +565,7 @@ export function BrandCompetitorDirectory() {
                         href={`https://${row.domain}`}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground hover:underline"
+                        className="matrx-tap-area inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground hover:underline"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <span className="truncate">{row.domain}</span>
@@ -606,7 +578,7 @@ export function BrandCompetitorDirectory() {
                 {row.accounts.length ? (
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs" onClick={(e) => e.stopPropagation()}>
                     {row.accounts.map((a) => (
-                      <Link key={a.trackedAccountId} href={`/marketing/${brand.seg}/socials/${a.platform}/${a.profileId}`} className="hover:underline">
+                      <Link key={a.trackedAccountId} href={`/marketing/${brand.seg}/socials/${a.platform}/${a.profileId}`} className="matrx-tap-area hover:underline">
                         {PLATFORM_LABEL[a.platform] ?? a.platform}{" "}
                         <span className="text-muted-foreground">{formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })}</span>{" "}
                         {compact(a.followers)}
@@ -817,7 +789,7 @@ function AddCompetitorDialog({
             Close
           </Button>
           <Button variant="primary" disabled={!name.trim() || (!cleanDomain && entered.length === 0)} onClick={save}>
-            {addPoints ? `Add · ${addPoints}` : "Add"}
+            {addPoints ? `Add · ${addPoints}` : "Add · Free"}
           </Button>
         </DialogFooter>
       </DialogContent>

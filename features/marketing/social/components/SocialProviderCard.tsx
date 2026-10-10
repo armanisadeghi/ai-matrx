@@ -14,6 +14,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Coins, Database, Receipt } from "lucide-react";
 
+import { Skeleton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -113,7 +114,7 @@ export function SocialProviderCard() {
       </div>
       <div className="mt-4 divide-y divide-border rounded-lg border border-border">
         {providers.length === 0 ? (
-          <Row icon={Database} label="Status" detail={caps.isError ? "Status unavailable" : "Loading…"} />
+          <Row icon={Database} label="Status" detail={caps.isError ? "Status unavailable" : ""} loading={!caps.isError} />
         ) : seesVendor ? (
           providers.map(([name, status]) => (
             <Row key={name} icon={Database} label={providerName(name)} detail={status === "ready" ? "Ready" : "Not configured"} title={status === "ready" ? undefined : status} />
@@ -125,9 +126,10 @@ export function SocialProviderCard() {
           <Row
             icon={Coins}
             label="Credits remaining"
+            loading={credits.isPending}
             detail={
               credits.isPending
-                ? "Loading…"
+                ? ""
                 : credits.isError
                   ? "Balance unavailable"
                   : balances.length === 0
@@ -139,9 +141,10 @@ export function SocialProviderCard() {
         <Row
           icon={Receipt}
           label="This month · all organizations"
+          loading={spendRollup.isPending}
           detail={
             spendRollup.isPending
-              ? "Loading…"
+              ? ""
               : spendRollup.isError
                 ? "Spend unavailable"
                 : formatSpend(
@@ -176,15 +179,19 @@ export function SocialProviderCard() {
   );
 }
 
-function Row({ icon: Icon, label, detail, title }: { icon: typeof Database; label: string; detail: string; title?: string }) {
+function Row({ icon: Icon, label, detail, title, loading = false }: { icon: typeof Database; label: string; detail: string; title?: string; loading?: boolean }) {
   return (
     <div className="flex items-center gap-2.5 px-3 py-2.5">
       <Icon className="h-4 w-4 shrink-0 text-primary" />
       <div className="min-w-0">
         <p className="text-xs font-medium">{label}</p>
-        <p className="truncate text-xs text-muted-foreground" title={title ?? detail}>
-          {detail}
-        </p>
+        {loading ? (
+          <Skeleton className="mt-0.5 h-3 w-28" aria-label={`Loading ${label}`} />
+        ) : (
+          <p className="truncate text-xs text-muted-foreground" title={title ?? detail}>
+            {detail}
+          </p>
+        )}
       </div>
     </div>
   );

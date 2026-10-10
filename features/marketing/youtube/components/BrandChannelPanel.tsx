@@ -286,8 +286,17 @@ function ChannelBindControl({
     }
   }
 
+  // Nothing to bind: one row, the state and the one action beside it.
+  const oneRow =
+    !inventory.isLoading && !elsewhere.isLoading && !inventory.isError && !elsewhere.isError && rows.length === 0;
   return (
-    <div className="flex flex-col gap-1.5 rounded-md border border-dashed border-border px-2.5 py-2">
+    <div
+      className={
+        oneRow
+          ? "flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-border px-2.5 py-2"
+          : "flex flex-col gap-1.5 rounded-md border border-dashed border-border px-2.5 py-2"
+      }
+    >
       <p className="text-xs leading-5 text-muted-foreground">
         No channel linked
       </p>
@@ -307,9 +316,6 @@ function ChannelBindControl({
         />
       ) : rows.length === 0 ? (
         <>
-          <p className="text-xs leading-5 text-muted-foreground">
-            No connected account has a channel
-          </p>
           <div>
             <Button
               variant="outline"
