@@ -19,7 +19,7 @@
 // What the JWT does NOT carry — `created_at`, `identities`, `last_sign_in_at`,
 // `*_confirmed_at`, `factors` — is not this door's business. A surface that
 // shows one of those reads it through `fetchAuthUserRecord` from the client,
-// once, after hydration (`features/shell/components/DeferredShellData.tsx`).
+// once, after hydration (`hooks/usePublicAuthSync.ts`).
 //
 // Usage:
 //

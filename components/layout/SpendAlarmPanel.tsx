@@ -44,7 +44,7 @@ export default function SpendAlarmPanel({
             Spend alarms ({alarms.length})
           </DialogTitle>
           <DialogDescription>
-            {errors > 0 ? `${errors} errors` : "Warnings only"}
+            {errors > 0 ? `${errors} ${errors === 1 ? "error" : "errors"}` : "Warnings only"}
           </DialogDescription>
         </DialogHeader>
 

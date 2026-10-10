@@ -5,8 +5,8 @@
 // JWKS), and `getClaimsUser` itself carries no caching. Measured on
 // production: EVERY (core) page load fired two independent client-side
 // claims verifications on mount — `GlobalAuthSync` → `usePublicAuthSync`
-// (mounted once in `app/Providers.tsx` for every route) and
-// `DeferredShellData` (mounted in `app/(core)/layout.tsx`) — each calling
+// (mounted once in `app/Providers.tsx` for every route) and a second
+// shell-island reader (since retired) — each calling
 // `getClaimsUser(supabase)` within the same boot window, each capable of
 // firing its own `/auth/v1/.well-known/jwks.json` fetch when the SDK's
 // module-level JWKS cache has not warmed yet (a fresh tab, a cold reload).
@@ -21,7 +21,7 @@
 //
 // A short TTL (not just in-flight dedup) also absorbs the case where the two
 // callers do not run in the very same tick — `usePublicAuthSync` delays
-// 100ms before its effect and `DeferredShellData` fires "after first paint".
+// 100ms before its effect and other readers fire "after first paint".
 // It is short enough that a genuine sign-in/sign-out/refresh is never served
 // a stale verdict for more than a moment, and the auth-state listener below
 // clears it immediately on any identity-changing event anyway.

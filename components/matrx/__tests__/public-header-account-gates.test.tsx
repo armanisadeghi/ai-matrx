@@ -58,7 +58,6 @@ function reduxState(isAnonymous: boolean) {
         picture: null,
       },
       fingerprintId: null,
-      shellDataLoaded: true,
     },
   };
 }

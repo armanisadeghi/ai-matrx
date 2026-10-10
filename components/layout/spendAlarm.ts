@@ -15,6 +15,8 @@ export type SpendAlarm = {
   link: string | null;
   count: number;
   lastAt: string;
+  /** The person an account alarm is about (a user id), so a name can replace the raw id. */
+  subjectUserId: string | null;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -37,6 +39,8 @@ export function toSpendAlarm(a: SystemAnnouncement): SpendAlarm | null {
     link,
     count,
     lastAt: typeof meta.last_at === "string" ? meta.last_at : a.updated_at,
+    subjectUserId:
+      meta.subject_type === "account" && typeof meta.subject_id === "string" ? meta.subject_id : null,
   };
 }
 
@@ -46,4 +50,28 @@ export function sortSpendAlarms(alarms: SpendAlarm[]): SpendAlarm[] {
     if (x.severity !== y.severity) return x.severity === "error" ? -1 : 1;
     return y.lastAt.localeCompare(x.lastAt);
   });
+}
+
+const ACCOUNT_LINK_BASE = "https://manage.aimatrx.com/administration/users/usage?user=";
+
+/**
+ * Rows written before the writer resolved names carry a raw user id in the title,
+ * the detail and a generic link. Show the person instead: swap the id (and its
+ * "Account " prefix) for the name, drop a title amount the detail already
+ * states, and send Open to that person's usage page.
+ */
+export function nameSpendAlarm(alarm: SpendAlarm, names: ReadonlyMap<string, string>): SpendAlarm {
+  const id = alarm.subjectUserId;
+  const name = id ? names.get(id) : undefined;
+  if (!id || !name) return alarm;
+  const swap = (text: string) => text.split(`Account ${id}`).join(name).split(id).join(name);
+  const title = swap(alarm.title);
+  const detail = swap(alarm.detail);
+  const amount = /\s\$[\d.,]+$/.exec(title)?.[0];
+  return {
+    ...alarm,
+    title: amount && detail.includes(amount.trim()) ? title.slice(0, -amount.length) : title,
+    detail,
+    link: alarm.link && alarm.link.endsWith("/administration/billing") ? ACCOUNT_LINK_BASE + id : alarm.link,
+  };
 }

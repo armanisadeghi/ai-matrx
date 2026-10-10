@@ -61,7 +61,7 @@ export default async function AppLayout({
   // application disappear because the network blinked for two seconds.
   //
   // It is also NOT self-healing. The client re-resolves identity after
-  // hydration (`DeferredShellData`) and repairs Redux — but this shell's chrome
+  // hydration (`usePublicAuthSync`) and repairs Redux — but this shell's chrome
   // is driven by a SERVER prop the client never revisits, so the guest shell
   // would sit there, lying, until the next navigation.
   //

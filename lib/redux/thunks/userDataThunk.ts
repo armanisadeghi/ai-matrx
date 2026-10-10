@@ -56,9 +56,6 @@ function pickProfileFields(
   if (source.fingerprintId !== undefined) {
     out.fingerprintId = source.fingerprintId;
   }
-  if (source.shellDataLoaded !== undefined) {
-    out.shellDataLoaded = source.shellDataLoaded;
-  }
   return out;
 }
 

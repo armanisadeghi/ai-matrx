@@ -40,7 +40,7 @@ export interface SSRShellData {
  * Replaces separate calls to get_user_session_data(), ai_model query,
  * context_menu_unified_view query, and sms unread count.
  *
- * Called client-side from `DeferredShellData` after auth resolves.
+ * Currently has no caller (its shell island was retired).
  */
 export async function getSSRShellData(
   supabase: SupabaseClient,

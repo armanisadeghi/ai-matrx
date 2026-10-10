@@ -17,7 +17,8 @@ import { getActiveAnnouncements } from "@/actions/feedback.actions";
 import { SystemAnnouncement } from "@/types/feedback.types";
 import SystemAnnouncementBanner from "./SystemAnnouncementBanner";
 import SpendAlarmPanel from "./SpendAlarmPanel";
-import { sortSpendAlarms, toSpendAlarm, type SpendAlarm } from "./spendAlarm";
+import { nameSpendAlarm, sortSpendAlarms, toSpendAlarm, type SpendAlarm } from "./spendAlarm";
+import { fetchUserDisplayNames } from "@/features/mandates/notes";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
 
@@ -25,6 +26,7 @@ export default function AnnouncementProviderImpl() {
   const dispatch = useAppDispatch();
   const [fetched, setFetched] = useState<SystemAnnouncement[]>([]);
   const [currentAnnouncementIndex] = useState(0);
+  const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map());
   const viewedAnnouncements = useAppSelector(
     (state) => state.userPreferences.system.viewedAnnouncements,
   );
@@ -38,6 +40,18 @@ export default function AnnouncementProviderImpl() {
     fetchAnnouncements();
   }, []);
 
+  useEffect(() => {
+    const ids = fetched
+      .map((a) => toSpendAlarm(a)?.subjectUserId)
+      .filter((id): id is string => !!id);
+    if (ids.length === 0) return;
+    let alive = true;
+    fetchUserDisplayNames(ids).then((m) => alive && setNames(m)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [fetched]);
+
   const { announcements, alarms } = useMemo(() => {
     const plain: SystemAnnouncement[] = [];
     const found: SpendAlarm[] = [];
@@ -49,8 +63,8 @@ export default function AnnouncementProviderImpl() {
         plain.push(a);
       }
     }
-    return { announcements: plain, alarms: sortSpendAlarms(found) };
-  }, [fetched, viewedAnnouncements]);
+    return { announcements: plain, alarms: sortSpendAlarms(found.map((a) => nameSpendAlarm(a, names))) };
+  }, [fetched, viewedAnnouncements, names]);
 
   const acknowledge = (keys: string[]) => {
     dispatch(

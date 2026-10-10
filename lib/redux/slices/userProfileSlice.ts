@@ -8,7 +8,6 @@
 // Field allocation rationale (decisions.md D1):
 // - userMetadata — display data, persists via partialize for first-paint
 // - fingerprintId — stable per-device id for guest identity; persists
-// - shellDataLoaded — boot-time loading flag; transient, NOT persisted
 //
 // Auth-domain fields (id, email, accessToken, isAdmin, etc.) live in
 // `userAuthSlice.ts` and are intentionally volatile.
@@ -29,10 +28,6 @@ import type { UserMetadata } from "@/utils/userDataMapper";
 export interface UserProfileState {
   userMetadata: UserMetadata;
   fingerprintId: string | null;
-  /** Tracks if shell data (user + preferences) has fully loaded — gates
-   * components that must not render stale defaults (e.g. AnnouncementProvider).
-   * Transient — NOT persisted (excluded via partialize). */
-  shellDataLoaded: boolean;
 }
 
 const initialState: UserProfileState = {
@@ -44,7 +39,6 @@ const initialState: UserProfileState = {
     picture: null,
   },
   fingerprintId: null,
-  shellDataLoaded: false,
 };
 
 const userProfileSlice = createSlice({
@@ -72,15 +66,9 @@ const userProfileSlice = createSlice({
       if (action.payload.fingerprintId !== undefined) {
         state.fingerprintId = action.payload.fingerprintId;
       }
-      if (action.payload.shellDataLoaded !== undefined) {
-        state.shellDataLoaded = action.payload.shellDataLoaded;
-      }
     },
     setFingerprintId: (state, action: PayloadAction<string>) => {
       state.fingerprintId = action.payload;
-    },
-    setShellDataLoaded: (state, action: PayloadAction<boolean>) => {
-      state.shellDataLoaded = action.payload;
     },
     clearUserProfile: () => initialState,
   },
@@ -98,8 +86,7 @@ const userProfileSlice = createSlice({
         state.userMetadata = { ...state.userMetadata, ...loaded.userMetadata };
       }
       // fingerprintId is intentionally NOT in `partialize` — it's identity-
-      // domain, set by the auth flow on each boot. shellDataLoaded is also
-      // excluded (transient). So we don't read either from REHYDRATE.
+      // domain, set by the auth flow on each boot, so we don't read it from REHYDRATE.
     });
   },
 });
@@ -108,7 +95,6 @@ export const {
   setUserMetadata,
   setUserProfile,
   setFingerprintId,
-  setShellDataLoaded,
   clearUserProfile,
 } = userProfileSlice.actions;
 
@@ -125,9 +111,7 @@ export default userProfileSlice.reducer;
 //     correctly on the very first frame (no flicker on hard-refresh)
 //
 // `partialize: ["userMetadata"]` — fingerprintId is identity-domain (set by
-// the auth boot path each session), shellDataLoaded is transient. Persisting
-// either could cause stale-data bugs (e.g. AnnouncementProvider rendering
-// before this turn's actual shell-data fetch completes).
+// the auth boot path each session). Persisting it could cause stale-data bugs.
 
 export const userProfilePolicy = definePolicy<UserProfileState>({
   sliceName: "userProfile",

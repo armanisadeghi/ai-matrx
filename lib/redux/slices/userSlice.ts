@@ -35,7 +35,6 @@ export {
   selectAccessToken,
   selectFingerprintId,
   selectAuthReady,
-  selectShellDataLoaded,
   selectIsAuthenticated,
   selectDisplayName,
   selectProfilePhoto,
@@ -54,6 +53,5 @@ export {
   clearUserAuth as clearUser,
 } from "@/lib/redux/slices/userAuthSlice";
 export {
-  setShellDataLoaded,
   setFingerprintId,
 } from "@/lib/redux/slices/userProfileSlice";

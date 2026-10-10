@@ -40,7 +40,6 @@ export const selectUser = createSelector(
     ...auth,
     userMetadata: profile.userMetadata,
     fingerprintId: profile.fingerprintId,
-    shellDataLoaded: profile.shellDataLoaded,
   }),
 );
 
@@ -205,8 +204,6 @@ export const selectUserIdentities = createSelector(
 
 export const selectFingerprintId = (state: RootState): string | null =>
   state.userProfile.fingerprintId;
-export const selectShellDataLoaded = (state: RootState): boolean =>
-  state.userProfile.shellDataLoaded;
 
 export const selectUserMetadata = createSelector(
   [selectUserProfile],

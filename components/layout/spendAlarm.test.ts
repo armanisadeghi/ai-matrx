@@ -1,5 +1,5 @@
 import type { SystemAnnouncement } from "@/types/feedback.types";
-import { sortSpendAlarms, toSpendAlarm } from "./spendAlarm";
+import { nameSpendAlarm, sortSpendAlarms, toSpendAlarm } from "./spendAlarm";
 
 const base = {
   id: "a1",
@@ -32,5 +32,30 @@ describe("toSpendAlarm", () => {
     const w = toSpendAlarm({ ...base, id: "w", metadata: { alarm: true, severity: "warning" } })!;
     const e = toSpendAlarm({ ...base, id: "e", metadata: { alarm: true, severity: "error" } })!;
     expect(sortSpendAlarms([w, e]).map((a) => a.id)).toEqual(["e", "w"]);
+  });
+});
+
+describe("nameSpendAlarm", () => {
+  const row = {
+    ...base,
+    title: "Spend spike: Account u9 spend, last 24 hours $10.67",
+    message: "Account u9 spend, last 24 hours: $10.67 against a baseline of $1.85.",
+    metadata: {
+      alarm: true,
+      severity: "error",
+      subject_type: "account",
+      subject_id: "u9",
+      link: "https://manage.aimatrx.com/administration/billing",
+    },
+  } as SystemAnnouncement;
+  it("shows the person, not the id, and opens that person's usage", () => {
+    const named = nameSpendAlarm(toSpendAlarm(row)!, new Map([["u9", "Dana Whitfield"]]));
+    expect(named.title).toBe("Spend spike: Dana Whitfield spend, last 24 hours");
+    expect(named.detail).not.toContain("u9");
+    expect(named.link).toBe("https://manage.aimatrx.com/administration/users/usage?user=u9");
+  });
+  it("leaves the row alone when no name resolves", () => {
+    const alarm = toSpendAlarm(row)!;
+    expect(nameSpendAlarm(alarm, new Map())).toBe(alarm);
   });
 });

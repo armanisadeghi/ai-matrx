@@ -68,7 +68,7 @@ export function usePublicAuthSync() {
     // The record-only fields (created_at, identities, last_sign_in_at, *_confirmed_at) come
     // from THE ONE record door — in the late tier, after paint, and only when the store still
     // lacks them: the locally stored session user usually carries them already, and the signed-in
-    // shell's DeferredShellData reads the same record at idle.
+    // this hook is the one reader of it.
     const mergeAuthRecordLate = (userId: string) => {
       void whenLateIdle().then(async (ok) => {
         if (!ok) return;

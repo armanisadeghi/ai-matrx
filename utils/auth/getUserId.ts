@@ -2,12 +2,12 @@
  * Auth helpers for service files — reads from Redux store synchronously.
  *
  * No network requests. Requires the store to be initialized (i.e., the app
- * must have mounted and DeferredShellData must have run).
+ * must have mounted and the server-seeded identity landed in `state.userAuth`).
  *
  * Reads from `state.userAuth` — the post-split canonical home for the
  * caller's identity (id, email, isAdmin, accessToken, ...). The sibling
  * `state.userProfile` slice holds derived/profile data only
- * (userMetadata, fingerprintId, shellDataLoaded) and is NOT where the
+ * (userMetadata, fingerprintId) and is NOT where the
  * user id lives. The legacy `state.user` slice was deleted in the same
  * split — never read it.
  *

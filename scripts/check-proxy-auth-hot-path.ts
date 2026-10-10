@@ -154,7 +154,7 @@ const MATCHER_CASES: [string, boolean][] = [
  * vanish because the network blinked for two seconds".
  *
  * It does not self-heal. The client re-resolves identity after hydration
- * (`DeferredShellData`) and repairs Redux, but the chrome is driven by a SERVER
+ * (`usePublicAuthSync`) and repairs Redux, but the chrome is driven by a SERVER
  * prop the client never revisits — the guest shell sits there until the next
  * navigation.
  *
@@ -314,9 +314,6 @@ const GETUSER_DOORS: Record<string, string> = {
 };
 
 const RECORD_DOOR_CALLERS: Record<string, string> = {
-  "features/shell/components/DeferredShellData.tsx":
-    "Fills the Redux user with the record-only fields ONCE after hydration of the " +
-    "signed-in shell; every profile / menu surface reads them from Redux.",
   "hooks/usePublicAuthSync.ts":
     "The same fill for public routes, once, in the late idle tier, only when the stored session lacks it.",
 };
@@ -344,7 +341,7 @@ export function auditRepoIdentityCalls(
           "(layouts, pages, Server Actions, services) or `getClaimsUser(client)` when you " +
           "already hold a client. Browser: `getClaimsUser(createClient())`, or read the user " +
           "from Redux. Need created_at / identities / last_sign_in_at / *_confirmed_at? They " +
-          "arrive in Redux via fetchAuthUserRecord from DeferredShellData; read them there. " +
+          "arrive in Redux via fetchAuthUserRecord from usePublicAuthSync; read them there. " +
           "A read-after-write of auth.updateUser is the ONLY reason to add a door here.",
       });
     }
@@ -634,7 +631,7 @@ function selfTest(): boolean {
     ],
     [
       "an allow-listed caller may import the record door",
-      { "features/shell/components/DeferredShellData.tsx": 'import { fetchAuthUserRecord } from "@/utils/supabase/authUserRecord.client";\nawait fetchAuthUserRecord();' },
+      { "hooks/usePublicAuthSync.ts": 'import { fetchAuthUserRecord } from "@/utils/supabase/authUserRecord.client";\nawait fetchAuthUserRecord();' },
       0,
     ],
     [

@@ -41,8 +41,8 @@ export const bootstrapActiveOrganization =
   (explicitUserId?: string | null) =>
   async (dispatch: AppDispatch, getState: () => RootState) => {
     try {
-      // THE CALLER MAY KNOW WHO THIS IS BEFORE REDUX DOES. `DeferredShellData`
-      // has the authenticated user in hand from `supabase.auth.getUser()`
+      // THE CALLER MAY KNOW WHO THIS IS BEFORE REDUX DOES. the retired shell island
+      // had the authenticated user in hand from `supabase.auth.getUser()`
       // several awaits before `setUser` is dispatched; without this parameter
       // the bootstrap could only run AFTER the shell fetch, which is exactly
       // how a failing shell fetch left the organization question unanswered

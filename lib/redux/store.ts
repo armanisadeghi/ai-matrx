@@ -100,7 +100,6 @@ function splitUserData(user: UserData): {
     userProfile: {
       userMetadata: user.userMetadata,
       fingerprintId: null,
-      shellDataLoaded: false,
     },
   };
 }
@@ -173,8 +172,7 @@ function resolveUserPreferencesForBootstrap(
  * Does NOT include `globalCache` — the slim store has no entity reducers.
  *
  * Model records (the core model catalog, not Redux) and the SMS unread total are NOT preloaded here.
- * Model records hydrate via `getModelRecords().hydrate` (DeferredShellData) and
- * SMS counts via `PostPaintHydrator` dispatch.
+ * The model catalog loads itself on demand (`getModelRecords().loadOptions`); SMS counts load with the SMS feature.
  */
 export function resolveStoreBootstrapState(
   input?: Partial<BaseReduxState>,

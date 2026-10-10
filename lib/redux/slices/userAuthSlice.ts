@@ -12,7 +12,7 @@
 // - accessToken, tokenExpiresAt — auth secret + lifecycle, MUST NOT persist
 // - authReady — boot-time flag, transient by nature
 //
-// Profile data (userMetadata, fingerprintId, shellDataLoaded) lives in
+// Profile data (userMetadata, fingerprintId) lives in
 // `userProfileSlice.ts` and is persisted via the `boot-critical` preset.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
