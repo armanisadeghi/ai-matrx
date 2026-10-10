@@ -17,14 +17,13 @@
  * destruction.
  */
 
-import { createDeclarationRegistry, TABLE_ROW_ITEM_TYPE } from "@ai-matrx/alchemy/declare";
+import { createSurfaceDeclarationRegistry } from "./surface-declaration-registry";
 import type {
   ResolvedSurfaceManifest,
   SurfaceManifest,
 } from "@ai-matrx/chat/surfaces/types";
-import { agentRolesExtension } from "@ai-matrx/chat/surfaces/declare/surface-declare";
 import { SURFACE_EXECUTOR_NAMES } from "@ai-matrx/chat/surfaces/executor";
-import { BASELINE_VALUES, PLATFORM_RESERVED_NAMES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { PLATFORM_RESERVED_NAMES } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { notesEditorManifest } from "./notes-editor.manifest";
 import { agentShortcutsManifest } from "./agent-shortcuts.manifest";
 import { aiWorkManifest } from "./ai-work.manifest";
@@ -589,7 +588,6 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
 // fails instead of silently dropping inherited values.
 // ---------------------------------------------------------------------------
 
-const MAX_INHERITANCE_DEPTH = 3;
 
 /**
  * Platform-written names (`surface-chain.ts` / `window-forms.ts`): a surface
@@ -647,14 +645,7 @@ export function assertDeclaresExecutor(
  * on ANY surface; a surface with genuinely no text/content concept opts out
  * via `skipBaselineValues`.
  */
-const REGISTRY = createDeclarationRegistry<SurfaceManifest>({
-  baselineValues: Object.values(BASELINE_VALUES),
-  // ALC-18 (D4): a canonical table can sit on any screen, so its row is a baseline ITEM type of
-  // every surface (`table_row`); `features/context-menu-v3/table-row-item.ts` resolves it.
-  baselineItemTypes: [TABLE_ROW_ITEM_TYPE],
-  maxInheritanceDepth: MAX_INHERITANCE_DEPTH,
-});
-REGISTRY.registerExtension(agentRolesExtension);
+const REGISTRY = createSurfaceDeclarationRegistry();
 for (const manifest of RAW_MANIFESTS) {
   assertNoPlatformReservedNames(manifest);
   assertDeclaresExecutor(manifest);
