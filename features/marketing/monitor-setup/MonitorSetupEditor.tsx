@@ -936,9 +936,9 @@ function MonitorSetupEditorBody({
               </p>
               {proposal.proposal.missing?.length ? (
                 <div className="mt-1">
-                  <p className="font-medium text-foreground">
+                  <p data-error-box className="font-medium text-foreground">
                     What we could not find:
-                  </p>
+                  <ErrorAlchemyMenu /></p>
                   <ul className="ml-4 list-disc text-muted-foreground">
                     {proposal.proposal.missing.map((m) => (
                       <li key={m}>{m}</li>
@@ -1485,7 +1485,7 @@ function MonitorSetupEditorBody({
                 </div>
               </div>
               {factError ? (
-                <p className="text-xs text-destructive">{factError}</p>
+                <p className="text-xs text-destructive">{factError}<ErrorAlchemyMenu error={factError} /></p>
               ) : null}
               {!spokespeople.length || !proofs.length ? (
                 <p className="text-xs text-warning">
@@ -1696,7 +1696,7 @@ function MonitorSetupEditorBody({
                 savedMonitor.last_error ? (
                 <p className="mt-1 text-sm text-destructive">
                   {savedMonitor.last_error}
-                </p>
+                <ErrorAlchemyMenu error={savedMonitor.last_error} /></p>
               ) : (
                 <p className="mt-1 text-sm text-foreground">
                   {runHeadline ??

@@ -23,6 +23,7 @@ import { GatedCaptureOffer } from "./GatedCaptureOffer";
 import type { GuidedCaptureTarget } from "./guidedApi";
 import { GUIDED_CAPTURE_PLATFORMS } from "./guidedJob";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The platform a capture target is for: explicit, else read from the pasted link. */
 function platformOf(target: GuidedCaptureTarget): string | null {
   return target.platform ?? detectPlatform(target.handleOrUrl) ?? null;
@@ -97,7 +98,7 @@ export function CaptureOfferDialog({
           <DialogTitle>{failure ? failure.title : `Capture ${label ?? "this page"} with your browser`}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-2">
-          {failure ? <p className="text-sm text-muted-foreground">{failure.reason}</p> : null}
+          {failure ? <p className="text-sm text-muted-foreground">{failure.reason}<ErrorAlchemyMenu error={failure.reason} /></p> : null}
           <GatedCaptureOffer
             organizationId={organizationId}
             target={{ ...target, platform: platform ?? undefined }}

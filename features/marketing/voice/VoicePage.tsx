@@ -60,6 +60,7 @@ import {
 import { formatCount } from "@ai-matrx/kit/format";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface VoicePageProps {
   scope: VoiceProfileScope;
   /** The brand id, or the person's own user id. */
@@ -341,7 +342,7 @@ export function VoicePage({
         <Card className="p-4" data-testid="voice-current">
           <h2 className="text-sm font-medium text-foreground">Current voice</h2>
           {listError ? (
-            <p className="mt-2 text-sm text-destructive">{listError}</p>
+            <p className="mt-2 text-sm text-destructive">{listError}<ErrorAlchemyMenu error={listError} /></p>
           ) : rows === null ? (
             <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Reading saved voices
@@ -422,7 +423,7 @@ export function VoicePage({
               aria-label="Search Sources"
             />
           </div>
-          {sourceError ? <p className="mt-2 text-sm text-destructive">{sourceError}</p> : null}
+          {sourceError ? <p className="mt-2 text-sm text-destructive">{sourceError}<ErrorAlchemyMenu error={sourceError} /></p> : null}
           <ul className="mt-2 max-h-64 divide-y divide-border overflow-y-auto rounded-md border border-border" data-testid="voice-sources">
             {sources === null ? (
               <li className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
@@ -484,7 +485,7 @@ export function VoicePage({
           {scope === "brand" && target === "brand" ? (
             <div className="mt-3" data-testid="voice-social-samples">
               <h3 className="text-xs font-medium text-foreground">The brand&apos;s own social posts</h3>
-              {socialError ? <p className="mt-1 text-sm text-destructive">{socialError}</p> : null}
+              {socialError ? <p className="mt-1 text-sm text-destructive">{socialError}<ErrorAlchemyMenu error={socialError} /></p> : null}
               <ul className="mt-1 max-h-64 divide-y divide-border overflow-y-auto rounded-md border border-border">
                 {socialPosts === null ? (
                   <li className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
@@ -529,7 +530,7 @@ export function VoicePage({
               {picked.length >= MAX_SAMPLES ? " — that is the most one voice uses" : ""}
             </span>
           </div>
-          {measureError ? <p className="mt-2 text-sm text-destructive">{measureError}</p> : null}
+          {measureError ? <p className="mt-2 text-sm text-destructive">{measureError}<ErrorAlchemyMenu error={measureError} /></p> : null}
           {measured?.triage ? <Triage result={measured} /> : null}
         </Card>
 
@@ -749,7 +750,7 @@ function ConfirmCard({
         <Button icon={saving ? <Loader2 className="animate-spin" aria-hidden /> : <Check aria-hidden />} variant="primary" onClick={save} disabled={saving}>
           Save voice
         </Button>
-        {error ? <span className="text-sm text-destructive">{error}</span> : null}
+        {error ? <span className="text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></span> : null}
       </div>
     </Card>
   );
@@ -797,7 +798,7 @@ function TryDraft({ fingerprintId, org }: { fingerprintId: string; org: () => Pr
           Fix voice
         </Button>
         {!draft.trim() ? <span className="text-xs text-muted-foreground">Paste a draft to check it.</span> : null}
-        {error ? <span className="text-sm text-destructive">{error}</span> : null}
+        {error ? <span className="text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></span> : null}
       </div>
       {outcome ? (
         <div className="space-y-2 rounded-md border border-border p-3 text-sm" data-testid="voice-outcome">

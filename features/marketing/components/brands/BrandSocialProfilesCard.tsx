@@ -32,6 +32,7 @@ import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { BrandProperty } from "@/features/marketing/types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function joinTitle(label: string, cost: string | null): string {
   return cost ? `${label} · ${cost}` : label;
 }
@@ -106,12 +107,12 @@ export function BrandSocialProfilesCard({
           ))}
         </div>
       ) : accounts.isError ? (
-        <div className="flex items-center gap-3 p-4 text-xs text-muted-foreground">
+        <div data-error-box className="flex items-center gap-3 p-4 text-xs text-muted-foreground">
           Couldn&apos;t load the social profiles.
           <Button variant="outline" onClick={() => void accounts.refetch()}>
             Retry
           </Button>
-        </div>
+        <ErrorAlchemyMenu /></div>
       ) : rows.length === 0 && extras.length === 0 ? (
         <p className="px-4 py-2.5 text-xs text-muted-foreground">No social profiles yet.</p>
       ) : (

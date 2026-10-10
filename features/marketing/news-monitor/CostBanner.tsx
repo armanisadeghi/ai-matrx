@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 
 import { resumeMonitorAutoRuns } from "./api";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function CostBanner({
   organizationId,
   pausedAt,
@@ -112,6 +113,6 @@ export function CostBanner({
           Resume scheduled runs
         </Button>
       ) : null}
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }

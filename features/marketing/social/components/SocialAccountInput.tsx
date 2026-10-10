@@ -36,6 +36,7 @@ import { isRawChannelId } from "../mappers";
 import { PlatformMark } from "./PlatformMark";
 import { SocialImage } from "./SocialImage";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // The design-system Select has no placeholder prop: "nothing picked" is a real
 // option whose label reads "Platform".
 const PICK_OPTIONS: SelectOption<SocialPlatform | "">[] = [
@@ -235,7 +236,7 @@ function AccountPreview({
           ) : lookup.state === "not_found" || lookup.state === "failed" ? (
             <span className="text-destructive" title={lookup.message} data-testid="account-lookup-problem">
               {lookup.state === "not_found" ? "Not found" : "Not checked"}
-            </span>
+            <ErrorAlchemyMenu /></span>
           ) : lookup.state === "idle" && canFetch ? (
             <button type="button" className="text-primary hover:underline" onClick={onLookUp}>
               {lookCost ? `Look up · ${lookCost}` : "Look up"}

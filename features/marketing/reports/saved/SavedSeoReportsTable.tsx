@@ -20,6 +20,7 @@ import { useSeoReportVersions } from "./hooks";
 import type { SavedSeoReportSummary, SeoReportVersion } from "./types";
 import { NO_RAW_ROW_WINDOW } from "@/features/marketing/social/row-open";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function artifactViewerHref(id: string): string {
   return `/artifacts/${id}`;
 }
@@ -46,7 +47,7 @@ export function SeoReportVersions({ report }: { report: SavedSeoReportSummary })
   if (!report.source_id) return <p className="px-3 py-2 text-xs text-muted-foreground">No version record</p>;
   if (versions.isLoading) return <RegionSkeleton shape="rows" count={2} aria-label="Loading versions" />;
   if (versions.error) {
-    return <p className="px-3 py-2 text-xs text-destructive">{extractErrorMessage(versions.error)}</p>;
+    return <p className="px-3 py-2 text-xs text-destructive">{extractErrorMessage(versions.error)}<ErrorAlchemyMenu /></p>;
   }
   const rows: SeoReportVersion[] = versions.data ?? [];
   return (

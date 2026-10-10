@@ -87,7 +87,7 @@ export function ProofPill({
   const read = readLadder(angle);
   if (read.total === 0) {
     return (
-      <span
+      <span data-error-box
         className={cn(
           "inline-flex items-center gap-1 text-[11px] text-muted-foreground",
           className,
@@ -96,7 +96,7 @@ export function ProofPill({
         {read.malformed > 0
           ? `${read.malformed} proof ${read.malformed === 1 ? "entry" : "entries"} could not be read`
           : "No proof recorded"}
-      </span>
+      <ErrorAlchemyMenu /></span>
     );
   }
   const gaps = read.total - read.held;

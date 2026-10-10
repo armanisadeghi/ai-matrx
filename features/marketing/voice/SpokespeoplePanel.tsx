@@ -29,6 +29,7 @@ import {
   type FingerprintRow,
 } from "./service";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function SpokespeoplePanel({
   brandId,
   brandName,
@@ -97,7 +98,7 @@ export function SpokespeoplePanel({
       <p className="mt-1 text-xs text-muted-foreground">
         A person&apos;s own measured voice, linked to this brand.
       </p>
-      {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="mt-2 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
       {linked === null && !error ? (
         <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Reading spokespeople

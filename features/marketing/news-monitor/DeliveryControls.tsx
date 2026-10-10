@@ -37,6 +37,7 @@ import {
 
 import { saveMonitorDelivery } from "./api";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The incoming-webhook credential kinds the Slack channel accepts (aidream
  * `notifications/channels/slack.py::WEBHOOK_DEFINITION_KEYS`). */
 const SLACK_DEFINITION_KEYS = new Set([
@@ -164,7 +165,7 @@ export function DeliveryControls({
       {membersError ? (
         <p className="text-xs text-destructive">
           Could not load this organization&apos;s people: {membersError}
-        </p>
+        <ErrorAlchemyMenu error={membersError} /></p>
       ) : membersLoading ? (
         <p className="text-xs text-muted-foreground">Loading people…</p>
       ) : (
@@ -228,10 +229,10 @@ export function DeliveryControls({
         {vaultError ? (
           <span className="text-destructive">
             Could not read the Vault: {vaultError}
-          </span>
+          <ErrorAlchemyMenu error={vaultError} /></span>
         ) : null}
       </div>
-      {problem ? <p className="text-xs text-destructive">{problem}</p> : null}
+      {problem ? <p className="text-xs text-destructive">{problem}<ErrorAlchemyMenu error={problem} /></p> : null}
       {trackerId ? (
         <div>
           <Button

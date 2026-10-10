@@ -32,6 +32,7 @@ import { accountHref } from "../account-href";
 import { PlatformMark, platformLabel } from "./PlatformMark";
 import { trackableOwn, useTrackOwn } from "./useTrackOwn";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function UntrackedAccount({ platform, propertyId }: { platform: string; propertyId: string }) {
   const brand = useMarketingBrand();
   const router = useRouter();
@@ -68,7 +69,7 @@ export function UntrackedAccount({ platform, propertyId }: { platform: string; p
   if (accounts.isError || !row) {
     return (
       <div className="flex flex-col items-start gap-2 p-3">
-        <p className="text-sm text-foreground">{accounts.isError ? "Couldn't load this account" : "Account not found"}</p>
+        <p data-error-box className="text-sm text-foreground">{accounts.isError ? "Couldn't load this account" : "Account not found"}<ErrorAlchemyMenu /></p>
         <Button variant="outline" asChild>
           <Link href={marketingRoutes.brandSocials(brand.seg)}>Back to Socials</Link>
         </Button>

@@ -20,6 +20,7 @@ import { formatCount } from "@ai-matrx/kit/format";
 import { budgetedBytes, contextParts, pythonJsonText } from "./agent-view";
 import { useAgentContextView } from "./hooks";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const PART_LABEL: Record<string, string> = {
   goals: "Goals",
   page_roles: "Key pages",
@@ -106,7 +107,7 @@ export function AgentViewDialog({
             <p role="alert" className="flex items-center gap-1 text-xs text-destructive">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               <span className="line-clamp-2">{failure}</span>
-            </p>
+            <ErrorAlchemyMenu /></p>
           ) : envelope ? (
             <div className="max-h-[60vh] space-y-3 overflow-y-auto">
               {notices.length ? (

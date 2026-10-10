@@ -48,6 +48,7 @@ import {
 } from "./director-context";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The front door's starting points. `send` runs now; otherwise the words wait in the composer for the rest. */
 export const PR_STARTING_POINTS: ReadonlyArray<{
   label: string;
@@ -498,7 +499,7 @@ export function PrDirectorPanel({
             <span className="text-[11px] text-destructive" title={bind.refused}>
               This chat is not saved to {brandName}; reopening it elsewhere will
               not carry the brand.
-            </span>
+            <ErrorAlchemyMenu /></span>
           ) : null}
         </div>
       </header>
@@ -527,7 +528,7 @@ export function PrDirectorPanel({
               Start a new conversation
             </button>
           </span>
-        </p>
+        <ErrorAlchemyMenu error={launchError} /></p>
       ) : !conversationId ? (
         <p className="p-3 text-xs text-muted-foreground">
           Opening your PR director…

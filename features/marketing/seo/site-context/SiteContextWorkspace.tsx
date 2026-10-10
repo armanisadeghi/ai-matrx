@@ -64,6 +64,7 @@ import {
   type RolePageRow,
 } from "./service";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const COMPETITORS_SHOWN = 12;
 const NO_ROLE = "__none";
 
@@ -175,7 +176,7 @@ export function ExpertiseSection() {
             <span role="alert" className="flex items-center gap-1 text-xs text-destructive">
               Not changed
               <InfoHint text={refusal.slice(0, 140)} label="Why it was not changed" />
-            </span>
+            <ErrorAlchemyMenu /></span>
           ) : null}
         </div>
       )}

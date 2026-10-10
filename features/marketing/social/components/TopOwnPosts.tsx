@@ -12,6 +12,7 @@ import { availablePostMetrics, insightText, POST_METRICS, topOwnPosts, type Post
 import { formatCompact } from "../outlier";
 import { useOwnPostFigures } from "../useOwnInsights";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** `account` names whose posts these are when several accounts list theirs; it appears only with the list. */
 export function TopOwnPosts({ trackedAccountId, limit = 5, account }: { trackedAccountId: string; limit?: number; account?: string }) {
   const query = useOwnPostFigures([trackedAccountId]);
@@ -42,7 +43,7 @@ export function TopOwnPosts({ trackedAccountId, limit = 5, account }: { trackedA
       {query.isLoading ? (
         <p className="text-xs text-muted-foreground">Loading</p>
       ) : query.isError ? (
-        <p className="text-xs text-muted-foreground">Couldn't load</p>
+        <p data-error-box className="text-xs text-muted-foreground">Couldn't load<ErrorAlchemyMenu /></p>
       ) : (
         <ol className="flex flex-col divide-y divide-border rounded-md border border-border">
           {top.map((f) => {

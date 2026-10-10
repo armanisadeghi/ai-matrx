@@ -16,6 +16,7 @@ import { InfoHint } from "@/components/official/InfoHint";
 import { useGenerateSeoReport } from "./hooks";
 import type { SeoReportDraft } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function GenerateSeoReportButton({
   draft,
   unavailableReason,
@@ -41,8 +42,8 @@ export function GenerateSeoReportButton({
       {!draft ? <InfoHint text={unavailableReason} label="Why it is off" /> : null}
       {state.kind === "refused" ? (
         <span className="flex min-w-0 items-center gap-1" role="status">
-          <span className="truncate text-xs text-destructive">{state.short}</span>
-          <InfoHint text={state.detail} label="Why it was not saved" />
+          <span className="truncate text-xs text-destructive">{state.short}<ErrorAlchemyMenu error={state.short} /></span>
+          <InfoHint text={state.detail} label="Why it was refused" />
         </span>
       ) : null}
       {state.kind === "saved" ? (

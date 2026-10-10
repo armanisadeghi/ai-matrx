@@ -612,7 +612,7 @@ export function SwipeFileTab() {
           </div>
         )}
         {itemsQuery.data && itemsQuery.data.missing > 0 ? (
-          <p className="text-xs text-muted-foreground">{itemsQuery.data.missing} saved items could not be read</p>
+          <p data-error-box className="text-xs text-muted-foreground">{itemsQuery.data.missing} saved items could not be read<ErrorAlchemyMenu /></p>
         ) : null}
       </div>
 

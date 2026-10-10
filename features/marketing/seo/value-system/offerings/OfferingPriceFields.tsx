@@ -6,6 +6,7 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { PRICE_UNITS, priceProblems } from "./vocabulary";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface OfferingPriceDraft {
   /** Empty amount = no published price. */
   priceAmount: string;
@@ -70,7 +71,7 @@ export function OfferingPriceFields({
       {problems.amount || problems.currency ? (
         <p className="text-[11px] text-destructive">
           {problems.amount ? "Amount must be a number, 0 or more." : "Currency is a 3-letter code, like USD."}
-        </p>
+        <ErrorAlchemyMenu /></p>
       ) : null}
     </div>
   );

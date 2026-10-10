@@ -28,6 +28,7 @@ import { starterAccountSeeds } from "../board-accounts";
 import { useAccountRows } from "../hooks";
 import { useSocials } from "./SocialsContext";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const LAYOUT = { propertiesOpen: false, widths: { properties: 250 } } as const;
 
 export function StudioTab() {
@@ -118,7 +119,7 @@ export function StudioTab() {
   if (boards.isError || error) {
     return (
       <div className="flex flex-col items-start gap-2 p-4 text-sm text-foreground">
-        <p>{error ?? (boards.error instanceof Error ? boards.error.message : "Could not read the Studio boards.")}</p>
+        <p>{error ?? (boards.error instanceof Error ? boards.error.message : "Could not read the Studio boards.")}<ErrorAlchemyMenu error={error} /></p>
         <Button
           variant="outline"
           onClick={() => {

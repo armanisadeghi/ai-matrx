@@ -92,6 +92,7 @@ import { SetAsideLists } from "./SetAsideLists";
 import { StoryActions } from "./StoryActions";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The "News monitor run" template's steps, in order (aidream `workflows/news_monitor_run_v1.py`). */
 const STEP_LABELS: Record<string, string> = {
   collect: "Collect news",
@@ -413,7 +414,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
           {live || selectedActive ? (
             <section className="rounded-md border border-border bg-card p-3" data-surface-value="news_run_live">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-sm font-semibold text-foreground">
+                <h2 data-error-box className="text-sm font-semibold text-foreground">
                   {live?.error
                     ? "The run could not start"
                     : running
@@ -423,14 +424,14 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                           ? "Run finished with failures"
                           : "Run finished"
                         : `The run ended: ${runStatus ?? "unknown"}`}
-                </h2>
+                <ErrorAlchemyMenu /></h2>
                 {selectedRunId ? (
                   <Link href={`/workflows/runs/${selectedRunId}`} className="text-xs text-primary">
                     Open the run step by step
                   </Link>
                 ) : null}
               </div>
-              {live?.error ? <p className="text-xs text-destructive">{live.error}</p> : null}
+              {live?.error ? <p className="text-xs text-destructive">{live.error}<ErrorAlchemyMenu error={live.error} /></p> : null}
               <ol className="mt-1 grid grid-cols-1 gap-x-4 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-4">
                 {STEP_ORDER.map((id, index) => {
                   const streamed =

@@ -74,6 +74,7 @@ import {
   type SocialPlatform,
 } from "@/features/marketing/social/types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type Step = "start" | "looking" | "confirm" | "creating" | "track" | "tracking";
 
 type TrackState = {
@@ -381,7 +382,7 @@ export function HandleBrandCreator({
         {failure ? (
           <p role="alert" className="text-sm text-destructive">
             {failure}
-          </p>
+          <ErrorAlchemyMenu error={failure} /></p>
         ) : null}
         <div className="flex items-center justify-end gap-2">
           {lookCost ? (
@@ -443,7 +444,7 @@ export function HandleBrandCreator({
                   ? `Could not read ${linkLabel(discovery.hub)}`
                   : `Found on ${linkLabel(discovery.hub)}`
                 : "No bio link to read"}
-            </span>
+            <ErrorAlchemyMenu error={discovery.hubError} /></span>
           </div>
           <ul className="divide-y divide-border rounded-md border border-border">
             <AccountRowView
@@ -526,7 +527,7 @@ export function HandleBrandCreator({
         {failure ? (
           <p role="alert" className="text-sm text-destructive">
             {failure}
-          </p>
+          <ErrorAlchemyMenu error={failure} /></p>
         ) : null}
         <div className="flex items-center justify-end gap-2">
           <Button
@@ -595,7 +596,7 @@ export function HandleBrandCreator({
                           : t?.state === "failed"
                             ? (t.message ?? "Not tracked")
                             : "Not tracked"}
-                </span>
+                <ErrorAlchemyMenu error={t.message} /></span>
                 {t?.state === "running" ? (
                   <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
                 ) : null}

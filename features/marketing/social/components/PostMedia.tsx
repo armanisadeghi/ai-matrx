@@ -277,7 +277,7 @@ export function PostMedia({
         </div>
       ) : stage.kind === "error" ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 px-4 text-center text-white">
-          <span className="text-xs">{stage.message}</span>
+          <span className="text-xs">{stage.message}<ErrorAlchemyMenu error={stage.message} /></span>
           <span className="inline-flex items-center gap-1">
             <button
               type="button"

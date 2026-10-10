@@ -32,6 +32,7 @@ import {
 import { FactRow, KindCard, Pill, SmartLink, formatWhen } from "./shared";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface NewsDigestViewProps {
   value: Record<string, unknown>;
   /**
@@ -305,7 +306,7 @@ export function NewsDigestView({ value, storyActions, onOpen, onShowSourceHealth
                   <span className="text-muted-foreground">
                     {humanizeIdentifier(str(h.status))} · {num(h.items)} item{num(h.items) === 1 ? "" : "s"}
                   </span>
-                  {str(h.error) ? <span className="text-muted-foreground">— {str(h.error)}</span> : null}
+                  {str(h.error) ? <span className="text-muted-foreground">— {str(h.error)}<ErrorAlchemyMenu /></span> : null}
                 </li>
               );
             })}

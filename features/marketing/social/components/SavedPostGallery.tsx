@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { fetchPlaybackUrl, socialErrorMessage } from "../server";
 import type { PostMediaRef } from "../types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The thumbnail is a preview, never an additional carousel slide. Preserve the server's source order. */
 export function savedPostSlides(media: readonly PostMediaRef[]): PostMediaRef[] {
   return media.filter(file => file.role !== "thumbnail" && (
@@ -82,7 +83,7 @@ function ArchivedSlide({ file, organizationId, onRatio, fill, position }: {
     <div role="group" aria-roledescription="slide" aria-label={`Saved slide ${position}`} className="absolute inset-0 flex items-center justify-center pb-10">
       {error ? (
         <div className="flex flex-col items-center gap-2 px-4 text-center text-white">
-          <span className="text-sm">{error}</span>
+          <span className="text-sm">{error}<ErrorAlchemyMenu error={error} /></span>
           {src ? <a href={src} download={file.file_id} className="inline-flex items-center gap-1 underline"><Download className="h-4 w-4" aria-hidden />Download saved file</a> : <Button variant="outline" onClick={() => setAttempt(attempt + 1)}>Try again</Button>}
         </div>
       ) : src ? isVideo ? (

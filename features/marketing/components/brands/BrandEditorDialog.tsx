@@ -47,6 +47,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
   { value: "paused", label: "Paused" },
@@ -811,7 +812,7 @@ function BrandEditorDialogBody({
         {failure ? (
           <p role="alert" className="text-sm text-destructive">
             {failure}
-          </p>
+          <ErrorAlchemyMenu error={failure} /></p>
         ) : null}
 
         <DialogFooter>

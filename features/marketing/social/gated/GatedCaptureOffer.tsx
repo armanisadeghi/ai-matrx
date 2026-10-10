@@ -24,6 +24,7 @@ import { useCanEditSocial } from "../useCanEditSocial";
 import { useGuidedJob } from "./useGuidedJob";
 import type { CaptureHandoff } from "@/features/capture-ladder/types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function GatedCaptureOffer({
   organizationId,
   target,
@@ -99,7 +100,7 @@ export function GatedCaptureOffer({
         {inline && status ? (
           <span role="status" aria-live="polite" className={`truncate text-xs ${view?.phase === "failed" ? "text-destructive" : "text-muted-foreground"}`}>
             {status}
-          </span>
+          <ErrorAlchemyMenu error={status} /></span>
         ) : null}
       </div>
       {inline && line ? (

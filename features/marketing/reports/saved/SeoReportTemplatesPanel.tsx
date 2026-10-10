@@ -25,6 +25,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { chooseSeoReportTemplate, type TemplateRung } from "./service";
 import { useSeoReportTemplates, useTemplateKnob } from "./hooks";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const RUNG_LABEL: Record<string, string> = {
   site: "Site",
   brand: "Brand",
@@ -98,12 +99,12 @@ export function SeoReportTemplatesPanel({
         <p role="alert" className="flex items-center gap-1 text-xs text-destructive">
           <span className="truncate">Not changed</span>
           <InfoHint text={refusal.slice(0, 140)} label="Why it was not changed" />
-        </p>
+        <ErrorAlchemyMenu /></p>
       ) : null}
       {state.kind === "loading" || knob.isLoading ? (
         <RegionSkeleton shape="rows" count={2} aria-label="Loading templates" />
       ) : state.kind === "error" ? (
-        <p role="alert" className="text-xs text-destructive">{state.message.slice(0, 140)}</p>
+        <p role="alert" className="text-xs text-destructive">{state.message.slice(0, 140)}<ErrorAlchemyMenu /></p>
       ) : state.data.templates.length === 0 ? (
         <EmptyState icon={<LayoutTemplate />} title="No report templates" />
       ) : (

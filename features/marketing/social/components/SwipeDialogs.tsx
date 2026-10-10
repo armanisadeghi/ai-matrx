@@ -95,7 +95,7 @@ export function CollectionNameDialog({
         />
         <p className="h-4 text-xs text-destructive" aria-live="polite">
           {error}
-        </p>
+        <ErrorAlchemyMenu error={error} /></p>
         <DialogFooter>
           <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={busy}>
             Cancel

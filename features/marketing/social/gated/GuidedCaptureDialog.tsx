@@ -38,6 +38,7 @@ import {
 import { guidedIntroBefore, guidedResultHref } from "./guidedJob";
 import { useGuidedJob } from "./useGuidedJob";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type Stage =
   | { kind: "intro" }
   | { kind: "sending" }
@@ -124,12 +125,12 @@ export function GuidedCaptureDialog({
                 <Link className="underline" href={EXTENSION_SETUP_ROUTE}>
                   Add the extension
                 </Link>
-              </p>
+              <ErrorAlchemyMenu /></p>
             )}
             {stage.kind === "error" && (
               <p role="alert" className="text-destructive">
                 {stage.sentence}
-              </p>
+              <ErrorAlchemyMenu /></p>
             )}
           </div>
         )}
@@ -156,7 +157,7 @@ export function GuidedCaptureDialog({
               </ol>
             )}
             {finished && view?.sourceId && (
-              <p>
+              <p data-error-box>
                 {phase === "saved_unread"
                   ? "The page is saved with your captures. We couldn't read it into fields yet."
                   : "Your results are saved and attached to this account."}{" "}
@@ -167,17 +168,17 @@ export function GuidedCaptureDialog({
                 >
                   See what was saved
                 </Link>
-              </p>
+              <ErrorAlchemyMenu /></p>
             )}
             {failed && (
               <p role="alert" className="text-destructive">
                 {view?.failure ?? "This capture was closed before it finished."}
-              </p>
+              <ErrorAlchemyMenu error={view?.failure} /></p>
             )}
             {readError && (
               <p role="status" className="text-amber-600">
                 {readError}
-              </p>
+              <ErrorAlchemyMenu error={readError} /></p>
             )}
           </div>
         )}

@@ -29,6 +29,7 @@ import { CONNECT_MENU_STATUS, type PlatformConnection } from "../connection-stat
 import { useConnectionStates } from "../useConnectionStates";
 import { PlatformMark, platformLabel } from "./PlatformMark";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** The networks a brand can connect, in the order the menu lists them. */
 const CONNECT_NETWORKS = ["facebook", "instagram", "threads", "linkedin", "pinterest", "x", "youtube", "tiktok"] as const;
 
@@ -109,7 +110,7 @@ export function ConnectAccountMenu({
             );
           })
         ) : connections.isError ? (
-          <div className="px-2 py-1.5 text-sm text-destructive">Couldn&apos;t check your connections</div>
+          <div className="px-2 py-1.5 text-sm text-destructive">Couldn&apos;t check your connections<ErrorAlchemyMenu /></div>
         ) : (
           <div className="w-64 p-1.5">
             <RegionSkeleton shape="rows" count={4} aria-label="Checking your connections" />

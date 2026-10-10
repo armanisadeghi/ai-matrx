@@ -24,6 +24,7 @@ import { createClient } from "@/utils/supabase/client";
 import { copyAppletFromTemplate, type CopiedApplet } from "./copyAppletFromTemplate";
 import { appletHref, USE_ON_RETURN } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type Copy = { phase: "idle" } | { phase: "copying" } | { phase: "done"; applet: CopiedApplet } | { phase: "failed"; why: string };
 
 export function AppletUseTemplate({
@@ -143,7 +144,7 @@ export function AppletUseTemplate({
       {copy.phase === "failed" ? (
         <p className="text-sm text-destructive" role="alert" data-applet-template-failed="">
           {copy.why}
-        </p>
+        <ErrorAlchemyMenu error={copy.why} /></p>
       ) : null}
       {mine && copy.phase !== "done" ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3" data-applet-template-have={mine.slug}>

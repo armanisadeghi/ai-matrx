@@ -26,6 +26,7 @@ import { RecordPageHeader } from "@/features/shell/components/header/templates/R
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useTrackerInputs, type NewsTrackerInputs } from "./data";
 
+import { ErrorNotice } from "@ai-matrx/design-system";
 const STATUS_BADGE = {
   active: { label: "Active", tone: "success" },
   paused: { label: "Paused", tone: "warning" },
@@ -305,11 +306,11 @@ export function NewsTrackerInputsView({ trackerId }: { trackerId: string }) {
         {query.isLoading ? (
           <RegionSkeleton />
         ) : query.isError ? (
-          <EmptyState
-            icon={<BookText />}
+          <ErrorNotice
+           
             title="Could not load this monitor"
-            line={query.error instanceof Error ? query.error.message : String(query.error)}
-            action={
+             message={query.error instanceof Error ? query.error.message : String(query.error)}
+            actions={
               <Button variant="outline" onClick={() => void query.refetch()}>
                 Try again
               </Button>

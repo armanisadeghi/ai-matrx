@@ -56,6 +56,7 @@ import {
   type PrMomentRow,
 } from "./calendar-model";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const BUCKET_TONE: Record<PrBucket, string> = {
   pitch_ready: "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200",
   watch: "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200",
@@ -372,11 +373,11 @@ export function PrCalendarPage() {
 
               {plan.couldNotVerify.length ? (
                 <section className="rounded-md border p-3">
-                  <h3 className="text-xs font-semibold">Could not verify ({plan.couldNotVerify.length})</h3>
-                  <p className="text-[11px] text-muted-foreground">
+                  <h3 data-error-box className="text-xs font-semibold">Could not verify ({plan.couldNotVerify.length})<ErrorAlchemyMenu /></h3>
+                  <p data-error-box className="text-[11px] text-muted-foreground">
                     Dates the researcher proposed that code could not find on the source page. They stay off the
                     calendar until they can be read there.
-                  </p>
+                  <ErrorAlchemyMenu /></p>
                   <ul className="mt-2 flex flex-col gap-1 text-xs">
                     {plan.couldNotVerify.map((c, i) => (
                       <li key={i}>
