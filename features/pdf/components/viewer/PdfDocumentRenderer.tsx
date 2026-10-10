@@ -54,7 +54,7 @@ import { cn } from "@/lib/utils";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 import { PdfLoadingState } from "@/features/pdf/components/viewer/PdfLoadingState";
 import { resolvePageSwipe } from "./page-swipe";
-import { planPdfToolbar } from "./toolbar/toolbar-plan";
+import { planPdfToolbar, TOOLBAR_METRICS } from "./toolbar/toolbar-plan";
 import { useMediaQueryState } from "@ai-matrx/kit/media-query";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
@@ -65,6 +65,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /** One toolbar icon button — every control in the row shares it. */
+/**
+ * Every size in the toolbar row comes from TOOLBAR_METRICS / the plan — the
+ * same numbers the fold plan measures with — never a Tailwind size class
+ * (guard: toolbar/toolbar-plan.test.ts reads this file).
+ */
+const ITEM_GROUP_STYLE = { columnGap: TOOLBAR_METRICS.itemGap } as const;
+const SEPARATOR_STYLE = {
+  width: 1,
+  height: 16,
+  marginInline: (TOOLBAR_METRICS.separator - 1) / 2,
+} as const;
+
 /** Every toolbar icon button shares this; its square size comes from the plan. */
 const TOOL_BUTTON_BASE =
   "flex shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40";
@@ -905,7 +917,8 @@ export default function PdfDocumentRenderer({
     endWidth: toolbarEnd ? endWidth : 0,
   });
   const plan = toolbarPlan;
-  const toolButton = cn(TOOL_BUTTON_BASE, plan.target === 44 ? "h-11 w-11" : "h-7 w-7");
+  const toolButton = TOOL_BUTTON_BASE;
+  const buttonStyle = { width: plan.target, height: plan.target };
 
   const pageLabelTitle =
     pageLabel.length > 0
@@ -926,16 +939,20 @@ export default function PdfDocumentRenderer({
        * Guard: toolbar/toolbar-plan.test.ts. */}
       {toolbar === "full" ? (
         <div
-          className="flex min-w-0 shrink-0 items-center justify-between gap-1 overflow-hidden border-b border-border/60 bg-background/80 px-2 text-xs"
-          style={{ minHeight: Math.max(40, plan.target + 1) }}
+          className="flex min-w-0 shrink-0 items-center justify-between overflow-hidden border-b border-border/60 bg-background/80 text-xs"
+          style={{
+            minHeight: Math.max(40, plan.target + 1),
+            columnGap: TOOLBAR_METRICS.groupGap,
+            paddingInline: TOOLBAR_METRICS.padding / 2,
+          }}
         >
-          <div className="flex shrink-0 items-center gap-0.5">
+          <div className="flex shrink-0 items-center" style={ITEM_GROUP_STYLE}>
             {toolbarStart ? (
               <>
-                <div ref={startRef} className="flex shrink-0 items-center gap-0.5">
+                <div ref={startRef} className="flex shrink-0 items-center" style={ITEM_GROUP_STYLE}>
                   {toolbarStart}
                 </div>
-                <span className="mx-1 h-4 w-px shrink-0 bg-border" />
+                <span aria-hidden className="shrink-0 bg-border" style={SEPARATOR_STYLE} />
               </>
             ) : null}
             {plan.row.includes("zoom") ? (
@@ -947,11 +964,15 @@ export default function PdfDocumentRenderer({
                     onClick={() => stepZoom(-STEP)}
                     disabled={currentScale <= MIN_SCALE}
                     className={toolButton}
+                    style={buttonStyle}
                   >
                     <Minus className="h-3.5 w-3.5" />
                   </button>
                 </TooltipIcon>
-                <span className="w-[3.25rem] shrink-0 text-center text-xs font-medium tabular-nums">
+                <span
+                  className="shrink-0 text-center text-xs font-medium tabular-nums"
+                  style={{ width: TOOLBAR_METRICS.zoomLabel }}
+                >
                   {zoomLabel}
                 </span>
                 <TooltipIcon label="Zoom in">
@@ -961,12 +982,13 @@ export default function PdfDocumentRenderer({
                     onClick={() => stepZoom(+STEP)}
                     disabled={currentScale >= MAX_SCALE}
                     className={toolButton}
+                    style={buttonStyle}
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
                 </TooltipIcon>
                 {plan.row.length > 1 || plan.showMore ? (
-                  <span className="mx-1 h-4 w-px shrink-0 bg-border" />
+                  <span aria-hidden className="shrink-0 bg-border" style={SEPARATOR_STYLE} />
                 ) : null}
               </>
             ) : null}
@@ -977,6 +999,7 @@ export default function PdfDocumentRenderer({
                   aria-label="Fit page"
                   aria-pressed={zoom.kind === "fit"}
                   onClick={() => setZoom({ kind: "fit" })}
+                  style={buttonStyle}
                   className={cn(toolButton, zoom.kind === "fit" && "bg-accent text-accent-foreground")}
                 >
                   <Maximize2 className="h-3.5 w-3.5" />
@@ -990,6 +1013,7 @@ export default function PdfDocumentRenderer({
                   aria-label="Fit width"
                   aria-pressed={zoom.kind === "fit-width"}
                   onClick={() => setZoom({ kind: "fit-width" })}
+                  style={buttonStyle}
                   className={cn(toolButton, zoom.kind === "fit-width" && "bg-accent text-accent-foreground")}
                 >
                   <Maximize className="h-3.5 w-3.5" />
@@ -1003,6 +1027,7 @@ export default function PdfDocumentRenderer({
                   aria-label="Actual size"
                   aria-pressed={zoom.kind === "actual"}
                   onClick={() => setZoom({ kind: "actual" })}
+                  style={buttonStyle}
                   className={cn(toolButton, zoom.kind === "actual" && "bg-accent text-accent-foreground")}
                 >
                   <Scaling className="h-3.5 w-3.5" />
@@ -1016,6 +1041,7 @@ export default function PdfDocumentRenderer({
                   aria-label="Rotate 90°"
                   onClick={() => setRotation((r) => (r + 90) % 360)}
                   className={toolButton}
+                    style={buttonStyle}
                 >
                   <RotateCw className="h-3.5 w-3.5" />
                 </button>
@@ -1024,7 +1050,8 @@ export default function PdfDocumentRenderer({
             {plan.showMore ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button type="button" aria-label="More view options" className={toolButton}>
+                  <button type="button" aria-label="More view options" className={toolButton}
+                    style={buttonStyle}>
                     <MoreHorizontal className="h-3.5 w-3.5" />
                   </button>
                 </DropdownMenuTrigger>
@@ -1099,10 +1126,10 @@ export default function PdfDocumentRenderer({
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center gap-0.5">
+          <div className="flex shrink-0 items-center" style={ITEM_GROUP_STYLE}>
             {plan.pager !== "none" ? (
               <div
-                className="flex shrink-0 items-center gap-0.5"
+                className="flex shrink-0 items-center" style={ITEM_GROUP_STYLE}
                 aria-label={`${pageLabelTitle} pagination`}
               >
                 {plan.pager === "full" ? (
@@ -1112,6 +1139,7 @@ export default function PdfDocumentRenderer({
                     disabled={pageNumber <= 1}
                     aria-label={`Previous ${pageLabel}`}
                     className={toolButton}
+                    style={buttonStyle}
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
@@ -1129,6 +1157,7 @@ export default function PdfDocumentRenderer({
                     disabled={pageNumber >= numPages}
                     aria-label={`Next ${pageLabel}`}
                     className={toolButton}
+                    style={buttonStyle}
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
@@ -1138,9 +1167,9 @@ export default function PdfDocumentRenderer({
             {toolbarEnd ? (
               <>
                 {plan.pager !== "none" ? (
-                  <span className="mx-1 h-4 w-px shrink-0 bg-border" />
+                  <span aria-hidden className="shrink-0 bg-border" style={SEPARATOR_STYLE} />
                 ) : null}
-                <div ref={endRef} className="flex shrink-0 items-center gap-0.5">
+                <div ref={endRef} className="flex shrink-0 items-center" style={ITEM_GROUP_STYLE}>
                   {toolbarEnd}
                 </div>
               </>

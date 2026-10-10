@@ -53,13 +53,19 @@ export interface PdfToolbarPlan {
   rowWidth: number;
 }
 
-/** Exact box sizes the renderer draws — keep in step with PdfDocumentRenderer. */
+/**
+ * THE box sizes of the toolbar row. PdfDocumentRenderer draws every part
+ * with these numbers (inline styles) — there is no second copy in Tailwind
+ * classes for them to drift from (guard: toolbar-plan.test.ts).
+ */
 export const TOOLBAR_METRICS = {
-  padding: 16, // px-2 both sides
-  groupGap: 4, // gap-1 between the left and right groups
-  itemGap: 2, // gap-0.5 between items in a group
-  separator: 9, // mx-1 + 1px rule
-  zoomLabel: 52, // w-[3.25rem]
+  padding: 16, // inline padding, both sides together
+  groupGap: 4, // between the left and right groups
+  itemGap: 2, // between items in a group
+  separator: 9, // 1px rule + 4px margin each side
+  zoomLabel: 52, // the "Fit 75%" label
+  targetCoarse: 44, // touch screens (pointer: coarse)
+  targetFine: 28, // mouse / trackpad
 } as const;
 
 const FOLD_ORDER: PdfToolbarControl[] = ["rotate", "actual", "fitWidth", "fitPage", "zoom"];
@@ -76,7 +82,7 @@ export function measurePdfToolbar(
   pager: PdfToolbarPlan["pager"],
   counterWidth: number,
 ): number {
-  const t = input.coarse ? 44 : 28;
+  const t = input.coarse ? TOOLBAR_METRICS.targetCoarse : TOOLBAR_METRICS.targetFine;
   const m = TOOLBAR_METRICS;
   const left: number[] = [];
   if (input.startWidth) left.push(input.startWidth, m.separator);
@@ -101,7 +107,7 @@ export function measurePdfToolbar(
 }
 
 export function planPdfToolbar(input: PdfToolbarPlanInput): PdfToolbarPlan {
-  const target = input.coarse ? 44 : 28;
+  const target = input.coarse ? TOOLBAR_METRICS.targetCoarse : TOOLBAR_METRICS.targetFine;
   const hasPager = input.pageNav && input.pages > 1;
   const counterWidth = input.pages >= 100 ? 64 : 48;
   let row: PdfToolbarControl[] = ["zoom", "fitPage", "fitWidth", "actual", "rotate"];
