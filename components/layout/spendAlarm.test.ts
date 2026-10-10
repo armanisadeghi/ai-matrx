@@ -1,5 +1,5 @@
 import type { SystemAnnouncement } from "@/types/feedback.types";
-import { isAgentSeat, readClosedAlarms, writeClosedAlarms, nameSpendAlarm, sortSpendAlarms, toSpendAlarm } from "./spendAlarm";
+import { countByLevel, isAgentSeat, readClosedAlarms, writeClosedAlarms, nameSpendAlarm, sortSpendAlarms, toSpendAlarm } from "./spendAlarm";
 
 const base = {
   id: "a1",
@@ -23,15 +23,36 @@ describe("toSpendAlarm", () => {
       ...base,
       metadata: { alarm: true, severity: "error", count: 3, link: "https://manage.aimatrx.com/x" },
     });
-    expect(alarm?.severity).toBe("error");
+    expect(alarm?.level).toBe("critical");
     expect(alarm?.ackKey).toBe("a1:3");
     expect(alarm?.link).toBe("https://manage.aimatrx.com/x");
     expect(alarm?.detail).not.toContain("Open:");
   });
-  it("sorts errors before warnings", () => {
-    const w = toSpendAlarm({ ...base, id: "w", metadata: { alarm: true, severity: "warning" } })!;
-    const e = toSpendAlarm({ ...base, id: "e", metadata: { alarm: true, severity: "error" } })!;
-    expect(sortSpendAlarms([w, e]).map((a) => a.id)).toEqual(["e", "w"]);
+  it("sorts critical first, then warning, then info", () => {
+    const mk = (id: string, level: string) => toSpendAlarm({ ...base, id, metadata: { alarm: true, level } })!;
+    const out = sortSpendAlarms([mk("i", "info"), mk("w", "warning"), mk("c", "critical")]);
+    expect(out.map((a) => a.id)).toEqual(["c", "w", "i"]);
+  });
+  it("reads the writer's level and fix line", () => {
+    const alarm = toSpendAlarm({
+      ...base,
+      metadata: { alarm: true, level: "info", fix: "None needed", link_kind: "user" },
+    })!;
+    expect(alarm.level).toBe("info");
+    expect(alarm.fix).toBe("None needed");
+  });
+  it("re-grades an old row that only has the two-step severity", () => {
+    expect(toSpendAlarm({ ...base, metadata: { alarm: true, severity: "error" } })!.level).toBe("critical");
+    expect(toSpendAlarm({ ...base, metadata: { alarm: true, severity: "warning" } })!.level).toBe("warning");
+    expect(toSpendAlarm({ ...base, metadata: { alarm: true } })!.fix).toBeNull();
+  });
+  it("counts alarms per level", () => {
+    const mk = (id: string, level: string) => toSpendAlarm({ ...base, id, metadata: { alarm: true, level } })!;
+    expect(countByLevel([mk("a", "critical"), mk("b", "critical"), mk("c", "info")])).toEqual({
+      critical: 2,
+      warning: 0,
+      info: 1,
+    });
   });
 });
 

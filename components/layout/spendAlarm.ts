@@ -5,11 +5,23 @@ import type { SystemAnnouncement } from "@/types/feedback.types";
  * `users.system_announcements` row written by aidream's
  * `services/billing/spend_alarm.py`. `metadata.alarm === true` marks the row.
  */
+/**
+ * How serious an alarm is, graded per kind by the writer (aidream `ALARM_KINDS`, the one table):
+ * critical = money is going out wrongly right now; warning = something needs a decision;
+ * info = a skip, or a check that ran.
+ */
+export type AlarmLevel = "critical" | "warning" | "info";
+export const ALARM_LEVELS: readonly AlarmLevel[] = ["critical", "warning", "info"];
+
 export type SpendAlarm = {
   id: string;
   /** Acknowledgement key. A repeat of the same alarm changes `count`, so it asks again. */
   ackKey: string;
+  /** The legacy two-step severity older rows carry; `level` is the grade the panel shows. */
   severity: "error" | "warning";
+  level: AlarmLevel;
+  /** One line naming what to do about it; null on a row written before the writer graded kinds. */
+  fix: string | null;
   title: string;
   detail: string;
   link: string | null;
@@ -30,10 +42,14 @@ export function toSpendAlarm(a: SystemAnnouncement): SpendAlarm | null {
   if (!meta || meta.alarm !== true) return null;
   const count = typeof meta.count === "number" ? meta.count : 1;
   const link = typeof meta.link === "string" && meta.link ? meta.link : null;
+  const severity = meta.severity === "error" ? "error" : "warning";
+  const level: AlarmLevel = ALARM_LEVELS.find((l) => l === meta.level) ?? (severity === "error" ? "critical" : "warning");
   return {
     id: a.id,
     ackKey: `${a.id}:${count}`,
-    severity: meta.severity === "error" ? "error" : "warning",
+    severity,
+    level,
+    fix: typeof meta.fix === "string" && meta.fix ? meta.fix : null,
     title: a.title,
     detail: a.message.split("\n\nOpen: ")[0],
     link,
@@ -44,12 +60,18 @@ export function toSpendAlarm(a: SystemAnnouncement): SpendAlarm | null {
   };
 }
 
-/** Errors first, then most recent. */
+/** Critical first, then warning, then info; most recent first within a level. */
 export function sortSpendAlarms(alarms: SpendAlarm[]): SpendAlarm[] {
   return [...alarms].sort((x, y) => {
-    if (x.severity !== y.severity) return x.severity === "error" ? -1 : 1;
+    if (x.level !== y.level) return ALARM_LEVELS.indexOf(x.level) - ALARM_LEVELS.indexOf(y.level);
     return y.lastAt.localeCompare(x.lastAt);
   });
+}
+
+export function countByLevel(alarms: SpendAlarm[]): Record<AlarmLevel, number> {
+  const out: Record<AlarmLevel, number> = { critical: 0, warning: 0, info: 0 };
+  for (const a of alarms) out[a.level] += 1;
+  return out;
 }
 
 const ACCOUNT_LINK_BASE = "https://manage.aimatrx.com/administration/users/usage?user=";
