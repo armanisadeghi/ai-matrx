@@ -22,7 +22,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { FileIcon } from "@ai-matrx/media/react";
-import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -110,7 +110,7 @@ export function SingleFileActionButtons({
 
   return (
     <div className={cn("flex items-center", className)}>
-      <TapTargetButton
+      <TapTargetButtonTransparent
         icon={
           copying ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -124,7 +124,7 @@ export function SingleFileActionButtons({
         onClick={handleCopyLink}
         disabled={!file || copying}
       />
-      <TapTargetButton
+      <TapTargetButtonTransparent
         icon={
           downloading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -137,7 +137,7 @@ export function SingleFileActionButtons({
         disabled={!file || downloading}
       />
       {showOpenInNewTab ? (
-        <TapTargetButton
+        <TapTargetButtonTransparent
           icon={<ExternalLink className="h-4 w-4" />}
           ariaLabel="Open in new tab"
           href={`/files/f/${fileId}`}
@@ -148,7 +148,7 @@ export function SingleFileActionButtons({
         <FileContextMenu fileId={fileId}>
           <TooltipTrigger asChild>
             <span>
-              <TapTargetButton
+              <TapTargetButtonTransparent
                 icon={<MoreHorizontal className="h-4 w-4" />}
                 ariaLabel="More actions"
                 disabled={!file}

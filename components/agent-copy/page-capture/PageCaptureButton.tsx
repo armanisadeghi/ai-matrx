@@ -35,10 +35,13 @@ export function PageCaptureButton({
    * menu; it exists purely so a header can name this control when it folds.
    */
   ariaLabel,
+  triggerVariant,
 }: {
   size?: "xs" | "icon" | "sm" | "toolbar";
   className?: string;
   ariaLabel?: string;
+  /** `transparent` on a header whose other buttons are not glass (all glass or none). */
+  triggerVariant?: "transparent" | "glass" | "outline";
 }) {
   const version = usePageCaptureVersion();
   // The outline only: the whole capture is built when a person uses the menu (`live()`).
@@ -54,6 +57,7 @@ export function PageCaptureButton({
     <span data-page-capture={capture.kind} data-page-capture-name={ariaLabel} className={className}>
       <CopyButtons
         size={size}
+        {...(triggerVariant ? { triggerVariant } : {})}
         label={capture.title}
         human={() => pageCaptureMarkdown(live())}
         /* The workspace ("Prepare for AI") clones this strictly: plain JSON, loads as sentences. */

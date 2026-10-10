@@ -38,7 +38,7 @@ import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
 import { NavSidebar } from "../desktop/NavSidebar";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
-import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 
 export interface SingleFileTopBarProps {
   fileId: string;
@@ -79,6 +79,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
       left={
         <>
           <ChevronLeftTapButton
+            variant="transparent"
             onClick={() => router.push("/files/all")}
             ariaLabel="Back to all files"
           />
@@ -130,7 +131,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
       }
       right={
         <div className={cn("flex items-center", className)}>
-          <PageCaptureButton size="icon" />
+          <PageCaptureButton size="icon" triggerVariant="transparent" />
           {file?.mimeType === "application/pdf" && (
             <PdfSurfaceSwitcher
               current="file-viewer"
@@ -141,7 +142,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
           )}
           {/* Show files — opens NavSidebar in a slide-out Sheet so the user
            * can hop between files without leaving the single-file shell. */}
-          <TapTargetButton
+          <TapTargetButtonTransparent
             icon={<FolderTree className="h-4 w-4" />}
             ariaLabel="Show all files"
             onClick={() => setShowFiles(true)}
