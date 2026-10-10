@@ -53,7 +53,7 @@ jest.mock("@/lib/organizations/ensureOrgId", () => ({
 }));
 
 import { scopesService } from "../service/scopesService";
-import { isScopesRpcErr } from "../types";
+import { isRecordsErr } from "@ai-matrx/records";
 import * as service from "@/features/data-tables/service";
 import { forgetAllTablePlacements, recordStoreHomeOf } from "@/features/data-tables/data-source/table-home";
 
@@ -77,7 +77,7 @@ describeLive("a moved organization's scope table is its custom Table", () => {
   it("provisioning answers the moved Table, placed, and its rows read from the store", async () => {
     forgetAllTablePlacements();
     const res = await scopesService.provisionScopeDataset(ITEM, SCOPE);
-    if (isScopesRpcErr(res)) throw new Error(res.error.message);
+    if (isRecordsErr(res)) throw new Error(res.error.message);
     const tableId = res.data.datasetId;
     // The scope was provisioned BEFORE the move: the answer is that same table, now in the store.
     expect(tableId).toBe(PRE_MOVE_TABLE);
@@ -90,7 +90,7 @@ describeLive("a moved organization's scope table is its custom Table", () => {
     // And it is the same answer twice (idempotent), never a second table.
     forgetAllTablePlacements();
     const again = await scopesService.provisionScopeDataset(ITEM, SCOPE);
-    if (isScopesRpcErr(again)) throw new Error(again.error.message);
+    if (isRecordsErr(again)) throw new Error(again.error.message);
     expect(again.data.datasetId).toBe(tableId);
   });
 });

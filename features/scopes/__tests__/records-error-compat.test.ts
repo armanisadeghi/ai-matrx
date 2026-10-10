@@ -1,4 +1,4 @@
-import { isScopesRpcErr } from "../types";
+import { isRecordsErr } from "@ai-matrx/records";
 
 describe("scopes records-result compatibility", () => {
   it("narrows the record store refusal envelope for existing host callers", () => {
@@ -8,7 +8,7 @@ describe("scopes records-result compatibility", () => {
     };
     const accepted = { ok: true as const, data: { id: "scope-7" } };
 
-    expect(isScopesRpcErr(refused)).toBe(true);
-    expect(isScopesRpcErr(accepted)).toBe(false);
+    expect(isRecordsErr(refused)).toBe(true);
+    expect(isRecordsErr(accepted)).toBe(false);
   });
 });
