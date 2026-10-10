@@ -767,7 +767,10 @@ def _seatless(obj, seen):
     if isinstance(obj, dict):
         if 'my_seat' in obj or 'seats' in obj:
             seen.append((obj.get('my_seat'), obj.get('seats'), obj.get('review_id')))
-        return {k: _seatless(v, seen) for k, v in obj.items() if k not in ('my_seat', 'seats')}
+        out = {k: _seatless(v, seen) for k, v in obj.items() if k not in ('my_seat', 'seats')}
+        if isinstance(out.get('can'), dict):   # legacy can-flags leak SQL null (false AND null); both mean "cannot"
+            out['can'] = {k: (False if v is None else v) for k, v in out['can'].items()}
+        return out
     if isinstance(obj, list):
         return [_seatless(v, seen) for v in obj]
     return obj
@@ -812,8 +815,9 @@ def mode1_class(d, known, opening_pairs, upper_in, cycle_org):
         key = LIST_KEYS[door]
         if {k: v for k, v in L.items() if k != key} != {k: v for k, v in N.items() if k != key}:
             return None
-        lm = {e.get('review_id'): e for e in L.get(key) or []}
-        nm = {e.get('review_id'): e for e in N.get(key) or []}
+        fixture = {str(k) for k in REVIEWS}   # as mode 2: list facts are judged on the fixture's reviews only
+        lm = {e.get('review_id'): e for e in L.get(key) or [] if e.get('review_id') in fixture}
+        nm = {e.get('review_id'): e for e in N.get(key) or [] if e.get('review_id') in fixture}
         classes = set()
         for rid in set(lm) | set(nm):
             if lm.get(rid) == nm.get(rid):
@@ -824,7 +828,8 @@ def mode1_class(d, known, opening_pairs, upper_in, cycle_org):
             if not cls:
                 return None
             classes |= cls
-        return 'opening: ' + ' + '.join(sorted(classes)) if classes else None
+        # no entry differs: only the order of entries whose sort keys tie (fixture rows share due dates) moved
+        return 'opening: ' + ' + '.join(sorted(classes)) if classes else 'same entries; order among equal sort keys differs'
     if door == 'hr_review_calibration' and _refused(L) and (caller, cycle_org.get(target)) in upper_in:
         return 'opening: ' + OPENING_LIST[1]
     return None
