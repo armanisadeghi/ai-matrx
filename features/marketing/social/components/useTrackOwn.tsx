@@ -99,5 +99,5 @@ export function useTrackOwn(organizationId: string, brandId: string) {
     toast.success(`Tracked ${done} of ${list.length}`);
   }
 
-  return { busyRow, setBusyRow, progress, trackOwn, trackAllOwn, costText, confirmSpend };
+  return { busyRow, setBusyRow, progress, trackOwn, trackOwnRow, trackAllOwn, costText, confirmSpend };
 }

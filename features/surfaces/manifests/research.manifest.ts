@@ -557,6 +557,38 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "configuration",
     sortOrder: 850,
   },
+  // ── Social tab (/research/topics/<id>/social; contributed by TopicSocial while it is open) ──
+  {
+    name: "social_loaded",
+    label: "Social tab loaded",
+    description: "True once the Social tab has read the topic's captured social profiles and posts. Absent when the Social tab is not open.",
+    valueType: "boolean",
+    alwaysAvailable: false,
+    typicalCharCount: 5,
+    group: "material",
+    sortOrder: 900,
+  },
+  {
+    name: "social_profiles",
+    label: "Social profiles",
+    description: "The subject's social handles as { platform, handle, display_name, followers, following, verified, captured, url }. captured false means the profile has not been read yet; null numbers mean not measured, never zero.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 1200,
+    group: "material",
+    sortOrder: 910,
+  },
+  {
+    name: "social_posts",
+    label: "Social posts",
+    description: "The captured posts, best outlier first, as { post_id, platform, handle, hook, views, likes, comments, multiple, posted_at, url } (first 60).",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 6000,
+    autoContext: false,
+    group: "material",
+    sortOrder: 920,
+  },
 ];
 
 /**
@@ -694,6 +726,10 @@ export function createResearchScope(values: {
   topic_created_at?: string;
   topic_updated_at?: string;
   active_view?: string;
+  // Social tab
+  social_loaded?: boolean;
+  social_profiles?: Array<Record<string, unknown>>;
+  social_posts?: Array<Record<string, unknown>>;
   // Pipeline state
   topic_status?: string;
   autonomy_level?: string;

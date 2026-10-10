@@ -6,11 +6,11 @@
  * a fetch). The website autopsy modes beside it (Run, Review, Opportunities, Competitors, Evidence,
  * History) are `matrx-user/marketing-competitors`.
  *
- * Read-only for now: Add competitor, Find socials and Track have no agent twin yet (Track and Find
- * read someone else's website and spend a lookup, so they need an approval card).
+ * Agent writes: create_competitors (the Add competitor dialog's save) and update_competitors (the
+ * row's Find socials and Track found accounts), each approved on a card; tracking names its points.
  */
 
-import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
+import type { SurfaceManifest, SurfaceScopePayload, SurfaceValue, SurfaceValueGroup, SurfaceWriteTarget } from "@ai-matrx/chat/surfaces/types";
 import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
@@ -45,6 +45,33 @@ const surfaceSpecific: SurfaceValue[] = [
   v("competitors", "Competitors (full rows)", "Every row as { key, name, website, tracking, accounts: [{ platform, handle, followers, posts_tracked, best_multiple }] }.", "array", 6000, "competitors", 250, { autoContext: false }),
 ];
 
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "create_competitors",
+    label: "Add competitors",
+    description:
+      'Adds competitors, exactly as the Add competitor dialog does: the website is saved as a website competitor and each handle is tracked as a competitor account (tracking SPENDS POINTS per account; when the cost is worth a warning the page names the points and asks again). Value is a JSON ARRAY of 1-10 objects { "name": string (required), "website"?: "example.com", "handles"?: { "instagram"?: "<link or handle>", "tiktok"?, "youtube"?, "x"?, "linkedin"?, "facebook"?, ... } }. Rows appear at once and each account reports its own progress on the row.',
+    valueType: "array",
+    updatesValue: "competitors",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "competitors",
+    sortOrder: 300,
+  },
+  {
+    name: "update_competitors",
+    label: "Find and track socials",
+    description:
+      'For competitors on this page, exactly as the row buttons do: find_socials reads the competitor\'s website for social links (the result lists what was found); track_found tracks the accounts found (SPENDS POINTS per account). Value is a JSON ARRAY of 1-10 objects { "key": "<from competitors>", "find_socials"?: true, "track_found"?: true }. Send both to find and track in one step.',
+    valueType: "array",
+    updatesValue: "competitors",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "competitors",
+    sortOrder: 310,
+  },
+];
+
 export const marketingCompetitorDirectoryManifest: SurfaceManifest = {
   surfaceName: COMPETITOR_DIRECTORY_SURFACE_NAME,
   client: "matrx-user",
@@ -56,12 +83,14 @@ export const marketingCompetitorDirectoryManifest: SurfaceManifest = {
   briefValues: ["competitors_loaded", "brand_name", "competitor_count", "with_accounts_count"],
   readiness: "partial",
   readinessNote:
-    "Read values only. Add competitor, Find socials and Track have no agent twin yet (they read a website and need an approval card). No outside-helper binding test.",
+    "Values plus create_competitors (Add competitor) and update_competitors (Find socials, Track found accounts). Every person action on this list has an agent twin; editing one competitor's accounts lives in its detail panel. No outside-helper binding test.",
   intro: `<surface_intro>
 You are on a brand's competitor directory: one row per competitor with its website and tracked social accounts. Check competitors_loaded first; when false, load_error says why.
-competitor_list is the condensed rows (read it first); competitors holds every row. A competitor with no tracked accounts has no audience numbers yet; null followers mean not measured, never zero. Website autopsy work (Run, Review, Opportunities) lives on the screens beside this one.
+competitor_list is the condensed rows (read it first); competitors holds every row. A competitor with no tracked accounts has no audience numbers yet; null followers mean not measured, never zero. create_competitors adds competitors (with their website and any account handles); update_competitors reads a competitor's website for social links (find_socials) and tracks the accounts found (track_found). Tracking accounts spends points; say so first. The person approves each on a card.
+Website autopsy work (Run, Review, Opportunities) lives on the screens beside this one.
 </surface_intro>`,
   groups,
+  writeTargets,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
 };
 

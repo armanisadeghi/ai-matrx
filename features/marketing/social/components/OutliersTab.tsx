@@ -35,7 +35,8 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
-import { useSurfaceClientTools, useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceClientTools, useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { parseUpdateOutliers } from "../agent-writes";
 import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import {
   SOCIAL_OUTLIERS_SURFACE_NAME,
@@ -232,16 +233,22 @@ export function OutliersTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchlists.isSuccess]);
 
+  /** Mark posts seen / dismissed on the selected watchlist: the row buttons and the agent's update_outliers. */
+  async function saveStates(targets: FeedItem[], state: HitState) {
+    if (!active) throw new Error("No watchlist is selected; New / Seen / Dismissed belong to a watchlist.");
+    await setHitStates({
+      organizationId,
+      savedViewId: active.id,
+      items: targets.map((t) => ({ postId: t.post.postId, score: t.post.outlierScore })),
+      state,
+    });
+    await invalidate();
+  }
+
   async function writeStates(targets: FeedItem[], state: HitState) {
     if (!active || targets.length === 0) return;
     try {
-      await setHitStates({
-        organizationId,
-        savedViewId: active.id,
-        items: targets.map((t) => ({ postId: t.post.postId, score: t.post.outlierScore })),
-        state,
-      });
-      await invalidate();
+      await saveStates(targets, state);
     } catch (err) {
       toast.error(socialErrorMessage(err, "Couldn't update the watchlist"));
     }
@@ -499,6 +506,27 @@ export function OutliersTab() {
       await invalidate();
       pickWatchlist(ALL);
       return `Archived "${active.name}".`;
+    },
+  });
+
+  useSurfaceWriteHandlers(SOCIAL_OUTLIERS_SURFACE_NAME, {
+    update_outliers: {
+      validate: (value) => {
+        if (!active) throw new Error("No watchlist is selected, so posts have no New / Seen / Dismissed state. Ask the person to pick one (or save one). Nothing was changed.");
+        parseUpdateOutliers(value, items.map((i) => i.post.postId));
+      },
+      apply: async (value) => {
+        const plans = parseUpdateOutliers(value, items.map((i) => i.post.postId));
+        for (const state of ["seen", "dismissed"] as const) {
+          const ids = new Set(plans.filter((p) => p.state === state).map((p) => p.postId));
+          const targets = items.filter((i) => ids.has(i.post.postId));
+          if (targets.length > 0) await saveStates(targets, state);
+        }
+        return {
+          summary: `Marked ${plans.length} post${plans.length === 1 ? "" : "s"} on "${active?.name ?? "the watchlist"}".`,
+          data: plans.map((p) => ({ post_id: p.postId, state: p.state })),
+        };
+      },
     },
   });
 

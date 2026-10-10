@@ -10,6 +10,7 @@
 
 import type {
   SurfaceClientTool,
+  SurfaceWriteTarget,
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
@@ -49,6 +50,7 @@ function build(args: {
   briefValues: string[];
   clientTools: SurfaceClientTool[];
   readinessNote: string;
+  writeTargets?: SurfaceWriteTarget[];
 }): SurfaceManifest {
   return {
     surfaceName: `matrx-user/${args.local}`,
@@ -65,8 +67,29 @@ function build(args: {
     groups: [BRAND_GROUP, ...args.groups],
     values: mergeBaselineValues(pickBaseline("selection", "context"), [...BRAND_VALUES, ...args.values]),
     clientTools: args.clientTools,
+    ...(args.writeTargets ? { writeTargets: args.writeTargets } : {}),
   };
 }
+
+/** One saved-immediately list target, approved by the person on a card before it runs. */
+const listTarget = (
+  name: string,
+  label: string,
+  description: string,
+  updatesValue: string,
+  group: string,
+  sortOrder: number,
+): SurfaceWriteTarget => ({
+  name,
+  label,
+  description,
+  valueType: "array",
+  updatesValue,
+  mode: "entity",
+  applyPolicy: "ask",
+  group,
+  sortOrder,
+});
 
 // -- Outliers ---------------------------------------------------------------
 
@@ -84,12 +107,23 @@ export const marketingSocialOutliersManifest = build({
   description: "Posts that beat their creator's own usual result, across the brand's tracked accounts.",
   briefValues: ["outliers_loaded", "brand_name", "outlier_count", "filters"],
   readinessNote:
-    "Values and view tools. Save and remove watchlist are agent tools too; moving a post between New / Seen / Dismissed has no agent twin yet.",
+    "Values, view tools, watchlist tools and update_outliers (mark seen / dismiss / restore). Every person action has an agent twin.",
   intro: `<surface_intro>
 You are on the brand's Outliers page: posts whose views beat the creator's own median, best first. Check outliers_loaded first.
-outlier_list is the condensed feed (read it first); outliers holds every row. multiple is views as a multiple of that creator's median; a post with no multiple has no baseline yet (the creator needs 11+ posts). filters is what the person has set: use ${SOCIAL_OUTLIERS_TOOLS.setFilters} to change the window, minimum multiple, platform, role, format, sort or the Cards / Table view. ${SOCIAL_OUTLIERS_TOOLS.openPost} opens a post's panel. ${SOCIAL_OUTLIERS_TOOLS.saveWatchlist} saves the current filters as a named watchlist and ${SOCIAL_OUTLIERS_TOOLS.removeWatchlist} archives the selected one; both need the person's approval. Empty means nothing beats the filter, not that the brand has no posts: post_count says how many posts exist.
+outlier_list is the condensed feed (read it first); outliers holds every row. multiple is views as a multiple of that creator's median; a post with no multiple has no baseline yet (the creator needs 11+ posts). filters is what the person has set: use ${SOCIAL_OUTLIERS_TOOLS.setFilters} to change the window, minimum multiple, platform, role, format, sort or the Cards / Table view. ${SOCIAL_OUTLIERS_TOOLS.openPost} opens a post's panel. ${SOCIAL_OUTLIERS_TOOLS.saveWatchlist} saves the current filters as a named watchlist and ${SOCIAL_OUTLIERS_TOOLS.removeWatchlist} archives the selected one; both need the person's approval. update_outliers marks posts seen or dismissed (seen also restores a dismissed one) on the selected watchlist; the person approves it on a card.
+Empty means nothing beats the filter, not that the brand has no posts: post_count says how many posts exist.
 </surface_intro>`,
   groups: [{ key: "feed", label: "Feed", sortOrder: 200 }],
+  writeTargets: [
+    listTarget(
+      "update_outliers",
+      "Mark outliers",
+      'Marks posts on the SELECTED watchlist, saved immediately, exactly as the row menu does. Value is a JSON ARRAY of 1-100 objects { "post_id": "<from outliers>", "state": "seen" | "dismissed" }; "seen" also restores a dismissed post. Refused when no watchlist is selected (watchlists shows which is selected) or a post_id is not in the feed; nothing is changed then. Posts themselves are never touched.',
+      "outliers",
+      "feed",
+      300,
+    ),
+  ],
   values: [
     v("outliers_loaded", "Outliers loaded", "True once the brand's posts are read. While false the other values are absent; load_error says why.", "boolean", 5, "feed", 200, { alwaysAvailable: true }),
     v("load_error", "Load error", "Why the posts could not be read. Absent on a clean read.", "string", 120, "feed", 205),
@@ -175,18 +209,47 @@ export const marketingSocialKpisManifest = build({
   description: "The brand's social goals against current numbers, follower trends and a benchmark against tracked accounts.",
   briefValues: ["kpis_loaded", "brand_name", "goal_count", "view"],
   readinessNote:
-    "Values and the view tool. Creating, editing, pausing and removing a goal have no agent twin yet: a goal carries a baseline and dates the dialog derives.",
+    "Values, the view tool and create_goals / update_goals / delete_goals through the dialog's own save (baseline and start date derived exactly as New goal does). Every person action has an agent twin.",
   intro: `<surface_intro>
 You are on the brand's KPIs page: goals with current-versus-target, a follower trend per own account, and a benchmark of own accounts against tracked ones. Check kpis_loaded first.
 goals is each goal with current, target, progress and status (achieved, on_track, behind, no_data, paused). own_trends has each own account's follower points; benchmark has one row per tracked account. A null number means not measured, never zero. view says which section the person sees; ${SOCIAL_KPIS_TOOLS.setView} switches it (trend, benchmark, own).
+To add goals use create_goals; to change a goal's target, metric, period, scope, or to pause/resume it use update_goals; delete_goals removes goals. metric ids come from goal_metric_options, scope values from goal_scope_options. Each is approved by the person on a card.
 </surface_intro>`,
   groups: [{ key: "kpis", label: "KPIs", sortOrder: 200 }],
+  writeTargets: [
+    listTarget(
+      "create_goals",
+      "Create goals",
+      'Creates goals, saved immediately, exactly as the New goal dialog does (its baseline and start date are set from today\'s numbers). Value is a JSON ARRAY of 1-25 objects { "metric": "followers" | "avg_views" | "posts_per_week" | "engagement_rate" | "outlier_count" (required), "target": number > 0 (required; engagement_rate is a percent like 4.5), "period"?: "week" | "month" | "quarter" | "year" (default month), "scope"?: a value from goal_scope_options (default "all") }. e.g. [{ "metric": "followers", "target": 10000, "period": "quarter" }]. A bad metric, period, scope or target refuses the whole list and nothing is created.',
+      "goals",
+      "kpis",
+      300,
+    ),
+    listTarget(
+      "update_goals",
+      "Update goals",
+      'Edits goals, saved immediately, exactly as Edit goal and the Pause / Resume buttons do. Value is a JSON ARRAY of objects { "id": "<from goals>", "metric"?, "target"?, "period"?, "scope"?, "status"?: "active" | "paused" }; only the fields sent change. Changing metric or scope re-measures the baseline from today; a target or period change keeps it. An unknown id refuses the whole list.',
+      "goals",
+      "kpis",
+      310,
+    ),
+    listTarget(
+      "delete_goals",
+      "Remove goals",
+      'Removes goals, exactly as the Remove button does: the goal leaves the list (archived; there is no restore on this page). Account numbers and posts are untouched. Value is a JSON ARRAY of goal ids from goals. Prefer update_goals with status "paused" to stop tracking a goal for now.',
+      "goals",
+      "kpis",
+      320,
+    ),
+  ],
   values: [
     v("kpis_loaded", "KPIs loaded", "True once goals and account numbers are read. While false the other values are absent; load_error says why.", "boolean", 5, "kpis", 200, { alwaysAvailable: true }),
     v("load_error", "Load error", "Why the numbers could not be read. Absent on a clean read.", "string", 120, "kpis", 205),
     v("view", "View", "trend, benchmark or own: the section on screen.", "string", 10, "kpis", 210),
     v("goal_count", "Goals", "How many goals the brand has.", "number", 3, "kpis", 215),
-    v("goals", "Goals (full rows)", "Each goal as { id, metric, scope, period, status, current, target, fraction }.", "array", 1500, "kpis", 220),
+    v("goal_metric_options", "Goal metrics", "The metrics a goal can measure, as { id, label }.", "array", 250, "kpis", 216),
+    v("goal_scope_options", "Goal scopes", "What a goal can measure: all own accounts, one platform's own accounts, or one tracked account, as { value, label }.", "array", 600, "kpis", 217),
+    v("goals", "Goals (full rows)", "Each goal as { id, metric, metric_id, scope, scope_value, period, status, current, target, fraction }.", "array", 1500, "kpis", 220),
     v("own_trends", "Own account trends", "Per own account: { platform, handle, followers, growth_30d, points } (points are [date, followers]).", "array", 2500, "kpis", 230),
     v("benchmark", "Benchmark", "One row per tracked account: { platform, handle, role, followers, growth_30d, posts_per_week, median_views, engagement_rate, outlier_rate }.", "array", 3000, "kpis", 240, { autoContext: false }),
   ],
@@ -208,6 +271,8 @@ export interface SocialKpisScopeValues {
   brand_name?: string;
   view?: string;
   goal_count?: number;
+  goal_metric_options?: Array<{ id: string; label: string }>;
+  goal_scope_options?: Array<{ value: string; label: string }>;
   goals?: Array<Record<string, unknown>>;
   own_trends?: Array<Record<string, unknown>>;
   benchmark?: Array<Record<string, unknown>>;
@@ -229,16 +294,44 @@ export const marketingSocialSwipeManifest = build({
   description: "The posts and ads saved for inspiration, in collections.",
   briefValues: ["swipe_loaded", "brand_name", "item_count", "collections"],
   readinessNote:
-    "Values, filter and open tools, New collection. Save link, rename, archive and notes/tags have no agent twin yet: link saving ingests a post and spends credits.",
+    "Values, filter and open tools, New collection, create_swipe_links (Save link, spends points), update_swipe_collections (rename / archive / restore) and update_swipe_items (note and tags). Every person action has an agent twin except removing an item from a collection and transcribing.",
   intro: `<surface_intro>
 You are on the brand's Swipe file: posts and ads the team saved, grouped in collections. Check swipe_loaded first.
 collections lists each collection with its item count; scope says which one is open (all = All saved). item_list is the condensed items shown under the current filters; items holds every row. ${SOCIAL_SWIPE_TOOLS.setFilters} changes the search, type, platform, tag and collection shown; ${SOCIAL_SWIPE_TOOLS.openItem} opens one item's note/tags sheet; ${SOCIAL_SWIPE_TOOLS.newCollection} creates a collection for this brand and needs approval.
+create_swipe_links saves post links into a collection (it fetches each post and spends points; say so before you call it). update_swipe_collections renames, archives or restores collections. update_swipe_items changes an item's note and tags. The person approves each on a card.
 </surface_intro>`,
   groups: [{ key: "swipe", label: "Swipe file", sortOrder: 200 }],
+  writeTargets: [
+    listTarget(
+      "create_swipe_links",
+      "Save links",
+      'Saves links to single posts into the swipe file, exactly as the Save link dialog does: each post is fetched (this SPENDS POINTS per link; when the cost is worth a warning the page names the points and asks again) and filed in a collection. Value is a JSON ARRAY of 1-10 objects { "url": "<a post link>", "collection_id": "<from collections>" OR "new_collection_name": "<name>", "note"?: string, "tags"?: [string] }. A profile link, a bad collection_id or both/neither collection fields refuses the whole list.',
+      "items",
+      "swipe",
+      300,
+    ),
+    listTarget(
+      "update_swipe_collections",
+      "Update collections",
+      'Renames, archives or restores collections, saved immediately, exactly as the collection menu does. Value is a JSON ARRAY of { "id": "<from collections or archived_collections>", "name"?: string, "archived"?: true | false }. Archiving keeps everything saved in it (Show archived brings it back).',
+      "collections",
+      "swipe",
+      310,
+    ),
+    listTarget(
+      "update_swipe_items",
+      "Update item notes",
+      'Sets saved items\' note and tags, exactly as the item sheet\'s Save does. Value is a JSON ARRAY of { "key": "<from items>", "collection_id"?: "<needed when the item is in more than one collection>", "note"?: string, "tags"?: [string] }; tags REPLACE the item\'s tags in that collection. Only fields sent change.',
+      "items",
+      "swipe",
+      320,
+    ),
+  ],
   values: [
     v("swipe_loaded", "Swipe file loaded", "True once collections and items are read. While false the other values are absent; load_error says why.", "boolean", 5, "swipe", 200, { alwaysAvailable: true }),
     v("load_error", "Load error", "Why the swipe file could not be read. Absent on a clean read.", "string", 120, "swipe", 205),
     v("collections", "Collections", "Live collections as { id, name, item_count, linked_to_brand }.", "array", 800, "swipe", 210),
+    v("archived_collections", "Archived collections", "Archived collections as { id, name }; update_swipe_collections with archived false restores one.", "array", 300, "swipe", 212),
     v("scope", "Open collection", "The collection id on screen, or all.", "string", 36, "swipe", 215),
     v("filters", "Filters", "{ search, type, platform, format, tag, saved } - all/any = no limit.", "object", 150, "swipe", 220),
     v("item_count", "Items shown", "How many items show under the current filters.", "number", 5, "swipe", 225),
@@ -287,6 +380,7 @@ export interface SocialSwipeScopeValues {
   brand_id?: string;
   brand_name?: string;
   collections?: Array<Record<string, unknown>>;
+  archived_collections?: Array<{ id: string; name: string }>;
   scope?: string;
   filters?: Record<string, unknown>;
   item_count?: number;
@@ -306,12 +400,39 @@ export const marketingSocialAdsManifest = build({
   description: "Search the public ad libraries (Meta, TikTok, Google, LinkedIn) and follow advertisers.",
   briefValues: ["ads_loaded", "brand_name", "section", "result_count"],
   readinessNote:
-    "Values, result filters and Search. Track advertiser, Look again and Stop tracking have no agent twin yet: they spend points or change a saved view.",
+    "Values, result filters, Search, and create_ / update_ / delete_tracked_advertisers (Track, Look again or mark seen, Stop tracking). Every person action has an agent twin.",
   intro: `<surface_intro>
 You are on the brand's Ad library. section says Search or Tracked. In Search, results holds the ads of the last search (empty until one runs; searched says what ran); each search spends points, so ${SOCIAL_ADS_TOOLS.search} needs the person's approval. ${SOCIAL_ADS_TOOLS.setFilters} narrows the shown results (active only, format, sort). In Tracked, tracked_advertisers lists the advertisers being followed, each opens to its ads.
+create_tracked_advertisers follows the advertiser of ads in results; update_tracked_advertisers looks again (spends points; say so first) or marks an advertiser's ads seen; delete_tracked_advertisers stops tracking. The person approves each on a card.
 Never search to look around: results is already what the person sees.
 </surface_intro>`,
   groups: [{ key: "ads", label: "Ad library", sortOrder: 200 }],
+  writeTargets: [
+    listTarget(
+      "create_tracked_advertisers",
+      "Track advertisers",
+      'Follows the advertiser behind each ad, exactly as the Track button on an ad card does (spends nothing). Value is a JSON ARRAY of 1-10 ad_id strings from results (or { "ad_id" }). Tracking one already followed is refused with the reason.',
+      "tracked_advertisers",
+      "ads",
+      300,
+    ),
+    listTarget(
+      "update_tracked_advertisers",
+      "Look again",
+      'For tracked advertisers: look_again searches their ad library for new ads, exactly as Look again does (SPENDS POINTS per advertiser; when the cost is worth a warning the page names the points and asks again); mark_seen marks their current ads seen. Value is a JSON ARRAY of { "id": "<from tracked_advertisers>", "look_again"?: true, "mark_seen"?: true }.',
+      "tracked_advertisers",
+      "ads",
+      310,
+    ),
+    listTarget(
+      "delete_tracked_advertisers",
+      "Stop tracking advertisers",
+      "Stops tracking advertisers, exactly as Stop tracking does: they leave Tracked; their ads stay in the shared cache. Value is a JSON ARRAY of ids from tracked_advertisers.",
+      "tracked_advertisers",
+      "ads",
+      320,
+    ),
+  ],
   values: [
     v("ads_loaded", "Ad library ready", "True once the page can answer. While false the other values are absent; load_error says why.", "boolean", 5, "ads", 200, { alwaysAvailable: true }),
     v("load_error", "Load error", "Why a read or search failed. Absent otherwise.", "string", 160, "ads", 205),
@@ -320,7 +441,7 @@ Never search to look around: results is already what the person sees.
     v("searched", "Last search", "{ library, by, text } of the search whose results show; absent before any search.", "object", 120, "ads", 215),
     v("result_count", "Ads shown", "How many ads show under the current result filters.", "number", 5, "ads", 220),
     v("results", "Results", "Each shown ad as { ad_id, library, advertiser, headline, body, format, status, started_at, landing_url }.", "array", 5000, "ads", 230, { autoContext: false }),
-    v("tracked_advertisers", "Tracked advertisers", "Followed advertisers as { id, advertiser, library }. Counts of active and new ads show on each card and are not reported here.", "array", 800, "ads", 240),
+    v("tracked_advertisers", "Tracked advertisers", "Followed advertisers (every brand) as { id, advertiser, library }. Counts of active and new ads show on each card and are not reported here.", "array", 800, "ads", 240),
   ],
   clientTools: [
     {

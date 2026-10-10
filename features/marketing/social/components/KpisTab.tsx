@@ -38,7 +38,13 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
-import { useSurfaceClientTools, useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  useSurfaceClientTools,
+  useSurfaceRuntimeRegistration,
+  useSurfaceWriteHandlers,
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import {
   SOCIAL_KPIS_SURFACE_NAME,
   SOCIAL_KPIS_TOOLS,
@@ -67,7 +73,9 @@ import {
 import { accountLabels, formatGrowth, judgeFollowerGrowth, profileFollowerSeries } from "../mappers";
 import { formatCompact } from "../outlier";
 import { socialErrorMessage } from "../server";
-import { archiveKpiGoal, createKpiGoal, updateKpiGoal, updateKpiGoalStatus } from "../service";
+import { archiveKpiGoal, updateKpiGoalStatus } from "../service";
+import { goalScopeOf, saveKpiGoal } from "../social-actions";
+import { parseCreateGoals, parseDeleteIds, parseUpdateGoals, type GoalRef } from "../agent-writes";
 import {
   SOCIAL_PLATFORM_LABELS,
   TRACKED_ROLE_LABELS,
@@ -152,6 +160,8 @@ export function KpisTab() {
         brand_name: brandName,
         view,
         goal_count: (goals.data ?? []).length,
+        goal_metric_options: KPI_METRICS.map((m) => ({ id: m.id, label: m.label })),
+        goal_scope_options: goalScopeOptions(accs).map((o) => ({ value: o.value, label: String(o.label) })),
         goals: (goals.data ?? []).map((g) => {
           const metric = goalMetricId(g);
           if (!metric) return { id: g.id, metric: g.metric_label ?? g.metric, status: "not tracked here" };
@@ -160,6 +170,8 @@ export function KpisTab() {
           return {
             id: g.id,
             metric: metricDefOf(metric).label,
+            metric_id: metric,
+            scope_value: goalScopeOf(g),
             scope: g.tracked_account_id ? "one account" : g.platform ? platformLabel(g.platform) : "own accounts",
             period: g.period,
             status: progress.status,
@@ -202,6 +214,71 @@ export function KpisTab() {
       return `Showing ${v}.`;
     },
   });
+
+  // Agent writes: the New goal / Edit goal / Pause / Resume / Remove buttons, through the SAME saves
+  // (`saveKpiGoal`, `updateKpiGoalStatus`, `archiveKpiGoal`). Each is approved on a card first.
+  const goalRows = goals.data ?? [];
+  const writeScopes = goalScopeOptions(data.data?.accounts ?? []).map((o) => o.value);
+  const goalRefs: GoalRef[] = goalRows.map((g) => {
+    const metric = goalMetricId(g);
+    return {
+      id: g.id,
+      label: `${metric ? metricDefOf(metric).label : g.metric_label ?? g.metric} ${g.target_value}`,
+      metric,
+      target: Number(g.target_value),
+      period: g.period,
+      scope: goalScopeOf(g),
+      status: g.status,
+    };
+  });
+  const goalWriteCtx = () => ({
+    organizationId,
+    brandId,
+    kpiAccounts: toKpiAccounts(data.data?.accounts ?? []),
+    posts: data.data?.posts ?? [],
+    now: Date.now(),
+  });
+  useSurfaceWriteHandlers(
+    SOCIAL_KPIS_SURFACE_NAME,
+    collectionWriteHandlers(
+      {
+        plural: "goals",
+        singular: "goal",
+        create: {
+          parse: (value) => parseCreateGoals(value, writeScopes),
+          run: async (save) => {
+            const id = await saveKpiGoal({ goal: null, save, ...goalWriteCtx() });
+            await invalidate();
+            return { id, name: `${metricDefOf(save.metric).label} ${save.target}` };
+          },
+          nameOf: (save) => `${save.metric} ${save.target}`,
+        },
+        update: {
+          parse: (value) => parseUpdateGoals(value, goalRefs, writeScopes),
+          run: async (plan) => {
+            const row = goalRows.find((g) => g.id === plan.id);
+            if (!row) throw new Error(`Goal ${plan.id} is gone.`);
+            if (plan.draft) await saveKpiGoal({ goal: row, save: plan.draft, ...goalWriteCtx() });
+            if (plan.status) await updateKpiGoalStatus(plan.id, plan.status);
+            await invalidate();
+            return { id: plan.id, name: plan.label };
+          },
+          nameOf: (plan) => plan.label,
+          changedOf: (plan) => plan.changed,
+        },
+        delete: {
+          parse: (value) => parseDeleteIds("delete_goals", "goals", value, goalRefs, "a goal"),
+          run: async (goal) => {
+            await archiveKpiGoal(goal.id);
+            await invalidate();
+            return { id: goal.id, name: goal.label };
+          },
+          nameOf: (goal) => goal.label,
+        },
+      },
+      refuseSurfaceWrite,
+    ),
+  );
 
   if (data.isLoading || goals.isLoading) return <RegionSkeleton shape="cards" count={4} />;
   if (data.isError || goals.isError) {
@@ -257,7 +334,6 @@ export function KpisTab() {
     }
   }
 
-  const goalRows = goals.data ?? [];
 
   return (
     <div className="matrx-touch-targets flex flex-col gap-3">
@@ -670,6 +746,20 @@ const METRIC_OPTIONS: SelectOption[] = KPI_METRICS.map((m) => ({ value: m.id, la
 const PERIOD_OPTIONS: SelectOption[] = KPI_PERIODS.map((p) => ({ value: p.value, label: p.label }));
 const ALL = "all";
 
+/** The scopes a goal can measure: all own accounts, one platform's own accounts, or one tracked account. */
+function goalScopeOptions(accounts: readonly AccountRow[]): SelectOption[] {
+  return [
+    { value: ALL, label: "All own accounts" },
+    ...[...new Set(accounts.filter((a) => a.role === "own").map((a) => a.platform))].map((p) => ({
+      value: `platform:${p}`,
+      label: platformLabel(p),
+    })),
+    ...accounts
+      .filter((a) => a.trackedAccountId)
+      .map((a) => ({ value: `account:${a.trackedAccountId}`, label: `${formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })} (${platformLabel(a.platform)})` })),
+  ];
+}
+
 function GoalDialog({
   open,
   goal,
@@ -716,64 +806,23 @@ function GoalDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, goal?.id]);
 
-  const scopeOptions: SelectOption[] = [
-    { value: ALL, label: "All own accounts" },
-    ...[...new Set(accounts.filter((a) => a.role === "own").map((a) => a.platform))].map((p) => ({
-      value: `platform:${p}`,
-      label: platformLabel(p),
-    })),
-    ...accounts
-      .filter((a) => a.trackedAccountId)
-      .map((a) => ({ value: `account:${a.trackedAccountId}`, label: `${formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })} (${platformLabel(a.platform)})` })),
-  ];
+  const scopeOptions: SelectOption[] = goalScopeOptions(accounts);
   const value = Number(target);
   const valid = Number.isFinite(value) && value > 0;
 
   async function submit() {
     if (!valid) return;
-    const def = metricDefOf(metric);
-    const accountId = scope.startsWith("account:") ? scope.slice(8) : null;
-    const platform = scope.startsWith("platform:") ? scope.slice(9) : null;
-    const draft = {
-      tracked_account_id: accountId,
-      platform,
-      period,
-      starts_on: new Date(now).toISOString().slice(0, 10),
-      ends_on: null,
-    };
-    // The baseline: where the number stands today, so a cumulative goal's
-    // pace is progress made since the goal was set.
-    const baseline = def.cumulative ? measureGoal({ goal: draft, metric, accounts: kpiAccounts, posts, now }).value : null;
     setBusy(true);
     try {
-      if (goal) {
-        // Re-baseline only when what is measured changed; a target or period edit keeps the pace origin.
-        const sameSubject =
-          goalMetricId(goal) === metric && goal.platform === platform && goal.tracked_account_id === accountId;
-        await updateKpiGoal(goal.id, {
-          metric: def.db,
-          metricLabel: def.dbLabel,
-          targetValue: value,
-          baselineValue: sameSubject ? goal.baseline_value : metric === "outlier_count" ? 0 : baseline,
-          period,
-          platform,
-          trackedAccountId: accountId,
-        });
-      } else {
-        await createKpiGoal({
-          organizationId,
-          brandId,
-          metric: def.db,
-          metricLabel: def.dbLabel,
-          targetValue: value,
-          baselineValue: metric === "outlier_count" ? 0 : baseline,
-          period,
-          startsOn: draft.starts_on,
-          endsOn: null,
-          platform,
-          trackedAccountId: accountId,
-        });
-      }
+      await saveKpiGoal({
+        goal,
+        save: { metric, target: value, period, scope },
+        organizationId,
+        brandId,
+        kpiAccounts,
+        posts,
+        now,
+      });
       await invalidate();
       setTarget("");
       onOpenChange(false);

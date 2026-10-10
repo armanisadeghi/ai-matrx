@@ -21,6 +21,8 @@ import { GUIDED_CAPTURE_PLATFORMS } from "@/features/marketing/social/gated/guid
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { isJsonObject } from "@/types/json";
 import { useTopicContext } from "../../context/ResearchContext";
+import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { createResearchScope } from "@/features/surfaces/manifests/research.manifest";
 import { getSources } from "../../service";
 import type { ResearchSource } from "../../types";
 import {
@@ -166,6 +168,39 @@ export default function TopicSocial() {
       : null;
   const profileFor = (h: Handle): { source: ResearchSource; facts: SocialSourceFacts } | undefined =>
     profiles.find((p) => p.facts.platform === h.platform && p.facts.handle.toLowerCase() === h.handle.toLowerCase());
+
+  // The agent surface: the Social tab's profiles and posts join the topic's `matrx-user/research`
+  // scope while this tab is open (from the rows already rendered, never a fetch).
+  useSurfaceScopeContribution("matrx-user/research", "topic-social", () =>
+    createResearchScope({
+      social_loaded: sources !== null,
+      social_profiles: handles.map((h) => {
+        const found = profileFor(h);
+        return {
+          platform: h.platform,
+          handle: h.handle,
+          display_name: readableName(found?.facts.displayName) ?? null,
+          followers: found?.facts.followers ?? null,
+          following: found?.facts.following ?? null,
+          verified: found?.facts.verified ?? null,
+          captured: Boolean(found),
+          url: found?.source.url ?? null,
+        };
+      }),
+      social_posts: posts.slice(0, 60).map((p) => ({
+        post_id: p.postId,
+        platform: p.platform,
+        handle: p.handle,
+        hook: p.hookLine,
+        views: p.views,
+        likes: p.likes,
+        comments: p.comments,
+        multiple: p.outlierScore,
+        posted_at: p.postedAt,
+        url: p.url,
+      })),
+    }),
+  );
 
   return (
     <div className="matrx-touch-targets h-full overflow-y-auto px-3 pb-8 pt-3">

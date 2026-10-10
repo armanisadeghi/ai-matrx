@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Radar, RefreshCw, Search } from "lucide-react";
 
 import {
@@ -30,7 +30,11 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
-import { useSurfaceClientTools, useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceClientTools, useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { parseAdIds, parseDeleteIds, parseUpdateAdvertisers } from "../agent-writes";
+import { trackAdvertiserFromAd } from "../social-actions";
 import {
   SOCIAL_ADS_SURFACE_NAME,
   SOCIAL_ADS_TOOLS,
@@ -76,8 +80,86 @@ function openLibrary(ad: AdCardModel) {
   if (ad.libraryUrl) window.open(ad.libraryUrl, "_blank", "noopener,noreferrer");
 }
 
+/** Look again at a tracked advertiser's library (spends one ad search): the button and the agent. */
+async function lookAgainAt(def: TrackedAdvertiser["definition"], organizationId: string, client: QueryClient): Promise<void> {
+  await searchAds({ library: def.library, advertiser: def.advertiser }, { organizationId });
+  await client.invalidateQueries({ queryKey: socialKeys.advertiserAds(`${def.library}|${def.advertiserPlatformId ?? def.advertiser}`) });
+}
+
+/**
+ * Agent writes for the Ad library: Track (from an ad), Look again / mark seen, Stop tracking — the
+ * same saves as the buttons, each approved on a card first; Look again names its points first.
+ */
+function useAdsAgentWrites(onTracked: () => void) {
+  const { organizationId } = useSocials();
+  const { confirmSpend } = useSocialSpend(organizationId);
+  const client = useQueryClient();
+  const invalidate = useInvalidateSocial();
+  const tracked = useTrackedAdvertisers();
+  const known = (tracked.data ?? []).map((t) => ({ id: t.viewId, name: t.definition.advertiser, t }));
+  useSurfaceWriteHandlers(SOCIAL_ADS_SURFACE_NAME, {
+    ...collectionWriteHandlers(
+      {
+        plural: "tracked_advertisers",
+        singular: "advertiser",
+        create: {
+          parse: (value) => parseAdIds("create_tracked_advertisers", value),
+          run: async (adId: string) => {
+            const [row] = await readAdRows([adId]);
+            if (!row) throw new Error(`ad ${adId} is not in the ad cache; use an ad_id from results.`);
+            const made = await trackAdvertiserFromAd(toAdCardModel(row), { organizationId });
+            await invalidate();
+            onTracked();
+            return { id: made.viewId, name: made.definition.advertiser };
+          },
+          nameOf: (adId: string) => adId,
+        },
+        update: {
+          parse: (value) => parseUpdateAdvertisers(value, known),
+          run: async (plan) => {
+            const t = known.find((k) => k.id === plan.id)?.t;
+            if (!t) throw new Error(`Advertiser ${plan.id} is no longer tracked.`);
+            if (plan.lookAgain) {
+              const ok = await confirmSpend("ads_search", 1, {
+                title: `Look again at ${t.definition.advertiser}?`,
+                description: `Searches the ${AD_LIBRARY_LABELS[t.definition.library]} library.`,
+                confirmLabel: "Look again",
+              });
+              if (!ok) throw new Error(`The person declined the points to look again at ${t.definition.advertiser}.`);
+              await lookAgainAt(t.definition, organizationId, client);
+            }
+            if (plan.markSeen) {
+              await saveTrackedAdvertiser({
+                organizationId,
+                viewId: t.viewId,
+                name: t.name,
+                definition: { ...t.definition, lastLookAt: new Date().toISOString() },
+              });
+            }
+            await invalidate();
+            return { id: plan.id, name: plan.name };
+          },
+          nameOf: (plan) => plan.name,
+          changedOf: (plan) => [...(plan.lookAgain ? ["looked again"] : []), ...(plan.markSeen ? ["marked seen"] : [])],
+        },
+        delete: {
+          parse: (value) => parseDeleteIds("delete_tracked_advertisers", "tracked_advertisers", value, known, "a tracked advertiser"),
+          run: async (k) => {
+            await archiveTrackedAdvertiser(k.id);
+            await invalidate();
+            return { id: k.id, name: k.name };
+          },
+          nameOf: (k) => k.name,
+        },
+      },
+      refuseSurfaceWrite,
+    ),
+  });
+}
+
 export function AdsTab() {
   const [section, setSection] = useState<Section>("search");
+  useAdsAgentWrites(() => setSection("tracked"));
   return (
     <div className="matrx-touch-targets flex flex-col gap-3">
       <div>
@@ -138,6 +220,7 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
   const [format, setFormat] = useState("all");
   const [sort, setSort] = useState<AdSort>("latest");
   const [saveAd, setSaveAd] = useState<AdCardModel | null>(null);
+  const trackedAll = useTrackedAdvertisers();
 
   async function run(next: { library: AdLibrary; kind: "query" | "advertiser"; text: string }, cursor?: string) {
     setBusy(true);
@@ -170,17 +253,7 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
   async function trackAdvertiser(ad: AdCardModel) {
     if (!isAdLibrary(ad.library)) return;
     try {
-      await saveTrackedAdvertiser({
-        organizationId,
-        name: `${ad.advertiser} · ${AD_LIBRARY_LABELS[ad.library]}`,
-        definition: {
-          version: 1,
-          library: ad.library,
-          advertiser: ad.advertiser,
-          advertiserPlatformId: ad.advertiserPlatformId,
-          lastLookAt: new Date().toISOString(),
-        },
-      });
+      await trackAdvertiserFromAd(ad, { organizationId });
       await invalidate();
       toast.success(`Tracking ${ad.advertiser}`);
       onTracked();
@@ -202,6 +275,7 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
         brand_id: brandId,
         brand_name: brandName,
         section: "search",
+        tracked_advertisers: (trackedAll.data ?? []).map((t) => ({ id: t.viewId, advertiser: t.definition.advertiser, library: t.definition.library })),
         library_options: AD_LIBRARIES.map((l) => ({ id: l, label: AD_LIBRARY_LABELS[l] })),
         ...(asked ? { searched: { library: asked.library, by: asked.kind, text: asked.text } } : {}),
         result_count: shown.length,
@@ -468,8 +542,7 @@ function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser;
     setBusy(true);
     setError(null);
     try {
-      await searchAds({ library: def.library, advertiser: def.advertiser }, { organizationId });
-      await client.invalidateQueries({ queryKey: socialKeys.advertiserAds(`${def.library}|${def.advertiserPlatformId ?? def.advertiser}`) });
+      await lookAgainAt(def, organizationId, client);
       toast.success("Looked again");
     } catch (err) {
       setError({ message: socialErrorMessage(err, "Look again failed"), failure: err });

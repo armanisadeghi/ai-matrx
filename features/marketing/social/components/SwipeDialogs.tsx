@@ -22,8 +22,9 @@ import { RefusedReadOffer } from "../gated/RefusedReadOffer";
 
 import { useAllSwipeCollections, useInvalidateSocial } from "../hooks";
 import { looksLikePostUrl } from "../link";
+import { saveLinkToSwipe } from "../social-actions";
 import { useSocialSpend } from "../cost";
-import { addToCollection, createCollection, ingestPost, socialErrorMessage } from "../server";
+import { addToCollection, createCollection, socialErrorMessage } from "../server";
 import {
   NEW_COLLECTION_CHOICE,
   defaultCollectionChoice,
@@ -292,25 +293,16 @@ export function SaveLinkDialog({
     setFailure(null);
     setStatus("Fetching…");
     try {
-      const result = await ingestPost(
-        { url: url.trim() },
-        {
-          organizationId,
-          onProgress: (p) => setStatus(p.step && p.total ? `${p.message} · ${p.step} of ${p.total}` : p.message),
-        },
-      );
-      setStatus("Adding to the collection…");
-      let collectionId = choice;
-      if (creating) {
-        const made = await createCollection({ name: newName.trim() || suggestedName, brandId }, { organizationId });
-        collectionId = made.collection_id;
-      }
-      const tags = parseTagInput(tagText);
-      await addToCollection(
-        collectionId,
-        { itemType: "social_post", itemId: result.post_id, ...(note.trim() ? { note: note.trim() } : {}), ...(tags.length ? { tags } : {}) },
-        { organizationId },
-      );
+      await saveLinkToSwipe({
+        url,
+        collectionId: creating ? null : choice,
+        newCollectionName: creating ? newName.trim() || suggestedName : null,
+        note,
+        tags: parseTagInput(tagText),
+        brandId,
+        organizationId,
+        onProgress: (p) => setStatus(p.step && p.total ? `${p.message} · ${p.step} of ${p.total}` : p.message),
+      });
       await invalidate();
       toast.success("Saved");
       onOpenChange(false);

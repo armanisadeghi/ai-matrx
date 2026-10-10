@@ -29,7 +29,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
-import { useSurfaceClientTools, useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceClientTools, useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { parseCreateSwipeLinks, parseUpdateSwipeCollections, parseUpdateSwipeItems } from "../agent-writes";
+import { saveLinkToSwipe } from "../social-actions";
 import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import {
   SOCIAL_SWIPE_SURFACE_NAME,
@@ -40,7 +44,7 @@ import { cn } from "@/lib/utils";
 
 import { useAllSwipeCollections, useInvalidateSocial, useSwipeItems } from "../hooks";
 import { useSocialSpend } from "../cost";
-import { createCollection, getTranscript, socialErrorMessage } from "../server";
+import { createCollection, getTranscript, setItemNotes, socialErrorMessage } from "../server";
 import { readTranscribedPostIds, renameCollection, setCollectionArchived, setCollectionBrand } from "../service";
 import {
   ALL_SAVED,
@@ -95,7 +99,7 @@ function chip(active: boolean) {
 
 export function SwipeFileTab() {
   const { brandId, organizationId } = useSocials();
-  const { costText } = useSocialSpend(organizationId);
+  const { costText, confirmSpend } = useSocialSpend(organizationId);
   const invalidate = useInvalidateSocial();
   const collections = useAllSwipeCollections();
   const [showArchived, setShowArchived] = useState(false);
@@ -261,6 +265,7 @@ export function SwipeFileTab() {
                   item_count: counts.get(c.id) ?? 0,
                   linked_to_brand: c.brand_id === brandId,
                 })),
+                archived_collections: archived.map((c) => ({ id: c.id, name: c.name })),
                 scope,
                 filters: {
                   search: effective.search,
@@ -328,6 +333,72 @@ export function SwipeFileTab() {
       await invalidate();
       return { id: made.collection_id, name };
     },
+  });
+
+  // Agent writes: Save link, Rename / Archive / Restore a collection, an item's note and tags — the
+  // same saves the dialogs and the item sheet call. Each is approved on a card first.
+  const collectionRefs = [...live, ...archived].map((c) => ({ id: c.id, name: c.name }));
+  useSurfaceWriteHandlers(SOCIAL_SWIPE_SURFACE_NAME, {
+    ...collectionWriteHandlers(
+      {
+        plural: "swipe_links",
+        singular: "link",
+        create: {
+          parse: (value) => parseCreateSwipeLinks(value, liveIds),
+          run: async (plan) => {
+            const ok = await confirmSpend("save_link", 1, { title: "Save this link?", description: plan.url, confirmLabel: "Save" });
+            if (!ok) throw new Error("The person declined the points for this link.");
+            const saved = await saveLinkToSwipe({ ...plan, brandId, organizationId });
+            await invalidate();
+            return { id: saved.postId, name: plan.url };
+          },
+          nameOf: (plan) => plan.url,
+          refusalFor: (err, savedSoFar) =>
+            err instanceof Error && err.message.startsWith("The person declined") && savedSoFar === 0 ? err.message : undefined,
+        },
+      },
+      refuseSurfaceWrite,
+    ),
+    ...collectionWriteHandlers(
+      {
+        plural: "swipe_collections",
+        singular: "collection",
+        update: {
+          parse: (value) => parseUpdateSwipeCollections(value, collectionRefs),
+          run: async (plan) => {
+            if (plan.rename) await renameCollection(plan.id, plan.rename);
+            if (plan.archived !== null) await setCollectionArchived(plan.id, plan.archived);
+            if (plan.archived && filters.scope === plan.id) setFilters({ ...filters, scope: ALL_SAVED });
+            await invalidate();
+            return { id: plan.id, name: plan.rename ?? plan.name };
+          },
+          nameOf: (plan) => plan.name,
+          changedOf: (plan) => [...(plan.rename ? ["name"] : []), ...(plan.archived !== null ? ["archived"] : [])],
+        },
+      },
+      refuseSurfaceWrite,
+    ),
+    ...collectionWriteHandlers(
+      {
+        plural: "swipe_items",
+        singular: "item",
+        update: {
+          parse: (value) => parseUpdateSwipeItems(value, items),
+          run: async (plan) => {
+            await setItemNotes(
+              plan.collectionId,
+              { itemType: plan.itemType as SwipeItem["itemType"], itemId: plan.itemId, note: plan.note, tags: plan.tags },
+              { organizationId },
+            );
+            await invalidate();
+            return { id: plan.key, name: plan.key };
+          },
+          nameOf: (plan) => plan.key,
+          changedOf: () => ["note", "tags"],
+        },
+      },
+      refuseSurfaceWrite,
+    ),
   });
 
   if (collections.isPending) {

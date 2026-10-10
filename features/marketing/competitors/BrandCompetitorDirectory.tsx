@@ -38,7 +38,11 @@ import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { brandKindCopy } from "@/features/marketing/lib/brand-kind";
 import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useSurfaceRuntimeRegistration, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
+import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { confirmSocialSpendNow } from "@/features/marketing/social/cost";
+import { parseCreateCompetitors, parseUpdateCompetitors } from "./competitor-agent-writes";
 import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
 import {
   COMPETITOR_DIRECTORY_SURFACE_NAME,
@@ -63,7 +67,7 @@ import { parseSocialAccount } from "@/features/marketing/social/link";
 import type { SocialPlatform } from "@/features/marketing/social/types";
 import { CompetitorDetail } from "./CompetitorDetail";
 import { compactCount as compact, PLATFORM_LABEL, rowsToSearch } from "./competitor-detail";
-import { useCompetitorSocialActions, useFoundSocials } from "./useCompetitorSocials";
+import { foundKey, useCompetitorSocialActions, useFoundSocials, type FoundSocials } from "./useCompetitorSocials";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 
 const CORE_PLATFORMS = ["instagram", "tiktok", "youtube"];
@@ -456,7 +460,66 @@ export function BrandCompetitorDirectory() {
       })),
     });
   };
-  useSurfaceRuntimeRegistration({ surfaceName: COMPETITOR_DIRECTORY_SURFACE_NAME, getScope: surfaceScope, isEditable: false });
+  useSurfaceRuntimeRegistration({ surfaceName: COMPETITOR_DIRECTORY_SURFACE_NAME, getScope: surfaceScope, isEditable: true });
+
+  // Agent writes: Add competitor (the dialog's save, `startAdd`), Find socials and Track found
+  // accounts (`useCompetitorSocialActions`) — the same paths as the buttons, each approved on a card;
+  // tracking accounts names its points first when the cost is worth a warning.
+  useSurfaceWriteHandlers(
+    COMPETITOR_DIRECTORY_SURFACE_NAME,
+    collectionWriteHandlers(
+      {
+        plural: "competitors",
+        singular: "competitor",
+        create: {
+          parse: (value) => parseCreateCompetitors(value),
+          run: async (plan) => {
+            if (plan.handles.length > 0) {
+              const ok = await confirmSocialSpendNow("track", plan.handles.length, {
+                title: `Add ${plan.name} and track ${plan.handles.length} account${plan.handles.length === 1 ? "" : "s"}?`,
+                confirmLabel: "Add",
+              });
+              if (!ok) throw new Error(`The person declined the points to track ${plan.name}'s accounts.`);
+            }
+            startAdd(plan);
+            return { id: plan.domain ?? plan.name, name: `${plan.name} (adding; each account reports on its row)` };
+          },
+          nameOf: (plan) => plan.name,
+          refusalFor: (err, savedSoFar) =>
+            err instanceof Error && err.message.startsWith("The person declined") && savedSoFar === 0 ? err.message : undefined,
+        },
+        update: {
+          parse: (value) => parseUpdateCompetitors(value, realRows),
+          run: async (plan) => {
+            let links = queryClient.getQueryData<FoundSocials | null>(foundKey(brand.id, plan.row.key))?.links ?? [];
+            let note = "";
+            if (plan.findSocials) {
+              const out = await socialActions.find(plan.row);
+              if (out.status === "error") throw new Error(out.message ?? `${plan.row.name}'s website could not be read.`);
+              links = out.links;
+              note = `found ${links.length} account${links.length === 1 ? "" : "s"}${links.length ? `: ${links.map((l) => `${l.platform} ${l.url}`).join(", ")}` : ""}`;
+            }
+            if (plan.trackFound) {
+              if (links.length === 0) throw new Error(`No found accounts to track for ${plan.row.name}; send find_socials true first.`);
+              const ok = await confirmSocialSpendNow("track", links.length, {
+                title: `Track ${links.length} of ${plan.row.name}'s accounts?`,
+                confirmLabel: "Track",
+              });
+              if (!ok) throw new Error(`The person declined the points to track ${plan.row.name}'s accounts.`);
+              const out = await socialActions.track(plan.row, links);
+              note = [note, `tracked ${out.tracked}`].filter(Boolean).join("; ");
+            }
+            return { id: plan.row.key, name: `${plan.row.name}${note ? ` (${note})` : ""}` };
+          },
+          nameOf: (plan) => plan.row.name,
+          changedOf: (plan) => [...(plan.findSocials ? ["find socials"] : []), ...(plan.trackFound ? ["track found"] : [])],
+          refusalFor: (err, savedSoFar) =>
+            err instanceof Error && err.message.startsWith("The person declined") && savedSoFar === 0 ? err.message : undefined,
+        },
+      },
+      refuseSurfaceWrite,
+    ),
+  );
 
   if (sites.isPending) return <LoadingSurface label={`Loading ${rivals.manyLower}…`} />;
   if (sites.isError) return <QueryError error={sites.error} />;
