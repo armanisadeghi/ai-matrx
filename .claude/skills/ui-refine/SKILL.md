@@ -28,7 +28,7 @@ Run this when the current page is roughly right and you want it sharpened withou
 
 > **Only when a person asked you, live, to redesign this page.** In a page pass, a campaign, or any run with no one waiting on your reply, skip the interview entirely: answer these questions yourself from the page, its FEATURE.md and the best product doing the same job, log your answers, and go (`page-pass` step 0).
 
-Ask in normal prose (never a multiple-choice UI). Skip if the user already covered it. These keep your refinement aimed at the real target:
+Ask. Skip if the user already covered it. These keep your refinement aimed at the real target:
 
 1. **What specifically is wrong with the current page / what must change?** — refinement targets the real pain; don't guess at it.
 2. **What's working and must be kept?** — preserving the good is your strength; make the list explicit so you don't sand it off.

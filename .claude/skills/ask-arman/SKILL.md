@@ -21,7 +21,6 @@ decisions, then one "confirm and I start". This skill is the path a real questio
 
 ## 1. The homework gate — run in order, record each result
 
-The first test that says "not a question" ends it.
 
 0. **Boss or user?** Would the question exist if he had never used the product himself? A
    question about ONE organization's content, taste or settings is a customer's: make it an
@@ -40,11 +39,6 @@ The first test that says "not a question" ends it.
 5. **A human step?** His account, his screen, money, a credential → one guided session in chat
    ([rule 11](/policies/talk-to-arman-like-a-person.md)), not a question.
 
-## 2. Never stop — the default in force
-
-Write which way you go if he never answers, how it reverses, and keep building on it. Only a
-**one-way door** (real data deleted, money spent, something sent outside, a contract bound)
-waits; everything around it proceeds.
 
 ## 3. File it on the Question Desk
 
@@ -62,12 +56,6 @@ AI Dream MCP tool `question_desk`. There is no markdown ledger.
 3. `update_question(status='researched')` once all five parts are filled (the tool refuses
    otherwise).
 
-## 4. Say it in chat
-
-Number it, one or two sentences a stranger needs, ONE direct question, the best practice and
-your recommendation (or "this one is open-ended"), then the admin URL the tool returned and:
-*"I'm proceeding on my recommendation, which is reversible."* No path, id, code or codename in
-the sentence. Keep working.
 
 ## 5. Interview mode (/ask-arman when he has time)
 
@@ -78,8 +66,7 @@ the sentence. Keep working.
 3. **Research survivors:** one `standard` brief per question fills the five parts with sources;
    tag kind (quick/complex), door, weight.
 4. **Rounds:** open with "I have N questions to ask you and M things to tell you"; the things
-   first. Then rounds per the [grilling](/skills/grilling/SKILL.md) mechanics in plain numbered
-   chat text, `mark_asked` as each goes out, closing with how many remain and "anything you skip
+   first. Then rounds per the [grilling](/skills/grilling/SKILL.md) mechanics, `mark_asked` as each goes out, closing with how many remain and "anything you skip
    ships with my recommendation". "I don't know" means the question failed: back to research.
 5. **Record:** answers he typed in the admin surface are already on the row; an answer given in
    chat → `record_answer`, verbatim. Then the owning `DECISIONS.md` (his words → `VISION.md`).

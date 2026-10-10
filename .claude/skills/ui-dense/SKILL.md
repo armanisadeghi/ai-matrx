@@ -23,7 +23,7 @@ Run this for admin dashboards, data tables/grids, ops and monitoring views, sett
 
 > **Only when a person asked you, live, to redesign this page.** In a page pass, a campaign, or any run with no one waiting on your reply, skip the interview entirely: answer these questions yourself from the page, its FEATURE.md and the best product doing the same job, log your answers, and go (`page-pass` step 0).
 
-Ask in normal prose (never a multiple-choice UI). Skip if covered. These surface what to prioritize so density doesn't become noise:
+Ask. Skip if covered. These surface what to prioritize so density doesn't become noise:
 
 1. **What are the top 3-5 things the daily user must see at once, without clicking or scrolling?**
 2. **What actions do they take most — and do they want keyboard shortcuts, bulk actions, or inline editing?**

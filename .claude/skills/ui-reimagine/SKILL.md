@@ -20,7 +20,7 @@ The boldest reconception. You ignore the current layout and ask *"what should th
 
 > **Only when a person asked you, live, to redesign this page.** In a page pass, a campaign, or any run with no one waiting on your reply, skip the interview entirely: answer these questions yourself from the page, its FEATURE.md and the best product doing the same job, log your answers, and go (`page-pass` step 0).
 
-Ask in normal prose (never a multiple-choice UI). Skip if the user said "just go." These three target your specific blind spots:
+Ask. Skip if the user said "just go." These three target your specific blind spots:
 
 1. **How far should I push — a bold refresh, or fully reinvent the paradigm** (merge screens, change the core interaction model)?
 2. **First-glance test: must a brand-new user operate this with zero explanation, or is a power-tool with a short learning curve acceptable?** — This calibrates how far toward complexity you may go. Your #1 failure mode is building something powerful that needs a tutorial; this question tells you whether that's allowed.

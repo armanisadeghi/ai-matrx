@@ -21,7 +21,7 @@ A fast, clean, **inviting** UI. Sharp, minimal, confident. The user's first reac
 
 > **Only when a person asked you, live, to redesign this page.** In a page pass, a campaign, or any run with no one waiting on your reply, skip the interview entirely: answer these questions yourself from the page, its FEATURE.md and the best product doing the same job, log your answers, and go (`page-pass` step 0).
 
-Give the user one moment to aim you, then go. Ask in normal prose (never a multiple-choice UI), keep it to ~2 sharp questions, and **skip entirely** if they already told you or said "just go" — lean means trusting yourself for the rest.
+Give the user one moment to aim you, then go. Ask, keep it to ~2 sharp questions, and **skip entirely** if they already told you or said "just go" — lean means trusting yourself for the rest.
 
 1. **Who is this for, and what's the one job they came here to do?** (sets the persona and the single thing that must be effortless)
 2. **Is there a product or app whose feel you want this to evoke?** (your reference model — if they don't have one, *you* pick it and name it)

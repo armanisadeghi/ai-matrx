@@ -57,7 +57,6 @@ emojis. Then the question, in one sentence.
   diagram of what actually happens, OR a throwaway prototype (Artifact or demo route) labeled
   PROTOTYPE. A question he cannot answer from what you gave him is a defect in the question — and often
   a sign the PATH is broken, which is the real finding.
-- **Delivery:** plain numbered chat text — **never a structured question picker**.
 
 Every round ends with:
 `Decided (override by number): D1 … · D2 …` / `Anything you skip ships with my recommendation.` /
