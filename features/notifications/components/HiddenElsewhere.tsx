@@ -37,6 +37,7 @@ import { supabase } from "@/utils/supabase/client";
 import { fullTime } from "../presentation";
 import { useWorkWaiting } from "../useInbox";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface HiddenItem {
   key: string;
   icon: typeof Lightbulb;
@@ -179,7 +180,7 @@ export function HiddenElsewhere() {
         Elsewhere
       </div>
       {partlyUnread ? (
-        <div className="px-3 py-2 text-xs text-destructive">Some hidden items couldn&apos;t load here.</div>
+        <div className="px-3 py-2 text-xs text-destructive">Some hidden items couldn&apos;t load here.<ErrorAlchemyMenu /></div>
       ) : null}
       <ul className="px-1">
         {workSnoozed > 0 ? (
