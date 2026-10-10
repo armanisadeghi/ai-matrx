@@ -31,6 +31,7 @@ import {
   type MeetingState,
 } from "../service";
 
+import { readOf } from "@ai-matrx/design-system";
 export const adminMeetingHref = (id: string) => `/administration/users/meetings/${id}`;
 
 const STATE_TONE: Record<MeetingState, string> = {
@@ -260,6 +261,7 @@ export function MeetingsHistoryPanel({
           onRowOpen={(row) => router.push(adminMeetingHref(row.id))}
           coverage={{ noun: "meeting", answeredBy: "client", loaded: rows.length, matched: total, cap: HISTORY_PAGE_SIZE }}
           toolbar={{ title: "Meetings", search: true }}
+          read={readOf({ loading, error }, { what: "platform meeting history" })}
           emptyState={{
             icon: <CalendarSearch className="h-5 w-5" />,
             title: filtersActive ? "No meeting matches these filters" : "No meetings on the platform yet",

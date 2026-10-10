@@ -17,6 +17,7 @@ import { archiveGoal, listGoals } from "./service";
 import { formatDay } from "./status";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@ai-matrx/design-system";
 interface Row extends Goal {
   depth: number;
   supports: string | null;
@@ -140,6 +141,7 @@ export function GoalsView({
           toolbar={{ title, searchPlaceholder: "Search goals", ...(canEdit ? { add: { onAdd: () => setEditing({ goal: null }) } } : {}) }}
           detail={{ enabled: false }}
           copy={copy}
+          read={readOf({ error }, { what: "your goals" })}
           emptyState={{ title: "No goals yet" }}
         />
       ) : goals ? (

@@ -48,6 +48,7 @@ import {
   type TriggerAction,
 } from "@/features/scheduling/service/workflowTriggers";
 
+import { readOf } from "@ai-matrx/design-system";
 const RANK: Record<SpendFlagHit["severity"], number> = { critical: 3, warning: 2, info: 1, hint: 0 };
 
 /** Every flag a trigger raises, one per icon slot (the stronger wins when two rules share a slot). */
@@ -449,6 +450,7 @@ export function TriggersManager({
           ]}
           isLoading={loading}
           defaultSort={{ id: "cost_total", direction: "desc" }}
+          read={readOf({ loading, error }, { what: "workflow triggers" })}
           emptyState={{ title: "No workflow triggers" }}
           toolbar={{
             search: true,

@@ -15,6 +15,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { cn } from "@/lib/utils";
 import { fetchMeetUsage, type MeetUsageOrgRow, type MeetUsageReport } from "../service";
 
+import { readOf } from "@ai-matrx/design-system";
 const PERIODS = [7, 30, 90] as const;
 type Period = (typeof PERIODS)[number];
 
@@ -134,6 +135,7 @@ export function MeetingsUsagePanel({ onOpenOrganization }: { onOpenOrganization:
 
           coverage={{ noun: "organization", answeredBy: "client", total: state.report?.byOrg.length }}
           toolbar={{ title: "By organization", search: true }}
+          read={readOf({ loading: state.loading, error: state.error }, { what: "meeting usage" })}
           emptyState={{
             icon: <Radio className="h-5 w-5" />,
             title: `No meetings in the last ${period} days`,

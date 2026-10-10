@@ -52,6 +52,7 @@ import {
   type SpendApprovalRow,
 } from "./spendApprovals";
 
+import { readOf } from "@ai-matrx/design-system";
 type StatusFilter = ApprovalStatus | "all";
 type Tone = "danger" | "warning" | null;
 
@@ -745,6 +746,7 @@ export function SpendApprovalsBoard({
           }}
           focusRowId={focusId}
           headerWrap="two-lines"
+          read={readOf({ loading, error }, { what: "spend approvals" })}
           emptyState={{ title: "No spend approvals" }}
           selection={{
             selectedIds,

@@ -40,6 +40,7 @@ import {
   type SpendWindowDays,
 } from "./agentSpend";
 
+import { readOf } from "@ai-matrx/design-system";
 /** `subject` = a detail page: only its rows, and no board total (see fetchAgentSpend). */
 export function useAgentSpend(orgId: string | null, days: SpendWindowDays, subject?: SpendSubjectKey) {
   const subjectKey = subject ? `${subject.agent_id ?? ""}|${subject.mandate_key ?? ""}|${subject.source ?? ""}` : "";
@@ -494,6 +495,7 @@ export function AgentSpendBoard({
           getRowId={rowKey}
           isLoading={loading}
           defaultSort={{ id: "cost", direction: "desc" }}
+          read={readOf({ loading, error }, { what: "agent spend" })}
           emptyState={{ title: `No agent spend in ${days} days` }}
           toolbar={{
             search: true,

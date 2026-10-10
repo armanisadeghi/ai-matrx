@@ -35,6 +35,7 @@ import {
 import type { AnswerProblem, TemplateQuestionType, TemplateRow } from "./types";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { readOf } from "@ai-matrx/design-system";
 const TYPE_OPTIONS: Array<{ value: TemplateQuestionType; label: string }> = [
   { value: "narrative_list", label: "List of items" },
   { value: "responsibilities", label: "Responsibilities list" },
@@ -152,6 +153,7 @@ export function TemplatesPanel() {
           toolbar={{ title: "Review templates", searchPlaceholder: "Search templates", add: { onAdd: () => openEditor({ draft: starterDraft(), metadataOnly: false }) } }}
           detail={{ enabled: false }}
           copy={copy}
+          read={readOf({ error }, { what: "review templates" })}
           emptyState={{ title: "No templates yet" }}
         />
       ) : rows ? (

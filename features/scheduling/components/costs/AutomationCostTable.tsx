@@ -49,6 +49,7 @@ import { guardrailKindOf, resumeAutomation } from "@/features/scheduling/service
 import { OctagonPause } from "lucide-react";
 import { toast } from "@/lib/toast";
 
+import { readOf } from "@ai-matrx/design-system";
 export function automationIntervalText(r: AutomationCostRow): string {
   if (!r.trigger_type) return "—";
   if (r.automation_kind === "workflow_trigger") {
@@ -230,6 +231,7 @@ export function AutomationRunsTable({
       getRowId={(r) => r.run_id}
       isLoading={loading}
       defaultSort={{ id: "run_at", direction: "desc" }}
+      read={readOf({ loading, error }, { what: "automations" })}
       emptyState={{ title: `No runs in ${AUTOMATION_COST_WINDOW_DAYS} days` }}
       frameHeight="content"
       copy={{
