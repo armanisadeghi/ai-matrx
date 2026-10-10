@@ -86,6 +86,12 @@ classification without buying a page-crawl autopsy. Everything lands `proposed`.
 
 ## Change log
 
+- 2026-10-09 — page-pass (L6), type list page, sharp after Linear: the brand directory has its own agent surface
+  (`matrx-user/marketing-competitor-directory`, read-only; the autopsy modes resolve to `matrx-user/marketing-competitors`),
+  clears the header, shows phone cards instead of a clipped table, opens the website in a new tab; the detail panel uses
+  the standard platform picker. Agency Social roll-up got its own surface and header title; brand-less accounts open the
+  profile. Social provider card and cost page show vendor names and "Not configured" instead of engineer text.
+
 - 2026-08-30 — The ground-truth table's primary row click now opens the canonical
   competitor classification WindowPanel. Inline editors, links, and row actions retain
   their own click behavior instead of opening the panel accidentally.

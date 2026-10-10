@@ -74,7 +74,7 @@ export function SocialAnalyticsPanel({
 
   return (
     <SectionCard title="Social" action={{ label: "Open Socials", href: marketingRoutes.brandSocials(brandSeg) }}>
-      <div className="grid grid-cols-2 gap-2 p-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 p-3">
         <KpiTile
           label="Tracked accounts"
           value={accounts.filter((a) => a.trackedAccountId).length}
