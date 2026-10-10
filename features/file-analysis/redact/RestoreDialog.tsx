@@ -204,7 +204,7 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
                 <p className="text-[11px] text-destructive">
                   Couldn&apos;t list sessions held in organization escrow, so
                   some sessions may be missing: {escrowError}
-                </p>
+                <ErrorAlchemyMenu error={escrowError} /></p>
               ) : null}
             </div>
             <div className="space-y-1">
