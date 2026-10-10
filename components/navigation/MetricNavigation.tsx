@@ -58,6 +58,7 @@ function availabilityBadge(
  * Pills hug their labels, 6px apart (each pill's 3px half-gap). Below `sm`
  * they sit in ONE sideways-scrolling strip (the iOS pattern: snap, a fade at
  * the trailing edge so it reads as scrollable); from `sm` up they wrap. A
+ * count slot is the same 28px (min-w-7) loading and loaded, so the pills do not re-wrap when the numbers land (/marketing CLS 0.029). A
  * label wider than the space truncates inside its pill, never past the gutter.
  * History (2026-10-04, /education/overview at 375px): a two-row grid stretched
  * every pill to its column; wrapping instead filled the first phone screen
@@ -117,12 +118,12 @@ export function MetricNavigation({
             {state === "loading" ? (
               <span
                 aria-label="Loading count"
-                className="h-4 w-6 shrink-0 animate-pulse rounded bg-muted"
+                className="h-4 w-7 shrink-0 animate-pulse rounded bg-muted"
               />
             ) : state === "unavailable" ? (
               <span className="text-xs text-muted-foreground">Count unavailable</span>
             ) : item.value !== undefined ? (
-              <span className="shrink-0 font-semibold tabular-nums text-foreground">
+              <span className="min-w-7 shrink-0 text-center font-semibold tabular-nums text-foreground">
                 {formatValue(item.value)}
               </span>
             ) : null}
