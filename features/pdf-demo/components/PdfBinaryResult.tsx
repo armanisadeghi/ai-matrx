@@ -47,8 +47,8 @@ export function PdfBinaryResult({ result }: Props) {
 
   return (
     <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2 text-sm">
           {isImage ? (
             <ImageIcon className="h-4 w-4 text-primary" />
           ) : isZip && !isPdf ? (
@@ -63,7 +63,7 @@ export function PdfBinaryResult({ result }: Props) {
             {formatFileSize(result.blob.size)} · {result.contentType}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Button asChild variant="outline">
             <a href={objectUrl} target="_blank" rel="noreferrer">
               <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
