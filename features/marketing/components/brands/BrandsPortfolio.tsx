@@ -695,11 +695,13 @@ function BrandCardQueryControls({
       <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
         {total === undefined ? (
           <span
-            className="h-4 w-16 animate-pulse rounded bg-muted"
+            // The same width as the shortest count text (min-w on it too): a placeholder wider than the real text wrapped the
+            // pager onto a second row, and the whole list jumped up when the count landed (/marketing, CLS 0.047).
+            className="h-4 w-[3.5rem] animate-pulse rounded bg-muted"
             aria-label="Loading brands"
           />
         ) : (
-          <span>
+          <span className="min-w-[3.5rem] text-right">
             {first}–{last} of {total.toLocaleString()}
           </span>
         )}

@@ -28,6 +28,9 @@ const storageKey = (surfaceKey: string, name: string) => `matrx:list-slot-size:$
 const FIRST_VISIT_SIZE: Record<string, SlotSize> = {
   "data-home:tabs": { w: 117, h: 31 },
   "data-home:controls": { w: 147, h: 34 },
+  // /agents/all (measured on a cold browser at 1024 and 1440): the same strip, so its first visit holds it too.
+  "agents-browse:tabs": { w: 117, h: 31 },
+  "agents-browse:controls": { w: 34, h: 34 },
 };
 
 /**
