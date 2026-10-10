@@ -10568,6 +10568,12 @@
       "checksum": "faa8f0c7ba79f6453a6127a85cdf4549ca35ceb45a87cf6e5bee8ce5368ff7c6",
       "applied_at": "2026-09-22 09:33:14.786775+00"
     },
+    "migrations/campaign/listrpc_arrays_list_rpc_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "listrpc_arrays_list_rpc_once.sql",
+      "checksum": "4844c39ab4e09f0b2e219c7b84328f058d1f72cc524ea075b191e5d036b0ca20",
+      "applied_at": "2026-10-10 07:14:45.744611+00"
+    },
     "migrations/campaign/hr_rev_05_standard_review_wave2.sql": {
       "source": "matrx-frontend",
       "filename": "hr_rev_05_standard_review_wave2.sql",
