@@ -320,9 +320,9 @@ export function BookingPicker({ page, preview }: { page: PublicBooking; preview?
                   </RecordsUiProvider>
                 </div>
               ) : (
-                <p className="type-secondary text-muted-foreground">
+                <p data-error-box className="type-secondary text-muted-foreground">
                   This question names a column the page could not read, so it cannot be answered here.
-                </p>
+                <ErrorAlchemyMenu /></p>
               )}
               {shapeRefusal ? (
                 <span className="type-secondary text-destructive">{shapeRefusal} <ErrorAlchemyMenu error={shapeRefusal} /></span>
