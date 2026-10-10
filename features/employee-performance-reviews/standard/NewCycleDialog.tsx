@@ -16,6 +16,7 @@ import { toast } from "@/lib/toast";
 import { createCycle, listTemplates } from "./service";
 import type { TemplateRow } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const plusDays = (d: Date, n: number) => new Date(d.getTime() + n * 86_400_000);
 
@@ -153,7 +154,7 @@ function NewCycleForm({
           {error ? (
             <p role="alert" className="text-sm text-destructive">
               {error}
-            </p>
+            <ErrorAlchemyMenu error={error} /></p>
           ) : null}
         </div>
         <DialogFooter>

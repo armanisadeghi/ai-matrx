@@ -18,6 +18,7 @@ import { calibrateReview, getCalibration } from "./service";
 import { ratingLabel, statusLabel } from "./status";
 import type { CalibrationData, CalibrationRow } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const NONE = "__none";
 const mean = (n: number | null) => (n === null ? "-" : n.toFixed(1));
 
@@ -157,7 +158,7 @@ export function CalibrationTab({ cycleId, orgRef, open }: { cycleId: string; org
     humanRow: (r) => [`Employee: ${r.employeeName}`, `Manager: ${r.managerName}`, `Manager overall: ${ratingLabel(scale, r.overallRating)}`, `Calibrated: ${ratingLabel(scale, r.calibratedRating)}`].join("\n"),
   };
 
-  if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
+  if (error) return <p role="alert" className="text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>;
   if (!data) return null;
   const teams = managerBars(data.byManager, scale);
 

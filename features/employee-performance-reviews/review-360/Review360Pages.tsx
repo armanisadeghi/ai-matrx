@@ -36,6 +36,7 @@ import {
   type TrackView,
 } from "./service";
 
+import { ErrorNotice } from "@ai-matrx/design-system";
 function useOrg(): string | null {
   const params = useSearchParams();
   const hr = useHrContext();
@@ -144,7 +145,7 @@ function ReviewList({ org }: { org: string }) {
       live = false;
     };
   }, [client, org]);
-  if (error) return <EmptyState icon={<ClipboardCheck />} title="360 reviews could not be read" line={error} />;
+  if (error) return <ErrorNotice title="360 reviews could not be read"  message={error} />;
   if (!rows) return <div className="m-4 h-24 animate-pulse rounded-md bg-card/40" aria-label="Loading 360 reviews" />;
   if (rows.length === 0) return <EmptyState icon={<ClipboardCheck />} title="No 360 reviews yet" line="Start one from an employee profile" />;
   return (
@@ -230,7 +231,7 @@ function ReviewDetail({ reviewId, org }: { reviewId: string; org: string }) {
     };
   }, [client, reviewId, tick]);
   if (!data) return <div className="m-4 h-24 animate-pulse rounded-md bg-card/40" aria-label="Loading the review" />;
-  if (!data.ok) return <EmptyState icon={<ClipboardCheck />} title="This review could not be opened" line={data.message} />;
+  if (!data.ok) return <ErrorNotice title="This review could not be opened"  message={data.message} />;
   const { doc, self, manager } = data.data;
   const both = Boolean(self?.submittedAt && manager?.submittedAt);
   const hr = isReviewHrManager(doc, userId);
@@ -330,7 +331,7 @@ function Respond({ trackId, org }: { trackId: string; org: string }) {
     },
   }));
 
-  if (error) return <Shell><EmptyState icon={<ClipboardCheck />} title="This review could not be opened" line={error} /></Shell>;
+  if (error) return <Shell><ErrorNotice title="This review could not be opened"  message={error} /></Shell>;
   if (!track) return <Shell><div className="m-4 h-24 animate-pulse rounded-md bg-card/40" aria-label="Loading your review" /></Shell>;
 
   const submit = async () => {

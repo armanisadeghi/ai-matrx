@@ -14,6 +14,7 @@ import { toast } from "@/lib/toast";
 
 import { listCaptureFiles, openCaptureFile, type CaptureFile } from "./meeting-notes";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type State = { kind: "loading" } | { kind: "error"; message: string } | { kind: "ready"; files: CaptureFile[] };
 
 const BOX = "flex h-24 flex-col gap-1 rounded-md border border-border bg-card p-2";
@@ -63,7 +64,7 @@ export function Review360MeetingFiles({ notesId }: { notesId: string | null }) {
     return (
       <section className={BOX} data-review-360-files="error">
         {head}
-        <p className="text-xs text-destructive">{state.message}</p>
+        <p className="text-xs text-destructive">{state.message}<ErrorAlchemyMenu error={state.message} /></p>
       </section>
     );
   }

@@ -16,6 +16,7 @@ import { GOAL_STATUSES, GOAL_STATUS_LABEL, parentChoices, progressLabel, type Go
 import { saveGoal, updateGoalProgress } from "./service";
 import { formatDay } from "./status";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const NONE = "__none";
 const scope = () => ({ context: { surface: "hr-goals" } });
 
@@ -137,7 +138,7 @@ function GoalForm({ employmentId, goal, alignable, onClose, onSaved }: { employm
         {error ? (
           <p role="alert" className="text-sm text-destructive">
             {error}
-          </p>
+          <ErrorAlchemyMenu error={error} /></p>
         ) : null}
       </div>
       <DialogFooter>
@@ -224,7 +225,7 @@ function ProgressForm({ goal, onClose, onSaved }: { goal: Goal; onClose: () => v
         {error ? (
           <p role="alert" className="text-sm text-destructive">
             {error}
-          </p>
+          <ErrorAlchemyMenu error={error} /></p>
         ) : null}
         {history.length > 0 ? (
           <ol aria-label="Progress history" className="max-h-48 space-y-1 overflow-y-auto text-sm">

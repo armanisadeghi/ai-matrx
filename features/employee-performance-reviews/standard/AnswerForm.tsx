@@ -21,6 +21,7 @@ import { GOAL_STATUS_LABEL, type GoalStatus } from "./goals";
 import type { AnswerProblem, ResponseRole, ReviewAnswers, ReviewGoal, TemplateQuestion, TemplateSnapshot } from "./types";
 import { emptyAnswers } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const AUTOSAVE_MS = 1200;
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -200,7 +201,7 @@ export function AnswerForm({
                 {problemsFor(key).map((p) => (
                   <p key={p.problem} role="alert" className="basis-full text-xs text-destructive">
                     {problemMessage(p, (k) => labels.get(k) ?? k)}
-                  </p>
+                  <ErrorAlchemyMenu /></p>
                 ))}
               </div>
             );
@@ -228,9 +229,9 @@ export function AnswerForm({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={role === "manager" ? "primary" : "info"}>{role === "self" ? "Your self review" : role === "peer" ? `Your feedback on ${subjectName}` : `Your review of ${subjectName}`}</Badge>
-        <span aria-live="polite" className="text-xs text-muted-foreground">
+        <span data-error-box aria-live="polite" className="text-xs text-muted-foreground">
           {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : saveState === "error" ? "Not saved" : "Saves as you type"}
-        </span>
+        <ErrorAlchemyMenu /></span>
       </div>
       {conflict ? (
         <div role="alert" className="space-y-2 rounded-md border border-border bg-card p-3 text-sm">
@@ -243,12 +244,12 @@ export function AnswerForm({
               Keep mine
             </Button>
           </div>
-        </div>
+        <ErrorAlchemyMenu /></div>
       ) : null}
       {saveError ? (
         <p role="alert" className="text-sm text-destructive">
           {saveError}
-        </p>
+        <ErrorAlchemyMenu error={saveError} /></p>
       ) : null}
       {problems.length > 0 ? (
         <div role="alert" className="rounded-md border border-destructive/40 bg-card p-3 text-sm">
@@ -258,7 +259,7 @@ export function AnswerForm({
               <li key={`${p.question}-${p.problem}-${i}`}>{problemMessage(p, (k) => labels.get(k) ?? k)}</li>
             ))}
           </ul>
-        </div>
+        <ErrorAlchemyMenu /></div>
       ) : null}
       {template.sections.map((section, index) => (
         <SectionCard key={section.key} badge={index + 1} title={section.title} description={section.description ?? undefined} anchor={`section-${section.key}`}>
@@ -270,7 +271,7 @@ export function AnswerForm({
                   ? problemsFor(q.key).map((p) => (
                       <p key={p.problem} role="alert" className="text-xs text-destructive">
                         {problemMessage(p, (k) => labels.get(k) ?? k)}
-                      </p>
+                      <ErrorAlchemyMenu /></p>
                     ))
                   : null}
               </Field>

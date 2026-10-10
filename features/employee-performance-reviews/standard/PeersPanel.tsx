@@ -19,6 +19,7 @@ import { decidePeers, nominatePeers, readPeersEnabled, sharePeerFeedback } from 
 import { formatDay } from "./status";
 import type { ReviewDetail } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function PeersPanel({ detail, onChanged }: { detail: ReviewDetail; onChanged: () => void }) {
   const { review, peerNominations } = detail;
   const userId = useAppSelector(selectUserId);
@@ -144,7 +145,7 @@ export function PeersPanel({ detail, onChanged }: { detail: ReviewDetail; onChan
           {refused.map((m) => (
             <li key={m}>{m}</li>
           ))}
-        </ul>
+        <ErrorAlchemyMenu /></ul>
       ) : null}
     </section>
   );

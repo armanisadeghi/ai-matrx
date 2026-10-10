@@ -17,6 +17,7 @@ import { reviewHistory } from "./service";
 import { formatDay, periodLabel, statusLabel, statusTone } from "./status";
 import type { HistoryRow } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function ProfileReviewsSection({ employmentId, org }: { employmentId: string | null; org: HrOrgRef }) {
   const [rows, setRows] = useState<HistoryRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export function ProfileReviewsSection({ employmentId, org }: { employmentId: str
       ) : error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
-        </p>
+        <ErrorAlchemyMenu error={error} /></p>
       ) : rows === null ? (
         <HrLoading variant="cards" rows={2} />
       ) : rows.length === 0 ? (

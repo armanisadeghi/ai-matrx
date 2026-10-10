@@ -16,6 +16,7 @@ import { GOAL_STATUS_LABEL, GOAL_STATUS_TONE, alignmentRows, progressLabel, type
 import { archiveGoal, listGoals } from "./service";
 import { formatDay } from "./status";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface Row extends Goal {
   depth: number;
   supports: string | null;
@@ -125,7 +126,7 @@ export function GoalsView({
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
-        </p>
+        <ErrorAlchemyMenu error={error} /></p>
       ) : null}
       {goals && goals.length > 0 ? (
         <MatrxDataTable<Row>

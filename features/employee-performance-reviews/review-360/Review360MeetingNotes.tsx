@@ -17,6 +17,7 @@ import { toast } from "@/lib/toast";
 import { useConfidentialServerStep } from "./Review360Host";
 import { ensureMeetingNotes, openMeetingNotes, saveMeetingNotes, type MeetingNotesView } from "./meeting-notes";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type State =
   | { kind: "loading" }
   | { kind: "closed" }
@@ -107,7 +108,7 @@ export function Review360MeetingNotes({
     return (
       <section className={BOX} data-review-360-notes="error">
         {head(null)}
-        <p className="text-xs text-destructive">{state.message}</p>
+        <p className="text-xs text-destructive">{state.message}<ErrorAlchemyMenu error={state.message} /></p>
       </section>
     );
   }

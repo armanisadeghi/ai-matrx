@@ -34,6 +34,7 @@ import {
 } from "./templateBuilder";
 import type { AnswerProblem, TemplateQuestionType, TemplateRow } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const TYPE_OPTIONS: Array<{ value: TemplateQuestionType; label: string }> = [
   { value: "narrative_list", label: "List of items" },
   { value: "responsibilities", label: "Responsibilities list" },
@@ -137,7 +138,7 @@ export function TemplatesPanel() {
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
-        </p>
+        <ErrorAlchemyMenu error={error} /></p>
       ) : null}
       {rows && rows.length > 0 ? (
         <MatrxDataTable<TemplateRow>
@@ -277,12 +278,12 @@ function TemplateEditor({
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
-        </p>
+        <ErrorAlchemyMenu error={error} /></p>
       ) : null}
       {general.map((p, i) => (
         <p key={i} role="alert" className="text-sm text-destructive">
           {templateProblemMessage(p.problem)}
-        </p>
+        <ErrorAlchemyMenu /></p>
       ))}
 
       {metadataOnly ? null : (
@@ -297,7 +298,7 @@ function TemplateEditor({
               {at(keys.sectionKeys.get(s.id)).map((p, i) => (
                 <p key={i} role="alert" className="text-xs text-destructive">
                   {templateProblemMessage(p.problem)}
-                </p>
+                <ErrorAlchemyMenu /></p>
               ))}
               {s.questions.map((q) => (
                 <div key={q.id} className="space-y-2 rounded-md border border-border p-2">
@@ -338,7 +339,7 @@ function TemplateEditor({
                   {at(keys.questionKeys.get(q.id)).map((p, i) => (
                     <p key={i} role="alert" className="text-xs text-destructive">
                       {templateProblemMessage(p.problem)}
-                    </p>
+                    <ErrorAlchemyMenu /></p>
                   ))}
                 </div>
               ))}
