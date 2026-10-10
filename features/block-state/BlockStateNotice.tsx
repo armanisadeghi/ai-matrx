@@ -10,6 +10,7 @@ import { ReactReduxContext } from "react-redux";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectBlockStateError } from "./redux/blockStatesSlice";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** Renders nothing where there is no store (a bare preview): there is nothing to save to either. */
 export function BlockStateNotice({ rowKey }: { rowKey: string | null }) {
   const redux = useContext(ReactReduxContext);
@@ -24,6 +25,6 @@ function BlockStateNoticeLine({ rowKey }: { rowKey: string | null }) {
       {error.signedOut
         ? "Sign in to keep your answers. Nothing here is saved."
         : "Your answers are not saved. We will retry on your next change."}
-    </p>
+    <ErrorAlchemyMenu /></p>
   );
 }
