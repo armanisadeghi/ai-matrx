@@ -2,7 +2,8 @@
 //   node scripts/cls-routes-walk.mjs [runs=2] [--routes=/data,/messages] [--seats=admin,member] [--widths=390,1024,1440] [--chat=default|open|closed] [--max=0.01] [--verbose]
 // --chat=open|closed seeds the shell chat dock's remembered state (cookies) per route family, as a returning person has it;
 // "default" is a first visit with no cookie. Client navigation (e.g. /chat/new to /notes with a real click) is covered by the chat-dock
-// instant-on-navigation rule, checked by hand with a real mouse click: the walk itself only cold-loads.
+// instant-on-navigation rule. After the cold loads, a client-navigation case per seat/width opens /chat/new, then clicks the
+// real in-app link to /notes with a real mouse click (page.mouse), and measures only the shift that navigation causes.
 // Signs in through `pnpm dev-login` (never types a password). Prints each shift entry's nodes
 // (selector, previousRect, currentRect). Exits 1 when any route/seat run exceeds --max (default 0.01).
 import { chromium } from "playwright";
@@ -73,6 +74,49 @@ for (const seat of seats) {
     const worst = out.reduce((a, b) => (b.cls > a.cls ? b : a));
     if (worst.cls > MAX) bad = true;
     if (worst.cls > MAX || verbose) console.log(JSON.stringify(worst.shifts, null, 1));
+  }
+}
+
+// Client navigation: /chat/new -> /notes by a real mouse click on the in-app link (no page.goto between).
+for (const seat of ["admin", "member"].filter((x) => seats.includes(x))) {
+  const login = execSync(`pnpm -s dev-login ${seat === "member" ? "--member " : ""}'/dashboard'`, { encoding: "utf8" });
+  const url = login.match(/OPEN\s*:\s*(\S+)/)?.[1];
+  const origin = new URL(url).origin;
+  const boot = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const bp = await boot.newPage();
+  await bp.goto(url, { timeout: 180_000 });
+  if (bp.url().includes("__dev-walk")) {
+    await bp.getByRole("button", { name: "Resume this preview" }).click();
+    await bp.waitForURL((u) => !u.href.includes("__dev-walk"), { timeout: 180_000 });
+  }
+  await bp.waitForTimeout(3000);
+  const state = await boot.storageState();
+  await boot.close();
+  for (const width of widths.filter((w) => w >= 1024)) {
+    const ctx = await browser.newContext({ viewport: { width, height: 900 }, storageState: state });
+    const page = await ctx.newPage();
+    await page.goto(`${origin}/chat/new`, { timeout: 240_000 });
+    await page.waitForTimeout(6000);
+    await page.evaluate(() => {
+      window.__cls = 0; window.__shifts = [];
+      new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) {
+        window.__cls += e.value;
+        window.__shifts.push({ v: +e.value.toFixed(4), t: Math.round(e.startTime), n: e.sources.map((s) => `${s.node?.nodeName ?? "?"} [${Math.round(s.previousRect.x)},${Math.round(s.previousRect.y)} ${Math.round(s.previousRect.width)}x${Math.round(s.previousRect.height)}] -> [${Math.round(s.currentRect.x)},${Math.round(s.currentRect.y)} ${Math.round(s.currentRect.width)}x${Math.round(s.currentRect.height)}] "${(s.node?.textContent ?? "").slice(0, 30).replace(/\n/g, " ")}"`) });
+      } }).observe({ type: "layout-shift", buffered: false });
+    });
+    const link = page.locator('a[href="/notes"]:visible').first();
+    await link.waitFor({ state: "attached", timeout: 30_000 }).catch(() => {});
+    const box = await link.boundingBox().catch(() => null);
+    if (!box) { console.log(`${seat} ${width}px client-nav /chat/new -> /notes: SKIPPED (no visible /notes link; open the nav)`); await ctx.close(); continue; }
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.waitForURL(/\/notes(\?|$)/, { timeout: 60_000 }).catch(() => {});
+    await page.waitForTimeout(9000);
+    const r = await page.evaluate(() => ({ cls: window.__cls, shifts: window.__shifts, url: location.pathname }));
+    console.log(`${seat} ${width}px client-nav /chat/new -> /notes: CLS = ${r.cls.toFixed(4)} (landed ${r.url})`);
+    if (r.url !== "/notes" || r.cls > MAX) bad = true;
+    if (r.cls > MAX || verbose) console.log(JSON.stringify(r.shifts, null, 1));
+    await ctx.close();
   }
 }
 await browser.close();
