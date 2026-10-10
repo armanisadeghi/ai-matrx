@@ -25,6 +25,7 @@ import {
 import type { BillingCycle, CatalogPlan } from "@/features/entitlements/catalog/types";
 import { Spinner } from "@/components/ui/spinner";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface UpgradeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -185,9 +186,9 @@ export function UpgradeModal({
                 </div>
               ) : null}
               {catalog.status === "error" ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
+                <p data-error-box className="py-8 text-center text-sm text-muted-foreground">
                   Plans could not be loaded. Try again later.
-                </p>
+                <ErrorAlchemyMenu /></p>
               ) : null}
               {visible.map((plan) => {
                 const active = plan.planKey === selectedKey;
