@@ -28,7 +28,7 @@ describe("admin cost columns", () => {
     expect(columns[0].accessorFn?.({ cost: 0.004 })).toBe(0.004);
     expect(columns[1].accessorFn?.({ cost: 0.004 })).toBe(80);
     expect(columns[0].cell?.({ cost: 0.004 }, 0)).toBe("<$0.01");
-    expect(text(columns[1].cell?.({ cost: 0.004 }, 0))).toBe("80 points");
+    expect(text(columns[1].cell?.({ cost: 0.004 }, 0))).toBe("80");
   });
 
   it("does not report an unknown charge as zero", () => {
@@ -44,7 +44,7 @@ describe("admin cost columns", () => {
       ],
       ["cost"],
     );
-    expect(expanded.map((column) => column.header)).toEqual(["Label", "Billed (USD)", "Billed (points)"]);
+    expect(expanded.map((column) => column.header)).toEqual(["Label", "Billed", "Billed (points)"]);
     expect(expanded[1].accessorFn?.({ label: "x", cost: "0.004" })).toBe(0.004);
     expect(expanded[2].accessorFn?.({ label: "x", cost: "0.004" })).toBe(80);
     expect(expanded[1].accessorFn?.({ label: "x", cost: null })).toBeNull();

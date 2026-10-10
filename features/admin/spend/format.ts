@@ -28,13 +28,8 @@ export function usd(value: number | null | undefined, rate: number | null): stri
 }
 
 /**
- * Keeps sub-cent amounts visible so a $0.004 ledger does not read as $0.00.
- *
- * THE BODY THIS REPLACES DID NOT KEEP THAT PROMISE: it capped at four decimal
- * places, so `usdPrecise(0.000004)` returned "$0.00" — the exact failure the
- * comment says it exists to stop. `digits: "adaptive"` gives two decimals at a
- * dollar or more, four down to a cent and six below that, so the same value now
- * reads "$0.000004". See {@link usd} for the `rate` contract.
+ * Same as {@link usd}: admin spend reads in cents (Arman, 2026-10-10), and a real amount under half
+ * a cent reads "<$0.01" rather than "$0.00". Kept as a name for its existing callers.
  */
 export function usdPrecise(value: number | null | undefined, rate: number | null): string {
   return formatAdminCost(value, { rate, unknown: "not measured" });

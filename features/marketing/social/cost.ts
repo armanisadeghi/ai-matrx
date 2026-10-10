@@ -131,7 +131,8 @@ export async function confirmSocialSpendNow(
   count: number,
   dialog: { title: string; confirmLabel: string; description?: string },
 ): Promise<boolean> {
-  const { formatCost, usdToPoints } = await import("@ai-matrx/kit/format");
+  const { usdToPoints } = await import("@ai-matrx/kit/format");
+  const { formatViewerCost: formatCost } = await import("@/components/cost/formatAdminCost");
   const { currentPointsRate } = await import("@/components/cost/pointsRate");
   const { currentCostUnit } = await import("@/components/cost/costUnit");
   const rate = currentPointsRate();
