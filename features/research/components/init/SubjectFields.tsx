@@ -9,7 +9,8 @@
 
 import { SocialAccountField } from "@/features/marketing/social/components/SocialAccountInput";
 import { isSocialPlatform } from "@/features/marketing/social/types";
-import { Field, Select } from "@ai-matrx/design-system/controls";
+import { useState } from "react";
+import { Button, Field, Select } from "@ai-matrx/design-system/controls";
 import {
   SOCIAL_PLATFORMS,
   SUBJECT_TYPES,
@@ -25,6 +26,13 @@ export function SubjectFields({
   onChange: (next: ResearchSubjectInput) => void;
 }) {
   const typed = value.type !== "topic";
+  // An empty form is compact: the three platforms people research most, plus any already filled in.
+  const [showAll, setShowAll] = useState(false);
+  const FIRST = 3;
+  const visible = SOCIAL_PLATFORMS.filter(
+    (p, i) => showAll || i < FIRST || Boolean(value.handles?.[p.value]?.trim()),
+  );
+  const hidden = SOCIAL_PLATFORMS.length - visible.length;
   const setHandle = (platform: string, handle: string) =>
     onChange({ ...value, handles: { ...(value.handles ?? {}), [platform]: handle } });
 
@@ -50,7 +58,7 @@ export function SubjectFields({
             value={value.domain ?? ""}
             onChange={(e) => onChange({ ...value, domain: e.target.value })}
           />
-          {SOCIAL_PLATFORMS.map((p) => (
+          {visible.map((p) => (
             <div key={p.value} className="min-w-0">
               <SocialAccountField
                 label={`${p.label} handle or link`}
@@ -60,6 +68,13 @@ export function SubjectFields({
               />
             </div>
           ))}
+          {hidden > 0 ? (
+            <div className="sm:col-span-2">
+              <Button variant="quiet" onClick={() => setShowAll(true)}>
+                {hidden} more platforms
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
     </div>
