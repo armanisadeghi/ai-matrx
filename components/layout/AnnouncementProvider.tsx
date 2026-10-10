@@ -3,8 +3,8 @@
 /**
  * Announcement Provider — thin client shell.
  *
- * Gates on `shellDataLoaded` (already part of the page's static graph
- * via the user slice). The body — server-action call to
+ * Gates on `selectAnnouncementsReady` (signed in + saved preferences
+ * settled; see announcementGate.ts). The body — server-action call to
  * `getActiveAnnouncements`, `SystemAnnouncement` types, and the
  * `SystemAnnouncementBanner` markup — lives in
  * `AnnouncementProviderImpl.tsx` and is `next/dynamic`-loaded only after
@@ -14,7 +14,7 @@
 
 import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectShellDataLoaded } from "@/lib/redux/slices/userSlice";
+import { selectAnnouncementsReady } from "./announcementGate";
 
 const AnnouncementProviderImpl = dynamic(
   () => import("./AnnouncementProviderImpl"),
@@ -22,7 +22,7 @@ const AnnouncementProviderImpl = dynamic(
 );
 
 export default function AnnouncementProvider() {
-  const shellDataLoaded = useAppSelector(selectShellDataLoaded);
-  if (!shellDataLoaded) return null;
+  const ready = useAppSelector(selectAnnouncementsReady);
+  if (!ready) return null;
   return <AnnouncementProviderImpl />;
 }
