@@ -70,12 +70,14 @@ import {
   noteItem,
   isEntity,
   isNoteDraft,
+  noteSeed,
   withChatList,
 } from "./work-sources";
 import { titleToAdopt } from "./feature-items.logic";
 import { useChatStatus, useFileStatus, useNoteStatus } from "./item-status";
+import { selectNoteById } from "@/features/notes/redux/selectors";
 import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
-import { FaceLine, plainExcerpt } from "./face-text";
+import { FaceLine, faceCopy } from "./face-text";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
@@ -534,9 +536,16 @@ function ChatFace({ source }: { source: NodeSource }) {
     const lastId = m?.orderedIds?.[m.orderedIds.length - 1];
     return lastId && m ? extractFlatText(m.byId[lastId]) : "";
   });
-  if (!id) return <FaceLine icon={MessagesSquare} text="Ask about what is on this board" muted />;
-  const excerpt = plainExcerpt(last);
-  return <FaceLine icon={MessagesSquare} text={excerpt || "Open to read this chat"} muted={!excerpt} />;
+  const { text, muted } = faceCopy("chat", last, !!id);
+  return <FaceLine icon={MessagesSquare} text={text} muted={muted} />;
+}
+
+/** The note's card at far zoom: the words waiting to become a note, or the note's own text. Same store the body fills. */
+function NoteFace({ source }: { source: NodeSource }) {
+  const id = entityId(source);
+  const stored = useAppSelector((s) => (id ? (selectNoteById(id)(s)?.content ?? "") : ""));
+  const { text, muted } = faceCopy("note", noteSeed(source) ?? stored, !!id);
+  return <FaceLine icon={NotebookText} text={text} muted={muted} />;
 }
 
 export const WORK_ITEMS: BoardItemType[] = [
@@ -617,6 +626,7 @@ export const WORK_ITEMS: BoardItemType[] = [
     defaultSize: { w: 560, h: 620 },
     matches: (s) => isEntity(s, "note"),
     Body: NoteItemBody,
+    Face: NoteFace,
     TitleField: NoteTileTitle,
     startNew: {
       label: "Note",

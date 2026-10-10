@@ -35,3 +35,13 @@ export function plainExcerpt(markdown: string, max = 160): string {
     .trim();
   return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
 }
+
+export type FaceKind = "chat" | "write-up" | "note";
+
+/** The one line a text-bearing tile's far-zoom card shows: its words, or a short line saying why there are none. */
+export function faceCopy(kind: FaceKind, raw: string | null, hasRecord: boolean): { text: string; muted: boolean } {
+  const excerpt = plainExcerpt(raw ?? "");
+  if (excerpt) return { text: excerpt, muted: false };
+  if (kind === "chat") return { text: hasRecord ? "Open to read this chat" : "Ask about what is on this board", muted: true };
+  return { text: "Nothing written yet", muted: true };
+}
