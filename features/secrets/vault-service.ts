@@ -107,7 +107,9 @@ function vaultRequest(
   auth: Record<string, string>,
   organizationId: string,
 ): Promise<Response> {
-  return sendMatrxRequest(buildMatrxRequestUrl(backendBase(), `/api/vault${path}`), {
+  // Vault routes remain mounted under `/api`; the shared builder keeps a
+  // route prefix only when it is part of the base URL.
+  return sendMatrxRequest(buildMatrxRequestUrl(`${backendBase().replace(/\/+$/, "")}/api`, `/api/vault${path}`), {
     ...init,
     headers: applyOrganizationContextHeader(
       { ...auth, ...(init.headers as Record<string, string> | undefined) },
