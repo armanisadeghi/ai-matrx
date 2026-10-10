@@ -12,7 +12,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, Loader2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { usePdfClient } from "@/features/pdf/api/client";
@@ -155,10 +155,10 @@ function KitRunCard({ card, onDismiss }: { card: RunCard; onDismiss?: () => void
       <Icon className={`h-4 w-4 shrink-0 ${card.phase === "working" ? "animate-spin text-primary" : card.phase === "done" ? "text-success" : card.phase === "failed" ? "text-destructive" : "text-muted-foreground"}`} />
       <span className="min-w-0 flex-1 break-words type-body text-foreground">{card.line}</span>
       {card.phase === "done" && card.undo ? (
-        <Button size="sm" variant="outline" onClick={() => void card.undo?.()}>Undo</Button>
+        <Button variant="outline" onClick={() => void card.undo?.()}>Undo</Button>
       ) : null}
       {onDismiss ? (
-        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Dismiss" onClick={onDismiss}><X className="h-4 w-4" /></Button>
+        <Button variant="quiet" aria-label="Dismiss" onClick={onDismiss}><X className="h-4 w-4" /></Button>
       ) : null}
     </div>
   );
