@@ -25,6 +25,8 @@ jest.mock("./table-saved-views-service", () => ({
   archivePersonalTableView: (...args: unknown[]) => mockArchive(...args),
 }));
 jest.mock("@ai-matrx/design-system/data-table", () => ({
+  // The real comparison: "is the view dirty" is the package's decision, not this file's.
+  sameTableView: jest.requireActual("@ai-matrx/design-system/data-table").sameTableView,
   SavedViewsControl: ({ views, activeId, error, onSelect, onSaveNew, onUpdate, onRemove }: {
     views: Array<{ id: string; name: string }>;
     activeId: string | null;

@@ -134,9 +134,29 @@ function builder(table: string) {
   return api;
 }
 
+/** `billing.plan_catalog()` — the one place the public pricing page reads its plans. */
+const PLAN_CATALOG: Record<string, unknown>[] = [
+  {
+    plan_key: "premium_monthly",
+    name: "AI Matrx Premium (TEST)",
+    audience: "personal",
+    tier: "premium",
+    rank: 20,
+    tagline: "Premium.",
+    monthly_cents: 1000,
+    limits: [],
+  },
+];
+
 const client = {
   schema: () => client,
   from: (table: string) => builder(table),
+  rpc: (fn: string) =>
+    Promise.resolve(
+      fn === "plan_catalog"
+        ? { data: rows.plan_catalog ?? [], error: null }
+        : { data: null, error: { code: "42883", message: `function ${fn} does not exist` } },
+    ),
 };
 
 jest.mock("@/utils/supabase/server", () => ({
@@ -196,6 +216,7 @@ beforeEach(() => {
     pc_shows: [SHOW],
     pc_episodes: [EPISODE],
     pc_articles: [],
+    plan_catalog: PLAN_CATALOG,
     product: [
       {
         id: "33333333-3333-4333-8333-333333333333",
@@ -402,7 +423,7 @@ describe("a refused read is never rendered as an empty state", () => {
   });
 
   it("the pricing loader throws rather than reporting 'no Premium' on a denied read", async () => {
-    rows.product = [];
+    rows.plan_catalog = [];
     const { loadEducationPricing } = await import(
       "@/features/pricing/education/loadEducationPricing"
     );

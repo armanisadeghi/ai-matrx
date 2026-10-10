@@ -43,7 +43,10 @@ jest.mock("@/utils/supabase/client", () => ({
     }),
   },
 }));
-jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: jest.fn() }),
+  usePathname: () => "/workflows",
+}));
 const toastError = jest.fn();
 jest.mock("@/lib/toast", () => ({
   toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn() },

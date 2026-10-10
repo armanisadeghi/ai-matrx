@@ -65,11 +65,12 @@ jest.mock("@/features/access-gate/service/accessDeniedContext", () => ({
     canRequest: true,
   }),
 }));
-jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (sel: (s: unknown) => unknown) => sel({}),
+jest.mock("@/lib/redux/selectors/userSelectors", () => ({
+  ...jest.requireActual("@/lib/redux/selectors/userSelectors"),
+  selectUserId: () => ME,
 }));
-jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => ME }));
 
+import { withAppStore } from "@/tests/helpers/WithStoreReads";
 import { TransferTableOwnership } from "@/features/sharing/components/TransferTableOwnership";
 import { MemberPersonalTablesAction } from "@/features/sharing/components/MemberPersonalTablesAction";
 import { TableTransferOffer } from "@/features/sharing/components/TableTransferOffer";
@@ -79,7 +80,8 @@ let root: Root;
 beforeEach(() => {
   host = document.createElement("div");
   document.body.appendChild(host);
-  root = createRoot(host);
+  // The reason box is a ProTextarea, wired to the app store; render under the real one.
+  root = withAppStore(createRoot(host));
   fetchMemberPersonalTables.mockClear();
   transferTableOwner.mockClear();
   role = { isAdmin: true, loading: false };

@@ -9,8 +9,8 @@
 const rpc = jest.fn();
 /** One page of a paged call, by row range; unset = the whole mocked result. */
 let page: ((from: number, to: number) => unknown) | null = null;
-jest.mock("@/utils/supabase/client", () => ({
-  supabase: {
+jest.mock("@/utils/supabase/client", () => {
+  const supabase = {
     rpc: (...a: unknown[]) => {
       const whole = rpc(...a);
       const builder = Object.assign(Promise.resolve(whole), {
@@ -19,8 +19,15 @@ jest.mock("@/utils/supabase/client", () => ({
       });
       return builder;
     },
-  },
-}));
+    // Facet and count reads go through `platform.list_rpc_once` (lib/entity-list/readListRpc.ts):
+    // ONE request that runs the named function and answers every row. The stand-in unwraps
+    // that envelope so the assertions below see the function that was actually asked for.
+    schema: () => ({
+      rpc: (_once: string, envelope: { p_fn: string; p_args: unknown }) => rpc(envelope.p_fn, envelope.p_args),
+    }),
+  };
+  return { supabase };
+});
 jest.mock("@/utils/supabase/writeOne", () => ({ tryWriteOne: jest.fn() }));
 
 import { DEFAULT_ENTITY_LIST_QUERY, type EntityListQuery } from "@/lib/entity-list/types";
@@ -91,10 +98,10 @@ it("the facets read past the API's 1,000-row cap: every page until a short one",
     { kind: "shown_to", value: "personal", total: 1 },
     ...Array.from({ length: 1392 }, (_, i) => ({ kind: "tag", value: `t${i}`, total: 1 })),
   ];
-  page = (from, to) => ({ data: rows.slice(from, to + 1), error: null, count: rows.length });
+  // One request returns every row as a single array, so the API's row cap cannot cut it.
+  rpc.mockResolvedValue({ data: rows, error: null });
   const facets = await fetchTranscriptFacets(query("active"));
-  // The first page with its total, then every page again under a stable order.
-  expect(rpc).toHaveBeenCalledTimes(3);
+  expect(rpc).toHaveBeenCalledTimes(1);
   expect(facets.byKind.tag).toHaveLength(1392);
   expect(facets.byKind.shown_to).toEqual([
     { value: "internal", count: 687 },
