@@ -167,40 +167,31 @@ export function HistoryPanel({
           const active = e.version === newest;
           const selected = e.version === previewVersion;
           return (
-            <li key={e.version}>
-              <div
-                role="button"
-                tabIndex={0}
+            <li key={e.version} className={cn("flex min-h-14 items-center gap-1 rounded hover:bg-muted", selected && "bg-muted")}>
+              <button
+                type="button"
                 data-clickable
                 aria-pressed={selected}
                 onClick={() => onPreview(active ? null : e.version)}
-                onKeyDown={(k) => {
-                  if (k.key === "Enter" || k.key === " ") onPreview(active ? null : e.version);
-                }}
-                className={cn("flex h-12 items-center gap-2 rounded px-2 hover:bg-muted", selected && "bg-muted")}
+                className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left"
               >
                 <span className="w-8 shrink-0 text-xs tabular-nums text-muted-foreground">{`v${e.version}`}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm">{note(e)}</span>
+                  <span className="line-clamp-2 text-sm" title={note(e)}>
+                    {note(e)}
+                  </span>
                   <span className="block truncate text-xs text-muted-foreground">
                     {`${author(e)} · ${relative(e.occurred_at, now)}`}
                   </span>
                 </span>
-                {active ? (
-                  <span className="shrink-0 text-xs text-muted-foreground">Active</span>
-                ) : selected ? (
-                  <Button
-                    variant="primary"
-                    disabled={busy}
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      onSetActive(e.version);
-                    }}
-                  >
-                    Set active
-                  </Button>
-                ) : null}
-              </div>
+              </button>
+              {active ? (
+                <span className="shrink-0 pr-2 text-xs text-muted-foreground">Active</span>
+              ) : selected ? (
+                <Button variant="primary" className="mr-1 shrink-0" disabled={busy} onClick={() => onSetActive(e.version)}>
+                  Set active
+                </Button>
+              ) : null}
             </li>
           );
         })}

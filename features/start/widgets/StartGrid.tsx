@@ -29,7 +29,8 @@ export function StartGrid({
   skeleton?: boolean;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+    // matrx-touch-targets: 44px tap floor for every control in the grid on a phone.
+    <div className="matrx-touch-targets grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
       {doc.widgets.map((w, i) => (
         <StartSlot
           key={w.id}
@@ -87,6 +88,7 @@ function StartSlot({
     <WidgetFrame
       type={widget.type}
       size={widget.size}
+      config={widget.config}
       icon={type.icon}
       title={type.describe(widget.config)}
       controls={controls}

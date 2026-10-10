@@ -29,14 +29,23 @@ export function favoriteRows<F extends { id: string; kind: string; label: string
 export function FavoritesWidget({ size }: StartWidgetBodyProps) {
   const { favorites } = usePinned();
   const { pinned, suggestions } = favoriteRows(favorites);
+  // Pinned rows carry their filled star (press = unpin); suggestions read "Suggested" in muted ink with
+  // an empty star (press = pin) — one list, two states anyone can tell apart.
   const rows: WidgetRow[] = [
-    ...pinned.map((f) => ({ key: f.id, title: f.label, href: f.href, icon: iconOf(f.iconName) })),
+    ...pinned.map((f) => ({
+      key: f.id,
+      title: f.label,
+      href: f.href,
+      icon: iconOf(f.iconName),
+      action: <PinButton size="sm" item={{ id: f.id, kind: "nav", label: f.label, href: f.href, ...(f.iconName ? { iconName: f.iconName } : {}) }} />,
+    })),
     ...suggestions.map((s) => ({
       key: `suggest:${s.href}`,
       title: s.label,
       href: s.href,
       icon: iconOf(s.iconName),
       tone: "muted" as const,
+      meta: "Suggested",
       action: <PinButton size="sm" item={{ id: s.href, kind: "nav", label: s.label, href: s.href, iconName: s.iconName, color: s.color }} />,
     })),
   ];

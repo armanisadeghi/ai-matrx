@@ -4,6 +4,7 @@
 // Reads the same corpus /data/pages lists (`createDataHomeCorpus`, kind "page"; every organization the
 // person reaches) — no second list service. Their own pages first.
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import { Select } from "@ai-matrx/design-system/controls";
 import { useRecordsDataSource } from "@/features/data-tables/records-ui-host/recordsUiHost";
@@ -36,7 +37,16 @@ export function DataPagePicker({ value, onChange }: { value: string; onChange: (
   }, [client, dataSource]);
   if (state.error) return <p className="text-xs text-destructive">{state.error}</p>;
   const choices = dataPageChoices(state.rows ?? []);
-  if (state.rows && choices.length === 0) return <p className="text-xs text-muted-foreground">No data pages yet</p>;
+  if (state.rows && choices.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        No data pages yet ·{" "}
+        <Link href="/make" className="underline">
+          Make a page
+        </Link>
+      </p>
+    );
+  }
   const options = value && !choices.some((c) => c.value === value) ? [{ value, label: "Current page" }, ...choices] : choices;
   return (
     <Select

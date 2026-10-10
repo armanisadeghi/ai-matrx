@@ -8,6 +8,7 @@ import { METRIC_CARDS, type MetricCardConfig } from "@/features/dashboard/consta
 import { useDashboardMetrics } from "@/features/dashboard/hooks/useDashboardMetrics";
 import ShellIcon from "@/features/shell/components/ShellIcon";
 import type { StartWidgetBodyProps } from "../types";
+import { startMetricHref } from "../catalog";
 
 export const DEFAULT_KPI_KEYS = "agents,conversations,knowledge_files,published_apps,notes,tasks";
 
@@ -23,12 +24,13 @@ export function KpisWidget({ config }: StartWidgetBodyProps) {
   const { metrics, isLoading, isError } = useDashboardMetrics();
   const cards = kpiCards(config.keys);
   return (
-    <ul className="grid h-full grid-flow-col auto-cols-[minmax(8rem,1fr)] gap-1 overflow-x-auto">
+    // Phone: a two-column grid (the slot grows by its known rows — frame.slotHeightPxPhone); wider: one row.
+    <ul className="grid h-full grid-cols-2 auto-rows-[52px] gap-1 md:auto-rows-auto md:grid-flow-col md:auto-cols-[minmax(8rem,1fr)] md:grid-cols-none">
       {cards.map((card) => {
         const value = metrics[card.key];
         return (
           <li key={card.key} className="min-w-0">
-            <Link href={card.href} data-clickable className="flex h-full items-center gap-2 rounded px-2 hover:bg-muted">
+            <Link href={startMetricHref(card)} data-clickable className="flex h-full items-center gap-2 rounded px-2 hover:bg-muted">
               <ShellIcon name={card.iconName} className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
               <span className="min-w-0">
                 {isLoading ? (

@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const world = { loading: true };
 
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "user-1" }));
+jest.mock("@ai-matrx/kit/media-query", () => ({ useIsMobile: () => false }));
 jest.mock("@/features/dashboard/hooks/useDashboardMetrics", () => ({
   useDashboardMetrics: () => ({
     metrics: { agents: 7, conversations: 12, knowledge_files: 0, published_apps: 0, notes: 3, tasks: 5, transcripts: 0, scopes: 0, shortcuts: 0, research_reports: 0, podcasts: 0, messages: 0 },
@@ -60,7 +61,7 @@ jest.mock("@/features/shell/components/ShellIcon", () => ({ __esModule: true, de
 
 import { StartGrid } from "../StartGrid";
 import { START_WIDGET_CATALOG } from "../catalog";
-import { slotHeightPx, slotRows } from "../frame";
+import { slotHeightPx, slotHeightPxPhone, slotRows } from "../frame";
 import type { StartDoc, StartWidgetSize } from "../types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -103,9 +104,10 @@ const slotOf = (host: HTMLElement) => host.querySelector<HTMLElement>("[data-sta
 function measure(slot: HTMLElement) {
   const px = (el: Element | null) => (el instanceof HTMLElement ? parseFloat(el.style.height || "0") : 0);
   const header = px(slot.querySelector("[data-start-slot-header]"));
+  const frame = parseFloat(slot.dataset.slotPx ?? "0") || px(slot);
   const list = slot.querySelector("ul");
   const rows = list ? [...list.children].filter((c) => !list.className.includes("grid-flow-col")).reduce((n, li) => n + px(li), 0) : 0;
-  return { frame: px(slot), header, rows };
+  return { frame, header, rows };
 }
 
 /** Every way the loaded slot differs from the loading one, or overflows its frame. [] = no shift. */
@@ -161,7 +163,7 @@ describe("Start widget slots hold their height", () => {
     expect(loadedSlot.querySelector('[aria-busy="true"]')).toBeNull();
     expect(slotShift(loadingSlot, loadedSlot)).toEqual([]);
     expect(measure(loadedSlot).frame).toBe(designed(type, size));
-    expect(slotHeightPx(type, size)).toBe(designed(type, size));
+    expect(slotHeightPx(type, size, config)).toBe(designed(type, size));
   });
 
   it("the counts strip shows each configured count, and a zero shows its nudge", async () => {
@@ -173,18 +175,46 @@ describe("Start widget slots hold their height", () => {
     expect(host.querySelector('a[href="/agents/all"]')).not.toBeNull();
   });
 
+  it("the conversation count opens the conversation list, not a new chat", async () => {
+    world.loading = false;
+    const host = await renderOne("kpis", "l", { keys: "conversations" });
+    expect(host.querySelector('a[href="/work/conversations"]')).not.toBeNull();
+    expect(host.querySelector('a[href="/chat/new"]')).toBeNull();
+  });
+
+  it("a page widget with no page is an ordinary-height empty state with a way to make one", async () => {
+    const host = await renderOne("page", "l", {});
+    expect(slotOf(host).dataset.slotPx).toBe("256");
+    expect(host.querySelector('a[href="/make"]')).not.toBeNull();
+  });
+
+  it("on a phone the counts strip wraps into rows its slot already holds", () => {
+    expect(slotHeightPxPhone("kpis", "l", { keys: "a,b,c,d,e,f" })).toBe(36 + 3 * 52 + 8);
+    expect(slotHeightPxPhone("tasks", "m", {})).toBe(256);
+  });
+
+  it("pinned pages carry their star (unpin) and suggestions say Suggested", async () => {
+    world.loading = false;
+    const host = await renderOne("favorites", "l", {});
+    const rows = [...host.querySelectorAll("li")];
+    expect(rows[0]!.textContent).toContain("Notes");
+    expect(rows[0]!.querySelector("button")).not.toBeNull();
+    expect(rows.slice(1).every((r) => r.textContent?.includes("Suggested"))).toBe(true);
+  });
+
   it("a pinned agent that was deleted says Removed and offers no Chat", async () => {
     world.loading = false;
     const host = await renderOne("agents", "m", {});
     expect(host.textContent).toContain("Removed");
     expect(host.querySelector('[aria-label="Chat with Gone agent"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Unpin Gone agent"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="Chat with Writer"]')).not.toBeNull();
   });
 
   it("an unknown widget type renders a named unavailable slot", async () => {
     const host = await renderOne("weather_from_the_future", "m", {});
     expect(host.textContent).toContain("Unavailable");
-    expect(slotOf(host).style.height).toBe(`${slotHeightPx("x", "m")}px`);
+    expect(slotOf(host).dataset.slotPx).toBe(String(slotHeightPx("x", "m")));
   });
 
   it("edit mode keeps the controls in the header row and the title whole behind a tooltip", async () => {

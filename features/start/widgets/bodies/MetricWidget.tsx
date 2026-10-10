@@ -7,6 +7,7 @@ import { METRIC_CARDS } from "@/features/dashboard/constants/metricCards";
 import { useDashboardMetrics } from "@/features/dashboard/hooks/useDashboardMetrics";
 import ShellIcon from "@/features/shell/components/ShellIcon";
 import type { StartWidgetBodyProps } from "../types";
+import { startMetricHref } from "../catalog";
 import { WidgetNotice } from "../frame";
 
 export function MetricWidget({ config }: StartWidgetBodyProps) {
@@ -15,7 +16,7 @@ export function MetricWidget({ config }: StartWidgetBodyProps) {
   if (!card) return <WidgetNotice>{`No count named "${config.metric ?? ""}"`}</WidgetNotice>;
   const value = metrics[card.key];
   return (
-    <Link href={card.href} data-clickable className="flex h-full items-center gap-3 rounded px-2 hover:bg-muted">
+    <Link href={startMetricHref(card)} data-clickable className="flex h-full items-center gap-3 rounded px-2 hover:bg-muted">
       <ShellIcon name={card.iconName} className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
       <div className="min-w-0">
         {isLoading ? (

@@ -15,6 +15,15 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { METRIC_CARDS } from "@/features/dashboard/constants/metricCards";
 import type { StartWidgetSpec } from "./types";
 
+/**
+ * Where a count's tile opens on the Start page. A count is read as "show me those": the conversation
+ * count opens the conversation list, not a new chat (the dashboard's own card still starts one).
+ */
+const START_METRIC_HREF: Partial<Record<string, string>> = { conversations: "/work/conversations" };
+export function startMetricHref(card: { key: string; href: string }): string {
+  return START_METRIC_HREF[card.key] ?? card.href;
+}
+
 /** The kinds the `recent` widget offers (tokens of the search projection, `platform.search_items`). */
 export const RECENT_KINDS = [
   { value: "conversation", label: "Conversations", one: "conversation" },
@@ -59,7 +68,7 @@ export const START_WIDGET_CATALOG: readonly StartWidgetSpec[] = [
     key: "recent",
     label: "Recent",
     icon: Clock,
-    section: "notes",
+    section: "work",
     sizes: ["s", "m", "l"],
     defaultConfig: { kind: "conversation" },
     fields: [{ key: "kind", label: "Kind", options: RECENT_KINDS.map((k) => ({ value: k.value, label: k.label })) }],
@@ -89,7 +98,7 @@ export const START_WIDGET_CATALOG: readonly StartWidgetSpec[] = [
     key: "favorites",
     label: "Favorites",
     icon: Star,
-    section: "canvas",
+    section: "work",
     sizes: ["s", "m", "l"],
     defaultConfig: {},
     fields: [],

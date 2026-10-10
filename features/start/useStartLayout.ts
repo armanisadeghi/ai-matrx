@@ -10,6 +10,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { startLayoutTable } from "./startLayout.typed-table";
 import { useStartPage } from "./useStartPage";
 import { parseStartDoc, serializeStartDoc } from "./widgets/doc";
+import { summarizeStartEdit } from "./widgets/editNote";
 import { defaultStartDoc } from "./widgets/defaultDoc";
 import { browserLock, seedStartLayoutOnce } from "./widgets/seedOnce";
 import { toast } from "@/lib/toast";
@@ -101,7 +102,15 @@ export function versionAuthor(entry: RecordHistoryEntry, userId: string | null):
 /** The note a version was saved with, else the store's own word for the operation. */
 export function versionNote(entry: RecordHistoryEntry): string {
   const note = entry.changes.find((c) => c.key === "note")?.after;
-  return typeof note === "string" && note ? note : entry.operation_label;
+  if (typeof note === "string" && note) return note;
+  // No note moved (a write that repeated the last note): say what the LAYOUT change was.
+  const doc = entry.changes.find((c) => c.key === "doc");
+  if (doc) {
+    const before = parseStartDoc(doc.before);
+    const after = parseStartDoc(doc.after);
+    if (after.ok) return before.ok ? summarizeStartEdit(before.doc, after.doc) : "Starting layout";
+  }
+  return entry.changes.length === 0 ? "Saved again, no change" : entry.operation_label;
 }
 
 export function useStartHistory(recordId: string | null, open: boolean) {

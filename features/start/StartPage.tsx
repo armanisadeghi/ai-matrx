@@ -187,8 +187,9 @@ function StartBody() {
           onAdd={(spec) => {
             const next = addWidget(draft, { type: spec.key, size: spec.sizes.includes("m") ? "m" : spec.sizes[0]!, config: spec.defaultConfig });
             setDraft(next);
+            // One rule for every widget: the new widget opens in Set up (size, and its fields if any).
             const added = next.widgets[next.widgets.length - 1];
-            if (added && spec.fields.length > 0) setPanel({ kind: "configure", id: added.id });
+            if (added) setPanel({ kind: "configure", id: added.id });
           }}
         />
       ) : null}
