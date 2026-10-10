@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { conversationIdOrNull } from "@ai-matrx/chat/agents/utils/conversation-ref";
 import { ChatRunHeader } from "@ai-matrx/chat/agents/components/chat/ChatRunHeader";
 import {
   VoiceChatClient,
@@ -18,6 +19,7 @@ interface VoiceChatConversationPageProps {
 async function resolveConversationSeed(
   conversationId: string,
 ): Promise<{ agentId: string; agentName: string | null } | null> {
+  if (!conversationIdOrNull(conversationId)) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .schema("chat")

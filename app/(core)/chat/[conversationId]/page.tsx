@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { PostgrestError } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
+import { conversationIdOrNull } from "@ai-matrx/chat/agents/utils/conversation-ref";
 import { ChatConversationRoom } from "@ai-matrx/chat/agents/components/chat/ChatConversationRoom";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { ChatMandateWarmup } from "@/components/warmup/ChatMandateWarmup";
@@ -59,6 +60,8 @@ type ConversationSeed =
 async function resolveConversationSeed(
   conversationId: string,
 ): Promise<ConversationSeed> {
+  // A mandate reference ("mandate", "mandate:<key>") is not a conversation id; never hand it to a uuid column.
+  if (!conversationIdOrNull(conversationId)) return { kind: "unavailable", error: null };
   const supabase = await createClient();
   const { data, error } = await supabase
     .schema("chat")
