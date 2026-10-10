@@ -76,6 +76,15 @@ export interface PdfPreviewProps {
   maxPageWidth?: number;
   onDocumentLoad?: (numPages: number) => void;
   onPageRendered?: (pageNumber: number) => void;
+  /** Shown when the redux file record has no name yet (studio docs carry their own). */
+  fileName?: string | null;
+  /** Extra line on the "source unavailable" panel (e.g. what is still usable). */
+  unavailableHint?: string;
+  /** Chrome knobs — pass-through to `PdfDocumentRenderer` (see there). */
+  toolbar?: "full" | "none";
+  pageNav?: boolean;
+  toolbarStart?: React.ReactNode;
+  toolbarEnd?: React.ReactNode;
 }
 
 export default function PdfPreview({
@@ -92,6 +101,12 @@ export default function PdfPreview({
   maxPageWidth,
   onDocumentLoad,
   onPageRendered,
+  fileName: fileNameFallback,
+  unavailableHint,
+  toolbar,
+  pageNav,
+  toolbarStart,
+  toolbarEnd,
 }: PdfPreviewProps) {
   const {
     remoteUrl,
@@ -118,7 +133,10 @@ export default function PdfPreview({
   if (sourceMissing && !providedIsPublic) {
     return (
       <div className={cn("relative h-full w-full", className)}>
-        <PdfSourceUnavailable fileName={file?.fileName ?? null} />
+        <PdfSourceUnavailable
+          fileName={file?.fileName ?? fileNameFallback ?? null}
+          hint={unavailableHint}
+        />
       </div>
     );
   }
@@ -130,7 +148,7 @@ export default function PdfPreview({
         remoteUrl={useHookSource ? remoteUrl : providedRemoteUrl}
         remoteHeaders={useHookSource ? headers : undefined}
         withCredentials={useHookSource && withCredentials}
-        fileName={file?.fileName ?? null}
+        fileName={file?.fileName ?? fileNameFallback ?? null}
         loading={useHookSource && sessionLoading}
         error={useHookSource ? sessionError : null}
         onRetry={retry}
@@ -146,6 +164,10 @@ export default function PdfPreview({
         maxPageWidth={maxPageWidth}
         onDocumentLoad={onDocumentLoad}
         onPageRendered={onPageRendered}
+        toolbar={toolbar}
+        pageNav={pageNav}
+        toolbarStart={toolbarStart}
+        toolbarEnd={toolbarEnd}
         className={continuous ? "w-full" : "h-full w-full"}
       />
     </div>

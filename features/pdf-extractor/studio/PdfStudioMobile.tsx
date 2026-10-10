@@ -498,6 +498,9 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
               fileName={activeDoc.name}
               pageNumber={activePage ?? 1}
               onPageChange={(n) => setActivePage(n)}
+              // The bottom bar is this screen's ONE pager (it pages the
+              // text tabs too) — never a second one in the viewer row.
+              pageNav={false}
             />
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground">

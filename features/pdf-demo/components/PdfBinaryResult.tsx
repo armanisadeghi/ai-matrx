@@ -6,12 +6,19 @@
  */
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Download, ExternalLink, FileArchive, FileText, Image as ImageIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import type { BinaryResult } from "../hooks/usePdfDemoApi";
 import { downloadUrl } from "@ai-matrx/kit/download";
+
+// react-pdf + pdfjs cannot SSR and are heavy — load only when a PDF arrives.
+const PdfDocumentRenderer = dynamic(
+  () => import("@/features/pdf/components/viewer/PdfDocumentRenderer"),
+  { ssr: false },
+);
 
 interface Props {
   result: BinaryResult | null;
@@ -73,30 +80,12 @@ export function PdfBinaryResult({ result }: Props) {
       </div>
 
       {isPdf ? (
-        // <object> with explicit type="application/pdf" is the most
-        // browser-portable way to embed a PDF blob: Chrome/Edge/Firefox
-        // invoke their native viewer, Safari falls through to the
-        // <iframe> fallback, and browsers without any PDF capability
-        // show the inner text. The fragment `#view=FitH&toolbar=1`
-        // tells the viewer to fit page-width and keep the toolbar.
-        <object
-          data={`${objectUrl}#view=FitH&toolbar=1`}
-          type="application/pdf"
-          aria-label={result.filename}
-          className="block w-full rounded-md border border-border bg-muted"
-          style={{ height: "600px" }}
-        >
-          <iframe
-            src={objectUrl}
-            title={result.filename}
-            className="w-full rounded-md border border-border bg-muted"
-            style={{ height: "600px" }}
-          />
-          <div className="p-6 text-center text-sm text-muted-foreground">
-            Your browser can&rsquo;t preview this PDF inline. Use{" "}
-            <strong>Open</strong> or <strong>Download</strong> above.
-          </div>
-        </object>
+        // THE canonical viewer (same zoom / fit / paging as every other PDF
+        // in the app) — never the browser's native <object>/<iframe> viewer,
+        // which was a second PDF renderer with its own chrome.
+        <div className="h-[600px] overflow-hidden rounded-md border border-border">
+          <PdfDocumentRenderer blobUrl={objectUrl} fileName={result.filename} />
+        </div>
       ) : isImage ? (
         <div className="flex items-center justify-center rounded-md border border-border bg-muted p-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}

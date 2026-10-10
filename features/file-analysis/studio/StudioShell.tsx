@@ -429,12 +429,13 @@ export function StudioShell({ fileId, organizationId }: StudioShellProps) {
                 onBackgroundClick={() => handleSelectAnnotation(null)}
               />
             </PdfRegionContextMenu>
-            {/* Active-mode banner — concrete instructions so the user always
-             * knows what's clickable. Floats inside the canvas so it doesn't
-             * eat layout space. */}
+            {/* Active-mode chip — what's clickable right now. Floats at the
+             * canvas BOTTOM: at top-3 it sat over the viewer's own toolbar
+             * row and hid zoom / fit / rotate. Short by law (interface text
+             * is layout); the header's mode buttons carry the full tooltip. */}
             <div
               className={cn(
-                "pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white shadow transition-opacity",
+                "pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium text-white shadow transition-opacity",
                 mode === "draw"
                   ? "bg-sky-500/90 opacity-100"
                   : mode === "select"
@@ -443,10 +444,10 @@ export function StudioShell({ fileId, organizationId }: StudioShellProps) {
               )}
             >
               {mode === "draw"
-                ? "Draw mode — drag a rectangle over any text to label it"
+                ? "Drag over text to label it"
                 : mode === "select"
-                  ? "Select mode — click an annotation, then drag to move or resize with the handles"
-                  : "View mode — read-only · switch to Draw or Select to interact"}
+                  ? "Click a region to move or resize"
+                  : "View only"}
             </div>
           </main>
 

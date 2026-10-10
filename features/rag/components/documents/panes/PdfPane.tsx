@@ -13,6 +13,7 @@
 
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
+import type { PdfPreviewProps } from "@/features/pdf/components/viewer/PdfPreview";
 import { useMemo } from "react";
 import type { DocumentDetail } from "@/features/rag/types/documents";
 import { pageImageUrl } from "@/features/rag/api/document";
@@ -24,15 +25,9 @@ import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher
 // Knowledge library and PDF viewer. Breaking this edge breaks the cycle.
 import { InlineMediaRef } from "@ai-matrx/media/react";
 
-interface PdfPreviewProps {
-  fileId: string;
-  className?: string;
-}
-
-// Heavy: react-pdf + pdfjs-dist. Same import shape as the file viewer.
+// Heavy: react-pdf + pdfjs-dist. The canonical viewer, deep-imported.
 const PdfPreview = dynamic<PdfPreviewProps>(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/PdfPreview"),
+  () => import("@/features/pdf/components/viewer/PdfPreview"),
   { ssr: false },
 ) as ComponentType<PdfPreviewProps>;
 
@@ -81,25 +76,24 @@ export function PdfPane({
 
   if (fallback) return fallback;
 
-  // cld_file source — use the rich PdfPreview as a passive renderer.
-  // Today PdfPreview only accepts (fileId, className); two-way page
-  // sync between this pane and the others is wired through the page-
-  // image fallback path or via PageNav in the viewer header. A future
-  // change to PdfPreview can expose currentPage / onPageChange to make
-  // the PDF pane drive the active page directly. For now, we silence
-  // unused-prop linting via the void.
-  void onActivePageChange;
-  void activePageIndex;
+  // cld_file source — the canonical viewer, page-synced with the other
+  // panes (activePageIndex is 0-based; the viewer is 1-based). The surface
+  // switcher docks INTO the viewer's toolbar row — it used to float
+  // absolutely over the row's right end, covering the pager.
   return (
     <div className="relative flex flex-col h-full overflow-hidden bg-background">
-      <div className="absolute right-2 top-2 z-10">
-        <PdfSurfaceSwitcher
-          current="rag-library"
-          fileId={document.source_id}
-          size="icon"
-        />
-      </div>
-      <PdfPreview fileId={document.source_id} />
+      <PdfPreview
+        fileId={document.source_id}
+        pageNumber={activePageIndex + 1}
+        onPageChange={(page) => onActivePageChange(page - 1)}
+        toolbarEnd={
+          <PdfSurfaceSwitcher
+            current="rag-library"
+            fileId={document.source_id}
+            size="icon"
+          />
+        }
+      />
     </div>
   );
 }

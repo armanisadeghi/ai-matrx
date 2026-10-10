@@ -83,17 +83,14 @@ import { useExtractionResults } from "@/features/page-extraction/hooks/useExtrac
 import { useExtractionResultsForFile } from "@/features/page-extraction/hooks/useExtractionResultsForFile";
 import { downloadFile } from "@ai-matrx/kit/download";
 
-// Shared renderer used by PdfCldFileViewer below.
+// THE canonical cld_files PDF view (source auth, retry, missing-source panel,
+// renderer). PdfCldFileViewer below is a named host adapter, never a second
+// wrapper: it used to re-implement PdfPreview and dropped `withCredentials`.
 // react-pdf + pdfjs-dist is ~400KB; defer until the viewer mounts.
-const PdfDocumentRenderer = dynamic(
-  () =>
-    import("@/features/files/components/core/FilePreview/previewers/PdfDocumentRenderer"),
+const PdfPreview = dynamic(
+  () => import("@/features/pdf/components/viewer/PdfPreview"),
   { ssr: false, loading: () => <PdfPaneLoading /> },
 );
-
-// Lightweight graceful state when the cld_files source has been removed
-// (deleted / trashed). Static import — it's a tiny presentational panel.
-import PdfSourceUnavailable from "@/features/pdf/components/viewer/PdfSourceUnavailable";
 
 function PdfPaneLoading() {
   return (
@@ -118,49 +115,27 @@ export function PdfCldFileViewer({
   fileName,
   pageNumber,
   onPageChange,
+  pageNav,
 }: {
   fileId: string;
   fileName?: string | null;
   pageNumber?: number;
   onPageChange?: (page: number) => void;
+  /** `false` when the host renders its own pager (phone bottom bar). */
+  pageNav?: boolean;
 }) {
-  const {
-    remoteUrl,
-    headers,
-    loading,
-    error,
-    sourceMissing,
-    bytesLoaded,
-    bytesTotal,
-    retry,
-  } = usePdfRemoteSource(fileId);
-  if (sourceMissing) {
-    return (
-      <PdfSourceUnavailable
-        fileName={fileName ?? null}
-        hint="The extracted text and pages on the right are still available."
-        className="border-0"
-      />
-    );
-  }
   return (
-    <PdfDocumentRenderer
-      remoteUrl={remoteUrl}
-      remoteHeaders={headers}
+    <PdfPreview
+      fileId={fileId}
       fileName={fileName ?? null}
-      loading={loading}
-      error={error}
-      onRetry={retry}
-      bytesLoaded={bytesLoaded}
-      bytesTotal={bytesTotal}
+      unavailableHint="The extracted text and pages on the right are still available."
       pageNumber={pageNumber}
       onPageChange={onPageChange}
-      className="border-0"
+      pageNav={pageNav}
     />
   );
 }
 import { cn } from "@/lib/utils";
-import { usePdfRemoteSource } from "@/features/files/hooks/usePdfRemoteSource";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import { ExtractionsPane } from "@/features/page-extraction/components/ExtractionsPane";
