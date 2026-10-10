@@ -1,6 +1,6 @@
 -- target: branch,production
 -- additive: yes
--- guard: access/confidential_hides_structure
+-- guard: custom/system_enabled
 -- lane: CONF-STRUCTURE
 -- lock: custom
 -- based-on: custom.applicable_fields(uuid, uuid, text) 42364cea39d5ae8973b822caab47891f4bea65ff586b3fbe0ae46344385374a2

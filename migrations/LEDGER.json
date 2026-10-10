@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T05:14:38.670Z",
+  "generated_at": "2026-10-10T05:26:46.055Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1261,6 +1261,12 @@
       "filename": "confstructure_a_the_hide_structure_knob.sql",
       "checksum": "f3670f06efb9a26a2f1d3e98bfb6bdbd757b7582cc12a2a0a7e6a18368fb50f6",
       "applied_at": "2026-10-10 05:10:03.925787+00"
+    },
+    "migrations/campaign/confstructure_b_a_confidential_table_hides_its_columns_from_those_who_cannot_read_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "confstructure_b_a_confidential_table_hides_its_columns_from_those_who_cannot_read_it.sql",
+      "checksum": "5e952626e12ec58c5329e7c20b0d888bf608746543ac4ee6aeaac304d44ef4a9",
+      "applied_at": "2026-10-10 05:26:43.242902+00"
     },
     "migrations/campaign/contextfields_agent_context_has_a_knob.sql": {
       "source": "matrx-frontend",
