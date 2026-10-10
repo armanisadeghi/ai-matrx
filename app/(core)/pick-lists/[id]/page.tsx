@@ -7,13 +7,14 @@ import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { UserListWithItems } from "@/features/data-tables/pick-lists/types";
+import { readPickList } from "@/features/data-tables/pick-lists/doors";
 import { StoreListPage } from "./StoreListPage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Per-list route — the canonical deep link for a pick list (`/pick-lists/<id>`), the
  * target of every Pick lists row and New pick list. Every list lives in the record
- * store as a Table of choices under the same id; `get_user_list_with_items`
+ * store as a Table of choices under the same id; `custom.pick_list_get`
  * answers it from there, and the page opens it as the store's table page.
  */
 
@@ -29,13 +30,8 @@ const loadList = cache(
         data: { user },
       } = await getClaimsUser(supabase);
       if (!user) return null;
-      const { data, error } = await supabase.rpc("get_user_list_with_items", {
-        p_list_id: listId,
-      });
-      if (error || !data) return null;
-      // get_user_list_with_items returns Json directly (no row schema in
-      // database.types.ts to guard against) — this is the sanctioned
-      // Json-direct RPC cast per the type-safety skill's supabase-patterns.
+      const data = await readPickList(supabase, listId);
+      if (!data) return null;
       return data as unknown as UserListWithItems;
     } catch {
       return null;

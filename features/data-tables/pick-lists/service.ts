@@ -16,6 +16,7 @@ import type {
   StructuredListForSelection,
 } from "./types";
 import { accessiblePickLists } from "./where-lists-live";
+import { readPickList, readPickListForSelection, rewritePickList } from "./doors";
 import { VersionLedger, updateRecordAt } from "@/lib/records/record-versions";
 
 /**
@@ -50,11 +51,11 @@ export async function getListWithItems(
 
 /** The list as stored, WITHOUT reading its choices' versions (the write path's own lookup). */
 async function readListWithItems(listId: string): Promise<UserListWithItems | null> {
-  const { data, error } = await supabase.rpc("get_user_list_with_items", {
-    p_list_id: listId,
-  });
-  if (error) throw new Error(`Failed to load list: ${error.message}`);
-  return (data as unknown as UserListWithItems) ?? null;
+  try {
+    return (await readPickList(supabase, listId)) as unknown as UserListWithItems | null;
+  } catch (e) {
+    throw new Error(`Failed to load list: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 async function currentUserId(): Promise<string | null> {
@@ -73,18 +74,18 @@ function clientFor(organizationId: string, userId: string | null): RecordsClient
 /**
  * Label-only read path for CONSUMERS (chat / Applets / widgets). Returns
  * labels / help_text / groups / icons but NEVER the secret item `description`.
- * Backed by the get_pick_list_for_selection RPC (SECURITY DEFINER) so it
+ * Backed by the `custom.pick_list_for_selection` door (SECURITY DEFINER) so it
  * works even for a private list bound to an agent the caller is running. Use this
  * — never getListWithItems — anywhere a non-owner can see the result.
  */
 export async function getPickListForSelection(
   listId: string,
 ): Promise<StructuredListForSelection | null> {
-  const { data, error } = await supabase.rpc("get_pick_list_for_selection", {
-    p_list_id: listId,
-  });
-  if (error) throw new Error(`Failed to load pick list: ${error.message}`);
-  return (data as unknown as StructuredListForSelection) ?? null;
+  try {
+    return (await readPickListForSelection(supabase, listId)) as unknown as StructuredListForSelection | null;
+  } catch (e) {
+    throw new Error(`Failed to load pick list: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 // ─── Create ────────────────────────────────────────────────────────────────────
@@ -115,18 +116,18 @@ export async function createList(input: CreateListInput) {
 
 // ─── Update ────────────────────────────────────────────────────────────────────
 
-/** Rename / re-describe a list (and, with `p_items`, rewrite its choices) through `update_user_list`. */
+/** Rename / re-describe a list (and, with `p_items`, rewrite its choices) through the `custom.pick_list_update` door. */
 export async function updateList(input: UpdateListInput) {
-  const { data, error } = await supabase.rpc("update_user_list", {
-    p_list_id: input.p_list_id,
-    p_list_name: input.p_list_name,
-    p_description: input.p_description,
-    p_is_public: input.p_is_public,
-    p_public_read: input.p_public_read,
-    p_items: input.p_items !== undefined ? input.p_items : null,
-  });
-  if (error) throw new Error(`Failed to update list: ${error.message}`);
-  return data;
+  try {
+    return await rewritePickList(supabase, {
+      listId: input.p_list_id,
+      name: input.p_list_name,
+      description: input.p_description,
+      items: input.p_items !== undefined ? (input.p_items as unknown as Record<string, unknown>[] | null) : null,
+    });
+  } catch (e) {
+    throw new Error(`Failed to update list: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 // ─── Choices (Records of the list's Table) ────────────────────────────────────
