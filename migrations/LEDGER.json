@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T11:24:16.980Z",
+  "generated_at": "2026-10-10T15:50:43.245Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1501,6 +1501,12 @@
       "filename": "datadefects4_a3_a_restore_call_keeps_well_under_the_door_limit.sql",
       "checksum": "d8821561f1d24ad69733a7031a5a3805541708c56b1b69a2641e238be22948b1",
       "applied_at": "2026-10-10 11:24:14.940162+00"
+    },
+    "migrations/campaign/datadefects4_a4_a_single_record_restore_counts_the_record_itself.sql": {
+      "source": "matrx-frontend",
+      "filename": "datadefects4_a4_a_single_record_restore_counts_the_record_itself.sql",
+      "checksum": "7096062b6742c151e6837c735bc4fbe564f5de3f08e47a26ff3bc51dd8f21031",
+      "applied_at": "2026-10-10 15:50:41.048748+00"
     },
     "migrations/campaign/datadefects4_a_a_table_comes_back_in_set_based_steps_and_says_how_much_is_left.sql": {
       "source": "matrx-frontend",
