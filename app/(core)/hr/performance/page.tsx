@@ -1,22 +1,24 @@
-// `/hr/performance` — the HR manager's 360 reviews (lane HR-360). Started from an employee's HR profile.
+// `/hr/performance` — the STANDARD performance review: my reviews, the reviews I write, and (for an
+// HR seat) the employer's review cycles. The 360 review is a separate trial at `/hr/performance/360`.
 
 import { Suspense } from "react";
 
-import { Review360ListPage } from "@/features/employee-performance-reviews/review-360/Review360Pages";
+import { StandardHome } from "@/features/employee-performance-reviews/standard/StandardHome";
+import { HrLoading } from "@/features/hr/shared/HrStates";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/hr/performance", {
   title: "Performance",
-  description: "360 reviews and their outcomes.",
+  description: "Performance reviews: yours, and your team's.",
 });
 
 export default function HrPerformancePage() {
   return (
     <>
-      <RecordPageHeader backHref="/hr" parents={[{ label: "HR", href: "/hr" }]} record={{ name: "360 reviews" }} />
-      <Suspense fallback={<div className="h-full animate-pulse bg-card/40" aria-label="Loading 360 reviews" />}>
-        <Review360ListPage />
+      <RecordPageHeader backHref="/hr" parents={[{ label: "HR", href: "/hr" }]} record={{ name: "Performance" }} />
+      <Suspense fallback={<HrLoading variant="table" rows={5} />}>
+        <StandardHome />
       </Suspense>
     </>
   );

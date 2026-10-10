@@ -230,7 +230,7 @@ function LaunchPanel({ cycleId, organizationId, onLaunched }: { cycleId: string;
           aria-label="Who to add"
           value={mode}
           onValueChange={setMode}
-          options={[
+          data={[
             { value: "manager", label: "A manager's team" },
             { value: "department", label: "A department" },
             { value: "people", label: "Named people" },

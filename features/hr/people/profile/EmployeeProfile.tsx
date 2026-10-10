@@ -43,6 +43,7 @@ import {
   isHostedTab,
 } from "./tabs/SimpleTabs";
 import { CustomTab } from "./tabs/CustomTab";
+import { ProfileReviewsSection } from "@/features/employee-performance-reviews/standard/ProfileReviewsSection";
 import { StartReview360Button } from "@/features/employee-performance-reviews/review-360/StartReview360Button";
 import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
@@ -277,6 +278,14 @@ function TabBody({
   if (tab === "documents") return <DocumentsTab org={org} />;
   if (tab === "notes") return <NotesTab profile={profile} />;
   if (tab === "relations") return <RelationsTab profile={profile} org={org} />;
+  if (tab === "performance") {
+    return (
+      <ProfileReviewsSection
+        employmentId={profile.header.employment_id}
+        org={org}
+      />
+    );
+  }
   if (isHostedTab(tab)) return <HostedTab segment={tab} profile={profile} />;
   // Custom tabs render at the END of the bar and go through the marked adapter.
   if (tab.startsWith("c/")) {

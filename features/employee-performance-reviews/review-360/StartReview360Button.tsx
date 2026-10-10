@@ -59,7 +59,7 @@ function StartButton({ profile }: { profile: HrEmployeeProfile }) {
       });
       if (!started.ok) throw new Error(started.message);
       toast.success("360 review started");
-      router.push(`/hr/performance?org=${profile.organization_id}`);
+      router.push(`/hr/performance/360?org=${profile.organization_id}`);
     } catch (thrown) {
       toast.error(thrown instanceof Error ? thrown.message : String(thrown));
     } finally {

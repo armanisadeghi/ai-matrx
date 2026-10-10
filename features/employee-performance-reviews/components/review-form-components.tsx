@@ -85,6 +85,9 @@ export function Field({
   );
 }
 
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five"];
+const numberWord = (n: number) => NUMBER_WORDS[n] ?? String(n);
+
 // ── Add-one-at-a-time list editor ────────────────────────────────────────────
 export function ListEditor({
   items,
@@ -95,7 +98,10 @@ export function ListEditor({
   onMove,
   surfaceName,
   getApplicationScope,
+  maxItems = MAX_LIST_ITEMS,
 }: {
+  /** The most items this list takes. The demo's five by default; a template question names its own. */
+  maxItems?: number;
   items: string[];
   placeholder: string;
   onAdd: (text: string) => void;
@@ -110,7 +116,7 @@ export function ListEditor({
   const [editingText, setEditingText] = useState("");
 
   const commitAdd = () => {
-    if (!draft.trim() || items.length >= MAX_LIST_ITEMS) return;
+    if (!draft.trim() || items.length >= maxItems) return;
     onAdd(draft);
     setDraft("");
   };
@@ -148,17 +154,17 @@ export function ListEditor({
           variant="primary"
           type="button"
           onClick={commitAdd}
-          disabled={items.length >= MAX_LIST_ITEMS}
+          disabled={items.length >= maxItems}
           className="flex-none"
         >
-          {items.length >= MAX_LIST_ITEMS ? "Limit reached" : "Add"}
+          {items.length >= maxItems ? "Limit reached" : "Add"}
         </Button>
       </div>
 
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>Add up to five items.</span>
+        <span>Add up to {numberWord(maxItems)} items.</span>
         <span className="tabular-nums">
-          {items.length} / {MAX_LIST_ITEMS}
+          {items.length} / {maxItems}
         </span>
       </div>
 

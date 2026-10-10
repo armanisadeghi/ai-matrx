@@ -12,8 +12,8 @@ export default async function HrPerformanceReviewPage({ params }: { params: Prom
   return (
     <>
       <RecordPageHeader
-        backHref="/hr/performance"
-        parents={[{ label: "HR", href: "/hr" }, { label: "360 reviews", href: "/hr/performance" }]}
+        backHref="/hr/performance/360"
+        parents={[{ label: "HR", href: "/hr" }, { label: "360 review (trial)", href: "/hr/performance/360" }]}
         record={{ name: "360 review" }}
       />
       <Suspense fallback={<div className="h-full animate-pulse bg-card/40" aria-label="Loading the review" />}>

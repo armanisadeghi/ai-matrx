@@ -421,6 +421,18 @@ export function hrTrainingHref(org: HrOrgRef): string {
 export function hrPerformanceHref(org: HrOrgRef): string {
   return hrUrl("/hr/performance", org);
 }
+/** The standard performance review: one cycle (HR). */
+export function hrPerformanceCycleHref(cycleId: string, org: HrOrgRef): string {
+  return hrUrl(`/hr/performance/cycles/${encodeURIComponent(cycleId)}`, org);
+}
+/** The standard performance review: one review's workspace. */
+export function hrPerformanceReviewHref(reviewId: string, org: HrOrgRef): string {
+  return hrUrl(`/hr/performance/reviews/${encodeURIComponent(reviewId)}`, org);
+}
+/** The 360 review trial's list (a separate process from the standard review). */
+export function hrPerformance360Href(org: HrOrgRef): string {
+  return hrUrl("/hr/performance/360", org);
+}
 export function hrAssetsHref(org: HrOrgRef): string {
   return hrUrl("/hr/assets", org);
 }

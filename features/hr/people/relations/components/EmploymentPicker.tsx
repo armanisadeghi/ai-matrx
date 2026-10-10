@@ -37,6 +37,7 @@ export function EmploymentPicker({
   value,
   onChange,
   onChangeSubject,
+  onChosen,
   disabled,
   placeholder = "Search by name or employee number",
 }: {
@@ -66,6 +67,11 @@ export function EmploymentPicker({
   onChangeSubject?: (
     value: { employmentId: string | null; employeeId: string | null },
   ) => void;
+  /**
+   * Called with the chosen spell AND the person's name, for a caller that keeps a list of
+   * people (the review cycle's named people) and must show who each entry is.
+   */
+  onChosen?: (person: { employmentId: string; name: string }) => void;
   disabled?: boolean;
   placeholder?: string;
 }) {
@@ -170,6 +176,7 @@ export function EmploymentPicker({
                 onClick={() => {
                   if (!row.employment_id && !onChangeSubject) return;
                   setChosen(row);
+                  if (row.employment_id) onChosen?.({ employmentId: row.employment_id, name: row.display_name });
                   if (onChangeSubject) {
                     onChangeSubject({
                       employmentId: row.employment_id ?? null,

@@ -55,6 +55,7 @@ import {
   hrMeTrainingHref,
   hrOnboardingHref,
   hrPeopleHref,
+  hrPerformance360Href,
   hrPerformanceHref,
   hrReportsHref,
   hrScheduleHref,
@@ -275,6 +276,17 @@ const NAV: HrNavDef[] = [
     icon: Target,
     description: "Reviews — yours, and your team's",
     href: hrPerformanceHref,
+    requires: ["working_record.read"],
+    // The standard review is for everyone: an employee opens their own reviews here.
+    self: { label: "My Reviews", href: hrPerformanceHref, needsEmployment: true },
+  },
+  {
+    // The 360 review is a separate trial process. It sits beside Performance and is never its default.
+    key: "performance-360",
+    label: "360 review (trial)",
+    icon: Target,
+    description: "The 360 review trial, separate from the standard review",
+    href: hrPerformance360Href,
     requires: ["working_record.read"],
   },
   {
