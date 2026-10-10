@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1395,
+  "routeCount": 1400,
   "routes": [
     {
       "pattern": "/",
@@ -482,6 +482,11 @@
       "pattern": "/administration/automation/scheduling/scanner-health",
       "status": "live",
       "source": "app/(admin)/administration/automation/scheduling/scanner-health/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/scheduling/support",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/scheduling/support/page.tsx"
     },
     {
       "pattern": "/administration/automation/scheduling/system-jobs",
@@ -3422,9 +3427,29 @@
       "source": "app/(core)/hr/performance/[reviewId]/meeting/page.tsx"
     },
     {
+      "pattern": "/hr/performance/360",
+      "status": "live",
+      "source": "app/(core)/hr/performance/360/page.tsx"
+    },
+    {
+      "pattern": "/hr/performance/cycles/[cycleId]",
+      "status": "live",
+      "source": "app/(core)/hr/performance/cycles/[cycleId]/page.tsx"
+    },
+    {
+      "pattern": "/hr/performance/goals",
+      "status": "live",
+      "source": "app/(core)/hr/performance/goals/page.tsx"
+    },
+    {
       "pattern": "/hr/performance/respond/[trackId]",
       "status": "live",
       "source": "app/(core)/hr/performance/respond/[trackId]/page.tsx"
+    },
+    {
+      "pattern": "/hr/performance/reviews/[reviewId]",
+      "status": "live",
+      "source": "app/(core)/hr/performance/reviews/[reviewId]/page.tsx"
     },
     {
       "pattern": "/hr/reports",
@@ -3517,6 +3542,11 @@
       "pattern": "/hr/settings/retention",
       "status": "live",
       "source": "app/(core)/hr/settings/retention/page.tsx"
+    },
+    {
+      "pattern": "/hr/settings/review-templates",
+      "status": "live",
+      "source": "app/(core)/hr/settings/review-templates/page.tsx"
     },
     {
       "pattern": "/hr/settings/schedule-rules",

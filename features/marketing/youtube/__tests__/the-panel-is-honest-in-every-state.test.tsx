@@ -321,7 +321,8 @@ describe("no channel is bound", () => {
       expect(m.text).toContain("No YouTube channel is bound");
       expect(m.text).toContain("All Green Recycling");
       expect(m.text).toContain("@allgreen");
-      expect(m.text).toContain("owner@allgreen.com");
+      // The row names the channel and its handle, never the connected account's email.
+      expect(m.text).not.toContain("owner@allgreen.com");
     } finally {
       m.unmount();
     }
@@ -363,7 +364,7 @@ describe("no channel is bound", () => {
       // does not — never nothing, and never a guess.
       expect(m.text).toContain("@armansadeghi");
       expect(m.text).toContain(OTHER_CHANNEL_ID);
-      expect(m.text).toContain("maria.delgado@rinconplumbing.test");
+      expect(m.text).not.toContain("maria.delgado@rinconplumbing.test");
     } finally {
       m.unmount();
     }
@@ -395,8 +396,8 @@ describe("no channel is bound", () => {
       expect(
         m.container.querySelectorAll("[aria-label^='Bind ']"),
       ).toHaveLength(1);
-      expect(m.text).toContain("also visible through second@example.com");
-      expect(m.text).toContain("first@example.com");
+      expect(m.text).not.toContain("second@example.com");
+      expect(m.text).not.toContain("first@example.com");
     } finally {
       m.unmount();
     }
@@ -459,11 +460,10 @@ describe("no channel is bound", () => {
       await settle();
       expect(confirmCalls).toHaveLength(1);
       const description = String(confirmCalls[0].description ?? "");
-      // What the refresh will READ, on WHOSE account, and what it OVERWRITES.
-      expect(description).toContain("owner@allgreen.com");
-      expect(description).toContain("spending a call");
-      expect(description).toContain("overwrite");
-      expect(description).toContain("read-only");
+      // What it does to the stored numbers, and that YouTube is untouched; no account email.
+      expect(description).not.toContain("owner@allgreen.com");
+      expect(description).toContain("replace");
+      expect(description).toContain("Nothing is changed on YouTube");
       // Declined — the binding writer was never called.
       expect(writeBrandChannelBinding).not.toHaveBeenCalled();
     } finally {
@@ -505,9 +505,8 @@ describe("bound, but nothing has ever been synced", () => {
   it("says nothing has been synced and names the only thing that fills it", async () => {
     const m = await mount();
     try {
-      expect(m.text).toContain("Nothing has been synced for this channel yet");
-      expect(m.text).toContain("no schedule");
-      expect(m.text).toContain("No videos have been mirrored");
+      expect(m.text).toContain("No analytics yet. Refresh to load them.");
+      expect(m.text).toContain("No videos yet. Refresh to load them.");
       // 🚨 NOT a zero anywhere: an empty channel is not a channel with 0 views.
       expect(m.text).not.toMatch(/Views · last 30 days/);
     } finally {
@@ -607,7 +606,7 @@ describe("bound, with two windows collected alike", () => {
     const m = await mount();
     try {
       expect(m.text).toContain("Average view duration");
-      expect(m.text).toContain("average of each day");
+      expect(m.text).not.toContain("average of each day");
     } finally {
       m.unmount();
     }
@@ -688,7 +687,7 @@ describe("the analytics rollout gate", () => {
       // 🚨 THE PREVIEW IS A DIFFERENT CAPABILITY AND IS `approved`: the videos
       // still render. Hiding them would hide a working half behind another
       // half's gate.
-      expect(m.text).toContain("The videos below do not depend on it");
+      // The ungated half (the videos) still renders.
       expect(m.container.querySelector('[data-door="entity-ref"]')).not.toBeNull();
     } finally {
       m.unmount();
@@ -725,8 +724,7 @@ describe("the per-video lane", () => {
       });
       await settle();
       const text = m.container.textContent ?? "";
-      expect(text).toContain("Per-video days are not collected yet");
-      expect(text).toContain("not zero views");
+      expect(text).toContain("Per-video analytics are not available yet");
     } finally {
       m.unmount();
     }

@@ -20,6 +20,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { closeAllInstancesOfOverlay, selectOpenInstances } from "@/lib/redux/slices/overlaySlice";
 import { toast } from "@/lib/toast";
 
 import { useInvalidateSocial } from "../hooks";
@@ -64,6 +66,14 @@ export function TrackAccountDialog({
   initialText?: string;
 }) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  // A dialog is the one thing in front. On a phone a post panel is a full sheet that would sit over it, so it closes.
+  const openPosts = useAppSelector((state) => selectOpenInstances(state, "socialPostWindow")).length;
+  useEffect(() => {
+    if (open && openPosts > 0 && typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+      dispatch(closeAllInstancesOfOverlay({ overlayId: "socialPostWindow" }));
+    }
+  }, [open, openPosts, dispatch]);
   const invalidate = useInvalidateSocial();
   const { costText } = useSocialSpend(organizationId);
   const input = useSocialAccountInput({ initialText, organizationId });

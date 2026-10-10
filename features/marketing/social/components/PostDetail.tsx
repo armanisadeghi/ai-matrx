@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { KpiTile } from "@/components/official/kpi/KpiTile";
+import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
 import { cn } from "@/lib/utils";
@@ -53,6 +53,7 @@ import {
 import {
   POST_METRIC_LABELS,
   availableMetrics,
+  formatDay,
   formatDuration,
   outlierInputFrom,
   postMetricSeries,
@@ -102,6 +103,11 @@ export type PostHost = "window" | "canvas" | "page";
 // Tabs
 // ---------------------------------------------------------------------------
 
+/** The points a button will use, named under it even when small. */
+function CostLine({ text }: { text: string | null }) {
+  return text ? <p className="text-xs tabular-nums text-muted-foreground">{text}</p> : null;
+}
+
 function LabelRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-2 border-b border-border py-1.5 text-xs">
@@ -114,6 +120,7 @@ function LabelRow({ label, children }: { label: string; children: React.ReactNod
 function TranscriptTab({ postId, organizationId }: { postId: string; organizationId: string }) {
   const transcript = usePostTranscript(postId);
   const client = useQueryClient();
+  const { pointsText } = useSocialSpend(organizationId);
   const [busy, setBusy] = useState(false);
 
   async function fetchIt() {
@@ -121,7 +128,9 @@ function TranscriptTab({ postId, organizationId }: { postId: string; organizatio
     setBusy(true);
     try {
       const outcome = await getTranscript(postId, { organizationId });
-      await client.invalidateQueries({ queryKey: socialKeys.transcript(postId) });
+      await client.invalidateQueries({
+        queryKey: socialKeys.transcript(postId),
+      });
       if (outcome.status === "none") toast.message("No speech found in this post");
     } catch (err) {
       toast.error(socialErrorMessage(err, "Couldn't get the transcript"));
@@ -139,6 +148,7 @@ function TranscriptTab({ postId, organizationId }: { postId: string; organizatio
         <Button variant="outline" onClick={() => void fetchIt()} disabled={busy}>
           {busy ? "Transcribing…" : "Get transcript"}
         </Button>
+        <CostLine text={pointsText("transcript")} />
       </div>
     );
   }
@@ -150,7 +160,9 @@ function TranscriptBody({ text, language, wordCount }: { text: string; language:
   const paragraphs = useMemo(() => parseTranscript(text), [text]);
   const hasTimes = paragraphs.some((p) => p.start !== null);
   const words = wordCount && wordCount > 0 ? wordCount : wordCountOf(paragraphs);
-  const meta = [languageName(language), words > 0 ? `${words.toLocaleString()} words` : null].filter(Boolean).join(" · ");
+  const meta = [languageName(language), words > 0 ? `${words.toLocaleString()} words` : null]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <div className="flex flex-col gap-2">
       <div className="flex min-h-7 items-center justify-between gap-2 text-[11px] text-muted-foreground">
@@ -163,7 +175,9 @@ function TranscriptBody({ text, language, wordCount }: { text: string; language:
           ) : null}
           <Button
             variant="quiet"
-            onClick={() => void navigator.clipboard.writeText(plainTranscript(paragraphs)).then(() => toast.success("Copied"))}
+            onClick={() =>
+              void navigator.clipboard.writeText(plainTranscript(paragraphs)).then(() => toast.success("Copied"))
+            }
           >
             Copy
           </Button>
@@ -201,6 +215,28 @@ function MetricsTab({
   if (snapshots.isLoading) return <RegionSkeleton shape="rows" count={3} />;
   const rows = snapshots.data ?? [];
   const metrics = availableMetrics(rows);
+  // A line needs two readings. Until then the figures stand as tiles, not a chart of one dot.
+  if (rows.length < 2) {
+    const first = rows.length ? Math.min(...rows.map((r) => Date.parse(r.observed_at))) : null;
+    return (
+      <div className="flex flex-col gap-1.5">
+        <KpiGrid className="sm:grid-cols-3 lg:grid-cols-3">
+          {metrics.map((m) => {
+            const latest = postMetricSeries(rows, m).at(-1);
+            return (
+              <KpiTile key={m} label={POST_METRIC_LABELS[m]} value={latest ? latest.value.toLocaleString() : null} />
+            );
+          })}
+          <KpiTile
+            label="Velocity 24h"
+            value={velocity === null ? null : formatCompact(velocity)}
+            title="Views gained in the first 24 hours after posting."
+          />
+        </KpiGrid>
+        {first ? <p className="text-xs text-muted-foreground">{`Tracking since ${formatDay(first)}`}</p> : null}
+      </div>
+    );
+  }
   const active = metrics.includes(metric) ? metric : (metrics[0] ?? "views");
   const points = postMetricSeries(rows, active);
   return (
@@ -211,7 +247,10 @@ function MetricsTab({
             aria-label="Metric"
             value={active}
             onValueChange={setMetric}
-            data={metrics.map((m) => ({ value: m, label: POST_METRIC_LABELS[m] }))}
+            data={metrics.map((m) => ({
+              value: m,
+              label: POST_METRIC_LABELS[m],
+            }))}
           />
         ) : (
           <span className="text-xs text-muted-foreground">{POST_METRIC_LABELS[active]}</span>
@@ -233,7 +272,58 @@ function MetricsTab({
         baseline={active === "views" ? baselineViews : null}
         sinceMs={postedAt ? Date.parse(postedAt) : null}
       />
-      <KpiTile label="Velocity 24h" value={velocity === null ? null : formatCompact(velocity)} title="Views gained in the first 24 hours after posting." />
+      <KpiTile
+        label="Velocity 24h"
+        value={velocity === null ? null : formatCompact(velocity)}
+        title="Views gained in the first 24 hours after posting."
+      />
+    </div>
+  );
+}
+
+function CaptionBlock({
+  caption,
+  hashtags,
+  expanded,
+  setExpanded,
+}: {
+  caption: string;
+  hashtags: readonly string[];
+  expanded: boolean;
+  setExpanded: (v: boolean | ((prev: boolean) => boolean)) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      {caption ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className={cn("text-left text-sm leading-snug text-foreground", !expanded && "line-clamp-5")}
+          aria-expanded={expanded}
+        >
+          {caption}
+        </button>
+      ) : (
+        <p className="text-xs text-muted-foreground">No caption.</p>
+      )}
+      {hashtags.length ? (
+        <div className="flex flex-wrap gap-1">
+          {hashtags.slice(0, expanded ? hashtags.length : 12).map((h) => (
+            <span key={h} className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+              {`#${h}`}
+            </span>
+          ))}
+          {!expanded && hashtags.length > 12 ? (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="rounded-full px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              {`+${hashtags.length - 12}`}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -267,7 +357,9 @@ function BreakdownTab({ postId, organizationId }: { postId: string; organization
     setState("idle");
     try {
       await analyzePost(postId, { organizationId });
-      await client.invalidateQueries({ queryKey: socialKeys.analysis(organizationId, postId) });
+      await client.invalidateQueries({
+        queryKey: socialKeys.analysis(organizationId, postId),
+      });
     } catch (err) {
       setFailure(err);
       setState(socialErrorCode(err) === "social_agent_not_built" ? "unavailable" : "failed");
@@ -293,6 +385,7 @@ function BreakdownTab({ postId, organizationId }: { postId: string; organization
           <Button variant="outline" onClick={() => void run()} disabled={busy}>
             {busy ? "Analyzing…" : "Run breakdown"}
           </Button>
+          <CostLine text="Uses AI, billed in points" />
         </>
       )}
       {state === "failed" ? (
@@ -318,7 +411,6 @@ function Stat({ label, value, sub, title }: { label: string; value: React.ReactN
     </div>
   );
 }
-
 
 /**
  * Publishes the post this body shows as the agent surface `matrx-user/social-post` (the same values and
@@ -355,22 +447,30 @@ function PostAgentSurface({
     },
   });
   const values = createSocialPostScope(postScopeValues(kind));
-  useSurfaceRuntimeRegistration({ surfaceName: SOCIAL_POST_SURFACE_NAME, getScope: () => values, isEditable: false });
-  useSurfaceClientTools(SOCIAL_POST_SURFACE_NAME, {
-    [SOCIAL_POST_CLIENT_TOOLS.getTranscript]: () => actions.transcript(),
-    [SOCIAL_POST_CLIENT_TOOLS.breakdown]: () => actions.breakdown(),
-    [SOCIAL_POST_CLIENT_TOOLS.saveToSwipe]: () => actions.saveToSwipe(),
-    [SOCIAL_POST_CLIENT_TOOLS.openDetail]: () => {
-      actions.openDetail();
-      return host === "page" ? "Already on the post's full page." : "Opened the post's full page.";
-    },
-  }, {
-    // Named on the approval card before an agent spends: the transcript's points, and the breakdown's AI run.
-    costs: {
-      [SOCIAL_POST_CLIENT_TOOLS.getTranscript]: () => agentCostText("transcript"),
-      [SOCIAL_POST_CLIENT_TOOLS.breakdown]: () => "AI usage, billed in points",
-    },
+  useSurfaceRuntimeRegistration({
+    surfaceName: SOCIAL_POST_SURFACE_NAME,
+    getScope: () => values,
+    isEditable: false,
   });
+  useSurfaceClientTools(
+    SOCIAL_POST_SURFACE_NAME,
+    {
+      [SOCIAL_POST_CLIENT_TOOLS.getTranscript]: () => actions.transcript(),
+      [SOCIAL_POST_CLIENT_TOOLS.breakdown]: () => actions.breakdown(),
+      [SOCIAL_POST_CLIENT_TOOLS.saveToSwipe]: () => actions.saveToSwipe(),
+      [SOCIAL_POST_CLIENT_TOOLS.openDetail]: () => {
+        actions.openDetail();
+        return host === "page" ? "Already on the post's full page." : "Opened the post's full page.";
+      },
+    },
+    {
+      // Named on the approval card before an agent spends: the transcript's points, and the breakdown's AI run.
+      costs: {
+        [SOCIAL_POST_CLIENT_TOOLS.getTranscript]: () => agentCostText("transcript"),
+        [SOCIAL_POST_CLIENT_TOOLS.breakdown]: () => "AI usage, billed in points",
+      },
+    },
+  );
   return null;
 }
 
@@ -400,13 +500,16 @@ export function PostDetailBody({
   const detail = usePostDetail(postId);
   const collections = useSwipeCollections(organizationId);
   const client = useQueryClient();
+  const { pointsText } = useSocialSpend(organizationId);
   const [tab, setTab] = useState<DetailTab>(initialTab);
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [ratio, setRatio] = useState<number | null>(null);
 
   const loaded = detail.data;
-  const titleText = loaded ? (loaded.post.title ?? loaded.post.caption ?? "").trim().replace(/\s+/g, " ").slice(0, 60) : "";
+  const titleText = loaded
+    ? (loaded.post.title ?? loaded.post.caption ?? "").trim().replace(/\s+/g, " ").slice(0, 60)
+    : "";
   useEffect(() => {
     if (onTitle && loaded) onTitle(titleText || "Post");
   }, [onTitle, loaded, titleText]);
@@ -417,7 +520,9 @@ export function PostDetailBody({
       let id = collectionId;
       if (!id) id = (await createCollection({ name: "Saved" }, { organizationId })).collection_id;
       await addToCollection(id, { itemType: "social_post", itemId: postId }, { organizationId });
-      await client.invalidateQueries({ queryKey: socialKeys.collections(organizationId) });
+      await client.invalidateQueries({
+        queryKey: socialKeys.collections(organizationId),
+      });
       toast.success("Saved to swipe file");
     } catch (err) {
       toast.error(socialErrorMessage(err, "Couldn't save the post"));
@@ -498,7 +603,9 @@ export function PostDetailBody({
         icon={<RefreshCw />}
         disabled={busy}
         onClick={() => void refreshMetrics(post.url)}
-        title={`Refresh numbers · updated ${relativeAge(post.last_refreshed_at)}`}
+        title={[`Refresh numbers · updated ${relativeAge(post.last_refreshed_at)}`, pointsText("post")]
+          .filter(Boolean)
+          .join(" · ")}
         aria-label="Refresh numbers"
       />
       {host === "canvas" && onSwitchHost ? (
@@ -516,7 +623,13 @@ export function PostDetailBody({
         host === "page" ? "" : "h-full overflow-y-auto @[34rem]:overflow-hidden",
       )}
     >
-      <PostAgentSurface data={detail.data} postId={postId} organizationId={organizationId} brandSeg={brandSeg} host={host} />
+      <PostAgentSurface
+        data={detail.data}
+        postId={postId}
+        organizationId={organizationId}
+        brandSeg={brandSeg}
+        host={host}
+      />
       <div
         className={cn(
           "grid gap-3 p-3",
@@ -525,7 +638,9 @@ export function PostDetailBody({
         )}
       >
         <div className="flex min-w-0 flex-col gap-2 @[34rem]:min-h-0">
-          <div className={cn("w-full", portrait ? "mx-auto max-w-[14.5rem]" : "mx-auto max-w-[26rem] @[44rem]:max-w-none")}>
+          <div
+            className={cn("w-full", portrait ? "mx-auto max-w-[14.5rem]" : "mx-auto max-w-[26rem] @[44rem]:max-w-none")}
+          >
             <PostMedia
               key={postId}
               postId={postId}
@@ -541,9 +656,19 @@ export function PostDetailBody({
             />
           </div>
           {actions}
+          {host !== "page" && tab !== "overview" && (caption || hashtags.length) ? (
+            <div className="hidden min-h-0 overflow-y-auto border-t border-border pt-2 @[34rem]:block">
+              <CaptionBlock caption={caption} hashtags={hashtags} expanded={expanded} setExpanded={setExpanded} />
+            </div>
+          ) : null}
         </div>
 
-        <div className={cn("@container/info flex min-w-0 flex-col gap-2.5", host !== "page" && "@[34rem]:min-h-0 @[34rem]:overflow-y-auto")}>
+        <div
+          className={cn(
+            "@container/info flex min-w-0 flex-col gap-2.5",
+            host !== "page" && "@[34rem]:min-h-0 @[34rem]:overflow-y-auto",
+          )}
+        >
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
             {profile ? (
               <Link
@@ -551,7 +676,13 @@ export function PostDetailBody({
                 href={`/marketing/${brandSeg}/socials/${profile.platform}/${profile.id}`}
               >
                 <PlatformMark platform={profile.platform} size={16} />
-                <span className="truncate">{formatSocialHandle({ platform: profile.platform, handle: profile.handle, url: profile.profile_url })}</span>
+                <span className="truncate">
+                  {formatSocialHandle({
+                    platform: profile.platform,
+                    handle: profile.handle,
+                    url: profile.profile_url,
+                  })}
+                </span>
               </Link>
             ) : (
               <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -559,7 +690,10 @@ export function PostDetailBody({
                 Unknown creator
               </span>
             )}
-            <span className="text-muted-foreground" title={post.posted_at ? new Date(post.posted_at).toLocaleString() : undefined}>
+            <span
+              className="text-muted-foreground"
+              title={post.posted_at ? new Date(post.posted_at).toLocaleString() : undefined}
+            >
               {[post.posted_at ? relativeAge(post.posted_at) : null, post.format, duration].filter(Boolean).join(" · ")}
             </span>
             <span
@@ -592,34 +726,9 @@ export function PostDetailBody({
 
           {tab === "overview" ? (
             <div className="flex flex-col gap-2">
-              {caption ? (
-                <button
-                  type="button"
-                  onClick={() => setExpanded((v) => !v)}
-                  className={cn("text-left text-sm leading-snug text-foreground", !expanded && "line-clamp-5")}
-                  aria-expanded={expanded}
-                >
-                  {caption}
-                </button>
-              ) : (
-                <p className="text-xs text-muted-foreground">No caption.</p>
-              )}
-              {hashtags.length ? (
-                <div className="flex flex-wrap gap-1">
-                  {hashtags.slice(0, expanded ? hashtags.length : 12).map((h) => (
-                    <span key={h} className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                      {`#${h}`}
-                    </span>
-                  ))}
-                  {!expanded && hashtags.length > 12 ? (
-                    <button type="button" onClick={() => setExpanded(true)} className="rounded-full px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground">
-                      {`+${hashtags.length - 12}`}
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
+              <CaptionBlock caption={caption} hashtags={hashtags} expanded={expanded} setExpanded={setExpanded} />
               <p className="text-[11px] text-muted-foreground">
-                {`${post.posted_at ? `Posted ${new Date(post.posted_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })} · ` : ""}Updated ${relativeAge(post.last_refreshed_at)}`}
+                {`${post.posted_at ? `Posted ${formatDay(post.posted_at)} · ` : ""}Updated ${relativeAge(post.last_refreshed_at)}`}
               </p>
             </div>
           ) : null}

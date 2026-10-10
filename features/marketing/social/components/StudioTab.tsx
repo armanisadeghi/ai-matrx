@@ -22,7 +22,7 @@ import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { toast } from "@/lib/toast";
 
-import { createLinkedBoard, getOrCreateStudioBoard, listStudioBoards } from "../studio/studio-boards";
+import { createLinkedBoard, getOrCreateStudioBoard, listStudioBoards, shortBoardTitle } from "../studio/studio-boards";
 import { addAccountsToStudioBoard, hasProfileTiles } from "../studio/studio-repair";
 import { starterAccountSeeds } from "../board-accounts";
 import { useAccountRows } from "../hooks";
@@ -139,12 +139,12 @@ export function StudioTab() {
       {list.map((b) => (
         <DropdownMenuItem key={b.id} onSelect={() => setPicked(b.id)}>
           <Check className={`mr-2 h-4 w-4 ${b.id === current.id ? "opacity-100" : "opacity-0"}`} />
-          {b.title}
+          {shortBoardTitle(b.title, brandName)}
         </DropdownMenuItem>
       ))}
       <DropdownMenuItem disabled={busy} onSelect={() => void add(`${brandName} board ${list.length + 1}`, false)}>
         <Plus className="mr-2 h-4 w-4" />
-        New {brandName} board
+        New board
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem asChild>

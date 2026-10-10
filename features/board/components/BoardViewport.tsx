@@ -34,13 +34,14 @@ import {
   type Camera,
   cameraFromHash,
   cameraShowsContent,
+  MIN_ZOOM,
   cameraToHash,
   panBy,
   screenToWorld,
   wheelZoomFactor,
   zoomAt,
 } from "../engine/camera";
-import { type Insets, BoardCameraStore } from "../engine/camera-store";
+import { type Insets, BoardCameraStore, PHONE_VIEW_WIDTH } from "../engine/camera-store";
 import { type WheelMode, routeWheel } from "../engine/wheel-input";
 import { isCreationTool, toolForKey } from "../engine/tools";
 import { boardOwnsKey, isTyping } from "../engine/key-target";
@@ -56,6 +57,17 @@ import { claimLoadFocus } from "../engine/claim-load-focus";
 import { beginSnap } from "../engine/snap-gesture";
 import { GRID_SIZE } from "../engine/snapping";
 import { loadSnapSettings, saveSnapSettings } from "../engine/snap-preference";
+
+/** A view smaller than this in either direction is still laying out: the first fit waits. */
+const MIN_FIT_VIEW = 160;
+
+/**
+ * A restored view nobody chose: pinned at the minimum zoom (a fit measured mid-layout and saved), or under 20% on a
+ * phone, where nothing is legible. The first view is opened again instead (`fitOpening`).
+ */
+function cameraIsUnreadable(camera: Camera, size: { w: number }): boolean {
+  return camera.z <= MIN_ZOOM * 1.01 || (size.w < PHONE_VIEW_WIDTH && camera.z < 0.2);
+}
 
 const HASH_THROTTLE_MS = 400;
 /** Screen px kept between a revealed element and the board's edge. */
@@ -184,16 +196,25 @@ export function BoardViewport({
     const fromUrl = cameraFromHash(window.location.hash);
     let fitted = !!fromUrl || !fitOnMount;
     if (fromUrl) store.setCamera(fromUrl);
+    // The first fit waits for the view to hold still: a board mounted in a pane that is still laying out is
+    // measured a few px wide first, and fitting then lands at the minimum zoom (5%) and SAVES it.
     const tryFit = () => {
-      if (!fitted && store.getSize().w > 1 && store.getItems().size > 0) {
+      const { w, h } = store.getSize();
+      if (!fitted && w > MIN_FIT_VIEW && h > MIN_FIT_VIEW && store.getItems().size > 0) {
         fitted = true;
-        store.fitAll();
+        store.fitOpening();
       }
     };
+    let settled: ReturnType<typeof setTimeout> | null = null;
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       store.setSize({ w: width, h: height });
-      tryFit();
+      if (fitted) return;
+      if (settled) clearTimeout(settled);
+      settled = setTimeout(() => {
+        settled = null;
+        tryFit();
+      }, 120);
     });
     ro.observe(root);
     // Tiles register after the first layout: fit when the first ones arrive, not only on a resize.
@@ -219,7 +240,7 @@ export function BoardViewport({
       if (checked || items.length === 0) return;
       if (store.getSize().w <= 1) return settleSoon();
       checked = true;
-      if (store.getCamera() === applied && !cameraShowsContent(applied, store.getSize(), items)) store.fitAll();
+      if (store.getCamera() === applied && (!cameraShowsContent(applied, store.getSize(), items) || cameraIsUnreadable(applied, store.getSize()))) store.fitOpening();
     };
     const settleSoon = () => {
       if (settle) clearTimeout(settle);
@@ -233,6 +254,7 @@ export function BoardViewport({
       offItems();
       offLost();
       if (tick) clearTimeout(tick);
+      if (settled) clearTimeout(settled);
       if (settle) clearTimeout(settle);
     };
   }, [store, fitOnMount]);

@@ -22,7 +22,7 @@ const readAccountRows = jest.fn();
 jest.mock("../service", () => ({ readAccountRows: (...a: unknown[]) => readAccountRows(...a) }));
 
 import { BoardError } from "@/features/board/persistence/boardsService";
-import { getOrCreateStudioBoard, orderStudioBoards } from "../studio/studio-boards";
+import { getOrCreateStudioBoard, orderStudioBoards, shortBoardTitle } from "../studio/studio-boards";
 
 const ARGS = { organizationId: "org", brandId: "brand", title: "Brand Studio" };
 
@@ -101,5 +101,16 @@ describe("the Studio board of a brand", () => {
     const board = await getOrCreateStudioBoard(ARGS);
     expect(board.id).toBe("have");
     expect(makeBoardFromTemplate).not.toHaveBeenCalled();
+  });
+});
+
+describe("shortBoardTitle (the menu under the brand's own name)", () => {
+  it("drops the brand prefix so the name appears once", () => {
+    expect(shortBoardTitle("Blue Bottle Coffee Studio", "Blue Bottle Coffee")).toBe("Studio");
+    expect(shortBoardTitle("Blue Bottle Coffee board 2", "Blue Bottle Coffee")).toBe("Board 2");
+  });
+  it("keeps a title that is only the brand, or does not start with it", () => {
+    expect(shortBoardTitle("Blue Bottle Coffee", "Blue Bottle Coffee")).toBe("Blue Bottle Coffee");
+    expect(shortBoardTitle("Launch plan", "Blue Bottle Coffee")).toBe("Launch plan");
   });
 });

@@ -83,6 +83,11 @@ export function useSocialSpend(organizationId: string | null | undefined) {
     return formatPointsAlways(actionUsd(costs.data, action, count), display.toPoints) ?? "points (price not loaded yet)";
   }
 
+  /** The points a click will use, always named (even when small): "≈ 38 points", or null when unpriced. */
+  function pointsText(action: SocialSpendAction, count = 1): string | null {
+    return formatPointsAlways(actionUsd(costs.data, action, count), display.toPoints);
+  }
+
   async function confirmSpend(
     action: SocialSpendAction,
     count: number,
@@ -97,7 +102,7 @@ export function useSocialSpend(organizationId: string | null | undefined) {
     });
   }
 
-  return { costText, agentCostText, confirmSpend };
+  return { costText, pointsText, agentCostText, confirmSpend };
 }
 
 // ---------------------------------------------------------------------------

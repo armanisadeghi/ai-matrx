@@ -15,6 +15,7 @@ import {
   type Camera,
   type Rect,
   type Size,
+  clampZoom,
   easeInOutCubic,
   fitRect,
   inflateRect,
@@ -89,6 +90,12 @@ const CULL_MARGIN_SCREEN_PX = 240;
 export type TileLife = "live" | "frozen" | "discarded";
 
 /** How long a tile stays live after it stops being needed (a pan past it, a zoom out and back). */
+/** A view narrower than this is a phone. */
+export const PHONE_VIEW_WIDTH = 640;
+/** Below this zoom a tile's text is not readable on a phone; the first view opens on one tile instead. */
+export const PHONE_MIN_READABLE_Z = 0.5;
+/** The zoom the first tile opens at on a phone: just above the card threshold, so its real body shows. */
+export const PHONE_OPEN_Z = 0.7;
 export const FREEZE_AFTER_MS = 8000;
 /** Frozen tiles kept warm; beyond this the least recently live are discarded. */
 export const WARM_TILE_BUDGET = 12;
@@ -205,6 +212,25 @@ export class BoardCameraStore {
   fitAll(padding = 48): void {
     const bounds = unionRects([...this.items.values()]);
     if (bounds) this.flyTo(this.fitClear(bounds, padding, 1));
+  }
+
+  /**
+   * The board's first view. A phone cannot read a whole board at once (fit-all lands at 5-15%), so when fitting
+   * everything would be smaller than `PHONE_MIN_READABLE_Z` on a phone-width view, the camera opens on the FIRST
+   * tile in reading order instead (top-left, one screen wide), and the rest is a pan away. Wider views and boards
+   * that fit readably keep fit-all.
+   */
+  fitOpening(padding = 48): void {
+    const rects = [...this.items.values()];
+    const bounds = unionRects(rects);
+    if (!bounds) return;
+    const all = this.fitClear(bounds, padding, 1);
+    if (this.size.w >= PHONE_VIEW_WIDTH || all.z >= PHONE_MIN_READABLE_Z) return this.flyTo(all);
+    const first = [...rects].sort((a, b) => a.y - b.y || a.x - b.x)[0];
+    const { top, right, left } = this.insets;
+    const edge = 16;
+    const z = clampZoom(Math.max(PHONE_OPEN_Z, Math.min((this.size.w - left - right - edge * 2) / first.w, 1)));
+    this.flyTo({ z, x: left + edge - first.x * z, y: top + edge - first.y * z });
   }
 
   fitItem(id: string, padding = 40): void {

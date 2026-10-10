@@ -1091,6 +1091,9 @@ export const OVERLAY_CATALOGUE = {
     label: "Post",
     instanceMode: "multi",
     isWindow: true,
+    // A post opened from a list belongs to THAT page: it closes when the person goes elsewhere
+    // (it used to float over the Accounts page, another brand's pages, and phone dialogs).
+    closesOnNavigation: true,
   },
   topicalMapTopicPanel: {
     label: "Topic",

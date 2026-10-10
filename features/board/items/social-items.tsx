@@ -57,7 +57,7 @@ import {
 } from "@/features/marketing/social/kind-models";
 import { toAdCardModel } from "@/features/marketing/social/ads";
 import { PostMedia } from "@/features/marketing/social/components/PostMedia";
-import { PlatformMark } from "@/features/marketing/social/components/PlatformMark";
+import { PlatformMark, platformLabel } from "@/features/marketing/social/components/PlatformMark";
 import { SocialImage } from "@/features/marketing/social/components/SocialImage";
 import { formatCompact } from "@/features/marketing/social/outlier";
 import { postAddress, toPostCardModel } from "@/features/marketing/social/mappers";
@@ -572,7 +572,7 @@ function BrandAccountsPicker({ onPick, onCancel }: PickerProps) {
   if (!brand) {
     return (
       <div className="flex flex-col gap-2">
-        <p className="px-3 pt-3 text-sm text-muted-foreground">Accounts belong to a brand. Open a brand's Studio to pick from them, or paste a link here.</p>
+        <p className="px-3 pt-3 text-sm text-muted-foreground">Brand accounts live in a brand's Studio.</p>
         <LinkForm kind="profile" onLink={(l) => onPick([linkItem("profile", l)])} onCancel={onCancel} />
       </div>
     );
@@ -1022,7 +1022,16 @@ function PostFace({ source }: { source: NodeSource }) {
   if (!post) {
     // A link that has not become a stored post (still reading, or the platform would not give it up): the face shows the link, never a blank grey card.
     const meta = metaOf(source);
-    if (!meta.url) return null;
+    if (!meta.url) {
+      if (idOf(source, SOCIAL_POST_KEY)) return null; // a stored post still reading
+      // A starter tile that has no link yet: it says what it waits for, never a blank bar.
+      return (
+        <span className="absolute inset-0 flex items-center justify-center gap-[3%] bg-gradient-to-br from-muted via-muted to-accent px-[6%] text-muted-foreground">
+          <Link2 className="shrink-0" style={{ width: FACE_TEXT, height: FACE_TEXT }} aria-hidden />
+          <span className="truncate font-medium" style={{ fontSize: FACE_TEXT }}>Paste a post link</span>
+        </span>
+      );
+    }
     const platform = meta.platform && isSocialPlatform(meta.platform) ? meta.platform : null;
     const shown = meta.url.replace(/^https?:\/\/(www\.)?/, "");
     return (
@@ -1045,7 +1054,7 @@ function PostFace({ source }: { source: NodeSource }) {
         }
       />
       {card.hookLine ? (
-        <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] text-[min(12px,7cqmin)] font-medium leading-tight text-white">
+        <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] font-medium leading-tight text-white" style={{ fontSize: FACE_SUB }}>
           {card.hookLine}
         </span>
       ) : null}
@@ -1053,23 +1062,39 @@ function PostFace({ source }: { source: NodeSource }) {
   );
 }
 
-/** An account's card at far zoom: its avatar large, with its follower count. */
+/** Far-zoom sizes are SCREEN pixels (the board's zoom is divided back out), capped by the card so nothing overflows. */
+const FACE_TEXT = "min(calc(15px / var(--board-z, 1)), 13cqw, 16cqh)";
+const FACE_SUB = "min(calc(12px / var(--board-z, 1)), 10cqw, 12cqh)";
+
+/** An account's card at far zoom: its avatar large, the platform mark on it, the platform name and follower count readable. */
 function ProfileFace({ source }: { source: NodeSource }) {
   const id = idOf(source, SOCIAL_PROFILE_KEY);
   const row = useProfile(id ?? "").data;
   if (!row) return null;
+  const platform = isSocialPlatform(row.platform) ? row.platform : "tiktok";
   return (
-    <span className="absolute inset-0 flex flex-col items-center justify-center gap-[4%]">
-      <span className="relative aspect-square h-[62%] max-h-full overflow-hidden rounded-full bg-muted">
-        <SocialImage
-          door={row.avatar_file_id ? profileAvatarDoor(row.id) : null}
-          url={row.avatar_url}
-          fallback={<span className="absolute inset-0 flex items-center justify-center"><PlatformMark platform={isSocialPlatform(row.platform) ? row.platform : "tiktok"} size={28} /></span>}
-        />
+    <span className="absolute inset-0 flex flex-col items-center justify-center gap-[3%] px-[4%]">
+      <span className="relative aspect-square h-[54%] max-h-full">
+        <span className="absolute inset-0 overflow-hidden rounded-full bg-muted ring-1 ring-border">
+          <SocialImage
+            door={row.avatar_file_id ? profileAvatarDoor(row.id) : null}
+            url={row.avatar_url}
+            fallback={<span className="absolute inset-0 flex items-center justify-center bg-muted"><PlatformMark platform={platform} size={28} /></span>}
+          />
+        </span>
+        <span className="absolute -bottom-[2%] -right-[2%]" style={{ transform: "scale(calc(1.15 / var(--board-z, 1)))", transformOrigin: "100% 100%" }}>
+          <PlatformMark platform={platform} size={28} className="ring-2 ring-card" />
+        </span>
       </span>
       {row.follower_count !== null ? (
-        <span className="text-[min(14px,9cqmin)] font-semibold tabular-nums text-foreground">{formatCompact(row.follower_count)} followers</span>
+        <span className="max-w-full truncate font-semibold tabular-nums leading-none text-foreground" style={{ fontSize: FACE_TEXT }}>
+          {formatCompact(row.follower_count)}
+        </span>
       ) : null}
+      <span className="max-w-full truncate leading-none text-muted-foreground" style={{ fontSize: FACE_SUB }}>
+        {platformLabel(platform)}
+        {row.follower_count !== null ? " followers" : ""}
+      </span>
     </span>
   );
 }
@@ -1090,7 +1115,7 @@ function PostMosaic({ posts, label }: { posts: readonly PostCardModel[]; label: 
           </span>
         ))}
       </span>
-      <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] text-[min(12px,7cqmin)] font-medium leading-tight text-white">{label}</span>
+      <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] font-medium leading-tight text-white" style={{ fontSize: FACE_SUB }}>{label}</span>
     </>
   );
 }
@@ -1132,7 +1157,7 @@ function AdFace({ source }: { source: NodeSource }) {
           <span className="line-clamp-6">{model.headline || model.body || model.advertiser}</span>
         </span>
       )}
-      <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] text-[min(12px,7cqmin)] font-medium leading-tight text-white">
+      <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] font-medium leading-tight text-white" style={{ fontSize: FACE_SUB }}>
         {model.advertiser}
         {model.headline ? ` · ${model.headline}` : ""}
       </span>
@@ -1156,7 +1181,7 @@ function SwipeFace({ source }: { source: NodeSource }) {
           <img key={a!.adId} src={a!.thumbnailUrl ?? undefined} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
         ))}
       </span>
-      <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] text-[min(12px,7cqmin)] font-medium text-white">{items.length} saved</span>
+      <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-[4%] pb-[3%] pt-[8%] font-medium text-white" style={{ fontSize: FACE_SUB }}>{items.length} saved</span>
     </>
   );
 }

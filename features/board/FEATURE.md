@@ -466,3 +466,4 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - **Shapes:** kinds `rounded`, `triangle`, `diamond`, `star` (`isBoxKind`; polygons via `shapePolygon`); tools in the Shapes menu with no key.
 - **Pen:** `engine/pen-style.ts` + `PenStyleBar` (colour, weight for the next strokes).
 - **Zoom tiers:** `OVERVIEW_ZOOM` = `READABLE_PX / BODY_FONT_PX`; body only while legible, card below.
+- **First view (2026-10-10, F10a):** the first fit waits until the pane has settled (>160px each way, 120 ms still) so a pane measured mid-layout never fits at the 5% floor and saves it; on a view under 640px wide, when fit-all would read under 50%, the board opens on the FIRST tile in reading order at >=70% (`BoardCameraStore.fitOpening`), and a restored camera pinned at the minimum zoom (or under 20% on a phone) is opened again the same way (`cameraIsUnreadable`). Tested in `__tests__/camera-opening.test.ts`.

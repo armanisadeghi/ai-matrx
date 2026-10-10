@@ -44,9 +44,17 @@ for (const seat of seats) {
           window.__shifts.push({ v: +e.value.toFixed(4), t: Math.round(e.startTime), n: e.sources.map((s) => `${desc(s.node)} [${r(s.previousRect)}] -> [${r(s.currentRect)}] "${(s.node?.textContent ?? "").slice(0, 30).replace(/\n/g, " ")}"`) });
         } }).observe({ type: "layout-shift", buffered: true });
       });
-      await page.goto(`${origin}${route}`, { timeout: 240_000 });
-      await page.waitForTimeout(9000);
-      out.push(await page.evaluate(() => ({ cls: window.__cls, shifts: window.__shifts, url: location.pathname })));
+      // A dev server that recompiles mid-load reloads the page: a run that lost its context is retried.
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await page.goto(`${origin}${route}`, { timeout: 240_000 });
+          await page.waitForTimeout(9000);
+          out.push(await page.evaluate(() => ({ cls: window.__cls, shifts: window.__shifts, url: location.pathname })));
+          break;
+        } catch (e) {
+          if (attempt >= 2) throw e;
+        }
+      }
       await ctx.close();
     }
     console.log(`${seat} ${width}px ${route}: CLS per run = ${out.map((r) => r.cls.toFixed(4)).join(", ")} (landed ${out[0].url})`);

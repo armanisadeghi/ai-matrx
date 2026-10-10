@@ -12,7 +12,7 @@
  * Stored thumbnail (small JPEG behind the signed-in door) -> else a provider URL a browser can
  * draw -> else the platform mark on a neutral tile (never a broken image); a skeleton fills the
  * reserved box while it loads. Null metrics render "—", never 0. The card's `⋯` holds
- * Open original / Copy link / Save to swipe file.
+ * Open original / Copy link, and inside a brand: Open account / Save to swipe file / Get transcript / Run breakdown.
  *
  * Built from semantic tokens directly: `components/official/card-and-grid`'s
  * `Card` is an icon-launcher card (icon + title + description), not a media
@@ -28,6 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useMarketingBrandOptional } from "@/features/marketing/lib/brand-context";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,7 @@ import { formatDuration, openPostLabel, relativeAge } from "../mappers";
 import { NO_VIEWS_TEXT, countLabel, outlierBadgeModel } from "../outlier";
 import type { PostCardModel } from "../types";
 import { OutlierBadge } from "./OutlierBadge";
+import { PostCardMenuItems } from "./PostCardMenuItems";
 import { postThumbnailDoor } from "../server";
 import { PlatformMark } from "./PlatformMark";
 import { SocialImage } from "./SocialImage";
@@ -75,6 +77,7 @@ export interface SocialPostCardProps {
 }
 
 export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, compact, accountHref, hideOutlier, className }: SocialPostCardProps) {
+  const brand = useMarketingBrandOptional();
   const badge = outlierBadgeModel(post.outlier);
   const duration = formatDuration(post.durationSeconds);
   // A post that reports no views (a carousel on some platforms) has no multiple to explain: no badge, no views stat.
@@ -195,6 +198,9 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
                   {a.label}
                 </DropdownMenuItem>
               ))}
+              {brand ? (
+                <PostCardMenuItems post={post} brandSeg={brand.seg} organizationId={brand.organizationId} hasSaveHandler={Boolean(onSave)} />
+              ) : null}
               {onSave ? (
                 <DropdownMenuItem onSelect={() => onSave(post)}>
                   <Bookmark className="mr-2 h-4 w-4" />

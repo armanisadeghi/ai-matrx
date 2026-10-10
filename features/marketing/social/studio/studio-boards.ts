@@ -124,3 +124,11 @@ export async function createLinkedBoard(args: { organizationId: string; brandId:
   });
   return { id: board.id, title: board.title, lastOpenedAt: null, canonical: false };
 }
+
+/** The menu sits under the brand's own name already: its boards read "Studio", "Board 2", not the brand three times. */
+export function shortBoardTitle(title: string, brandName: string): string {
+  const name = brandName.trim();
+  if (!name || !title.toLowerCase().startsWith(name.toLowerCase())) return title;
+  const rest = title.slice(name.length).replace(/^[\s\-–—:·]+/, "");
+  return rest ? rest.charAt(0).toUpperCase() + rest.slice(1) : title;
+}

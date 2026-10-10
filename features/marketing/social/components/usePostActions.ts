@@ -7,8 +7,7 @@
 
 import { useState } from "react";
 
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-
+import { confirmSocialSpendNow } from "../cost";
 import { useInvalidateSocial } from "../hooks";
 import { addToCollection, analyzePost, createCollection, getTranscript, socialErrorCode, socialErrorMessage } from "../server";
 
@@ -21,11 +20,8 @@ export function usePostActions(args: { postId: string; organizationId: string; h
 
   async function transcript(): Promise<string> {
     if (args.hasTranscript) return "This post already has a transcript.";
-    const ok = await confirm({
-      title: "Get the transcript?",
-      description: "Gets the transcript once, or transcribes the stored video. Uses part of your plan.",
-      confirmLabel: "Get transcript",
-    });
+    // Same rule as every spend: a trivial cost asks nothing, a worrying one names its points.
+    const ok = await confirmSocialSpendNow("transcript", 1, { title: "Get the transcript?", confirmLabel: "Get transcript" });
     if (!ok) return "The person declined; nothing was spent.";
     setBusy("transcript");
     try {

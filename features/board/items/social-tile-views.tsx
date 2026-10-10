@@ -199,6 +199,26 @@ export interface ProfileTileViewProps {
   onOpenPost: (post: PostCardModel) => void;
 }
 
+/** The account's name, handle and picture open its page, like the "Open account" button (a press selects the tile first; the tile's own click model decides). No page = plain text. */
+function OpenAccountTarget({
+  onOpen,
+  label,
+  className,
+  children,
+}: {
+  onOpen: (() => void) | null;
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  if (!onOpen) return <span className={cn("min-w-0", className)}>{children}</span>;
+  return (
+    <button type="button" onClick={onOpen} aria-label={label} title={label} className={cn("min-w-0 text-left", className)}>
+      {children}
+    </button>
+  );
+}
+
 export function ProfileTileView(props: ProfileTileViewProps) {
   const { profile, posts, snapshots } = props;
   const [ref, size] = useBoxSize({ w: 620, h: 700 });
@@ -212,24 +232,30 @@ export function ProfileTileView(props: ProfileTileViewProps) {
   return (
     <div ref={ref} className={cn(FRAME, "flex flex-col gap-2.5")}>
       <div className="flex min-w-0 items-center gap-2.5">
-        <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-border">
-          <SocialImage
-            door={profile.avatar_file_id ? profileAvatarDoor(profile.id) : null}
-            url={profile.avatar_url}
-            fallback={<PlatformMark platform={profile.platform} size={20} />}
-          />
-        </span>
+        <OpenAccountTarget onOpen={props.onOpenAccount} label={`Open ${name}`} className="shrink-0 rounded-full">
+          <span className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-border">
+            <SocialImage
+              door={profile.avatar_file_id ? profileAvatarDoor(profile.id) : null}
+              url={profile.avatar_url}
+              fallback={<PlatformMark platform={profile.platform} size={20} />}
+            />
+          </span>
+        </OpenAccountTarget>
         <div className="min-w-0 flex-1">
           <p className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground">
-            <span className="truncate">{name}</span>
+            <OpenAccountTarget onOpen={props.onOpenAccount} label={`Open ${name}`} className="min-w-0 rounded-sm hover:underline">
+              <span className="block truncate">{name}</span>
+            </OpenAccountTarget>
             {profile.is_verified ? <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" /> : null}
           </p>
           <p className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
             <PlatformMark platform={profile.platform} size={14} />
-            <span className="truncate">
-              @{profile.handle}
-              {compactHeader && profile.follower_count !== null ? ` · ${formatCompact(profile.follower_count)} followers` : ""}
-            </span>
+            <OpenAccountTarget onOpen={props.onOpenAccount} label={`Open @${profile.handle}`} className="min-w-0 rounded-sm hover:underline">
+              <span className="block truncate">
+                @{profile.handle}
+                {compactHeader && profile.follower_count !== null ? ` · ${formatCompact(profile.follower_count)} followers` : ""}
+              </span>
+            </OpenAccountTarget>
           </p>
         </div>
         {trackedLabel ? (

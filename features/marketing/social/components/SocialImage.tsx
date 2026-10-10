@@ -92,6 +92,15 @@ export function youtubeThumbStepDown(src: string | null, naturalWidth: number | 
   return src.replace("/maxresdefault.", "/hqdefault.");
 }
 
+/**
+ * A YouTube link stored as `maxresdefault` is asked for as `hqdefault` from the start: maxres 404s for many videos
+ * (a failed request the console logs and the person's network tab shows), while `hqdefault` exists for every video.
+ */
+export function youtubeThumbSafe(url: string | null): string | null {
+  if (!url) return url;
+  return /^https:\/\/(img\.youtube\.com|i\.ytimg\.com)\/vi(_webp)?\/[^/]+\/maxresdefault\./.test(url) ? url.replace("/maxresdefault.", "/hqdefault.") : url;
+}
+
 export interface SocialImageProps {
   /** Stored-copy door path (`postThumbnailDoor` / `profileAvatarDoor`); null when nothing is stored. */
   door: string | null;
@@ -111,7 +120,7 @@ export function SocialImage({ door, url, fallback, className, alt = "" }: Social
   useEffect(() => {
     let alive = true;
     setSrc(null);
-    const direct = isDrawableUrl(url) ? url : null;
+    const direct = isDrawableUrl(url) ? youtubeThumbSafe(url) : null;
     if (!door) {
       setSrc(direct);
       setState(direct ? "loading" : "failed");

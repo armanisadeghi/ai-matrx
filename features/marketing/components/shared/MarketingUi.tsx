@@ -154,8 +154,8 @@ export function StatusBadge({
       variant={statusBadgeVariant(status)}
       className={
         label
-          ? "whitespace-nowrap"
-          : "whitespace-nowrap capitalize"
+          ? "whitespace-nowrap text-xs"
+          : "whitespace-nowrap text-xs capitalize"
       }
     >
       {label ?? status.replaceAll("_", " ")}
