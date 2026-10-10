@@ -54,6 +54,8 @@ import { cn } from "@/lib/utils";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 import { PdfLoadingState } from "@/features/pdf/components/viewer/PdfLoadingState";
 import { resolvePageSwipe } from "./page-swipe";
+import { planPdfToolbar } from "./toolbar/toolbar-plan";
+import { useMediaQueryState } from "@ai-matrx/kit/media-query";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   DropdownMenu,
@@ -63,10 +65,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /** One toolbar icon button — every control in the row shares it. */
-// 44px on phones (the touch floor — the pager already sets the row there,
-// so the row height does not move), 28px from `sm` up.
-const TOOL_BUTTON =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 sm:h-7 sm:w-7";
+/** Every toolbar icon button shares this; its square size comes from the plan. */
+const TOOL_BUTTON_BASE =
+  "flex shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40";
 
 // Worker source — pinned to the installed pdfjs version and served from
 // our own origin (`/public/pdfjs/pdf.worker.min.mjs`, mirrored by a post-
@@ -301,6 +302,24 @@ const WHEEL_EDGE_EPSILON_PX = 2;
 // Component
 // ---------------------------------------------------------------------------
 
+/** Live border-box width of a small element (docked toolbar chrome). */
+function useBoxWidth(): [number, (node: HTMLDivElement | null) => void] {
+  const [width, setWidth] = useState(0);
+  const roRef = useRef<ResizeObserver | null>(null);
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    roRef.current?.disconnect();
+    roRef.current = null;
+    if (!node) return;
+    setWidth(Math.ceil(node.getBoundingClientRect().width));
+    const ro = new ResizeObserver(() =>
+      setWidth(Math.ceil(node.getBoundingClientRect().width)),
+    );
+    ro.observe(node);
+    roRef.current = ro;
+  }, []);
+  return [width, ref];
+}
+
 export default function PdfDocumentRenderer({
   blobUrl,
   remoteUrl,
@@ -379,6 +398,12 @@ export default function PdfDocumentRenderer({
     width: number;
     height: number;
   }>({ width: 0, height: 0 });
+
+  // Toolbar fold inputs: touch vs mouse sets the target size (never the
+  // window width), and docked host chrome is measured so the plan sees it.
+  const coarsePointer = useMediaQueryState("(pointer: coarse)") ?? false;
+  const [startWidth, startRef] = useBoxWidth();
+  const [endWidth, endRef] = useBoxWidth();
 
   // Layout-effect — runs synchronously after DOM mutation, before paint.
   // Catches the initial measurement on the same frame as mount.
@@ -871,6 +896,17 @@ export default function PdfDocumentRenderer({
     );
   }
 
+  const toolbarPlan = planPdfToolbar({
+    width: containerSize.width,
+    coarse: coarsePointer,
+    pages: numPages,
+    pageNav,
+    startWidth: toolbarStart ? startWidth : 0,
+    endWidth: toolbarEnd ? endWidth : 0,
+  });
+  const plan = toolbarPlan;
+  const toolButton = cn(TOOL_BUTTON_BASE, plan.target === 44 ? "h-11 w-11" : "h-7 w-7");
+
   const pageLabelTitle =
     pageLabel.length > 0
       ? `${pageLabel[0]?.toUpperCase()}${pageLabel.slice(1)}`
@@ -879,175 +915,238 @@ export default function PdfDocumentRenderer({
   return (
     <div
       className={cn(
-        "group/pdf-viewer @container/pdf-viewer flex h-full w-full min-w-0 flex-col bg-muted/20",
+        "group/pdf-viewer flex h-full w-full min-w-0 flex-col bg-muted/20",
         className,
       )}
     >
-      {/* Toolbar — zoom + rotate + page nav. Container-responsive: the
-       * viewer lives in panes from ~280px (studio reader column) to full
-       * screen, so the row is sized by ITS container, never the viewport.
-       * Below 26rem the secondary view controls (fit width, actual size,
-       * rotate — and fit page under 24rem, so phone-size 44px targets fit)
-       * fold into one overflow menu; the pager never overflows
-       * onto a neighbouring pane (the 2026-10-09 extractor defect). */}
+      {/* Toolbar — rendered FROM the fold plan (toolbar/toolbar-plan.ts):
+       * the plan measures this exact row (fixed-size parts) against the
+       * viewer's width, so the row fits at any width — 200px columns to full
+       * screen — and every control is in exactly one place, row or `···`.
+       * Guard: toolbar/toolbar-plan.test.ts. */}
       {toolbar === "full" ? (
-      <div className="flex min-h-10 min-w-0 items-center justify-between gap-1 border-b border-border/60 bg-background/80 px-2 text-xs shrink-0">
-        <div className="flex min-w-0 items-center gap-0.5">
-          {toolbarStart ? (
-            <>
-              <div className="flex shrink-0 items-center gap-0.5">{toolbarStart}</div>
-              <span className="mx-1 h-4 w-px shrink-0 bg-border" />
-            </>
-          ) : null}
-          <TooltipIcon label="Zoom out">
-            <button
-              type="button"
-              aria-label="Zoom out"
-              onClick={() => stepZoom(-STEP)}
-              disabled={currentScale <= MIN_SCALE}
-              className={TOOL_BUTTON}
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-          </TooltipIcon>
-          <span className="min-w-[3.25rem] shrink-0 text-center text-xs font-medium tabular-nums">
-            {zoomLabel}
-          </span>
-          <TooltipIcon label="Zoom in">
-            <button
-              type="button"
-              aria-label="Zoom in"
-              onClick={() => stepZoom(+STEP)}
-              disabled={currentScale >= MAX_SCALE}
-              className={TOOL_BUTTON}
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          </TooltipIcon>
-          <span className="mx-1 h-4 w-px shrink-0 bg-border" />
-          <div className="hidden @[24rem]/pdf-viewer:flex">
-            <TooltipIcon label="Fit page (default)">
-              <button
-                type="button"
-                aria-label="Fit page"
-                aria-pressed={zoom.kind === "fit"}
-                onClick={() => setZoom({ kind: "fit" })}
-                className={cn(
-                  TOOL_BUTTON,
-                  zoom.kind === "fit" && "bg-accent text-accent-foreground",
-                )}
-              >
-                <Maximize2 className="h-3.5 w-3.5" />
-              </button>
-            </TooltipIcon>
-          </div>
-          <div className="hidden items-center gap-0.5 @[26rem]/pdf-viewer:flex">
-            <TooltipIcon label="Fit width">
-              <button
-                type="button"
-                aria-label="Fit width"
-                aria-pressed={zoom.kind === "fit-width"}
-                onClick={() => setZoom({ kind: "fit-width" })}
-                className={cn(
-                  TOOL_BUTTON,
-                  zoom.kind === "fit-width" && "bg-accent text-accent-foreground",
-                )}
-              >
-                <Maximize className="h-3.5 w-3.5" />
-              </button>
-            </TooltipIcon>
-            <TooltipIcon label="Actual size (100%)">
-              <button
-                type="button"
-                aria-label="Actual size"
-                aria-pressed={zoom.kind === "actual"}
-                onClick={() => setZoom({ kind: "actual" })}
-                className={cn(
-                  TOOL_BUTTON,
-                  zoom.kind === "actual" && "bg-accent text-accent-foreground",
-                )}
-              >
-                <Scaling className="h-3.5 w-3.5" />
-              </button>
-            </TooltipIcon>
-            <span className="mx-1 h-4 w-px bg-border" />
-            <TooltipIcon label="Rotate 90°">
-              <button
-                type="button"
-                aria-label="Rotate 90°"
-                onClick={() => setRotation((r) => (r + 90) % 360)}
-                className={TOOL_BUTTON}
-              >
-                <RotateCw className="h-3.5 w-3.5" />
-              </button>
-            </TooltipIcon>
-          </div>
-          <div className="flex @[26rem]/pdf-viewer:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+        <div
+          className="flex min-w-0 shrink-0 items-center justify-between gap-1 overflow-hidden border-b border-border/60 bg-background/80 px-2 text-xs"
+          style={{ minHeight: Math.max(40, plan.target + 1) }}
+        >
+          <div className="flex shrink-0 items-center gap-0.5">
+            {toolbarStart ? (
+              <>
+                <div ref={startRef} className="flex shrink-0 items-center gap-0.5">
+                  {toolbarStart}
+                </div>
+                <span className="mx-1 h-4 w-px shrink-0 bg-border" />
+              </>
+            ) : null}
+            {plan.row.includes("zoom") ? (
+              <>
+                <TooltipIcon label="Zoom out">
+                  <button
+                    type="button"
+                    aria-label="Zoom out"
+                    onClick={() => stepZoom(-STEP)}
+                    disabled={currentScale <= MIN_SCALE}
+                    className={toolButton}
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipIcon>
+                <span className="w-[3.25rem] shrink-0 text-center text-xs font-medium tabular-nums">
+                  {zoomLabel}
+                </span>
+                <TooltipIcon label="Zoom in">
+                  <button
+                    type="button"
+                    aria-label="Zoom in"
+                    onClick={() => stepZoom(+STEP)}
+                    disabled={currentScale >= MAX_SCALE}
+                    className={toolButton}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipIcon>
+                {plan.row.length > 1 || plan.showMore ? (
+                  <span className="mx-1 h-4 w-px shrink-0 bg-border" />
+                ) : null}
+              </>
+            ) : null}
+            {plan.row.includes("fitPage") ? (
+              <TooltipIcon label="Fit page (default)">
                 <button
                   type="button"
-                  aria-label="More view options"
-                  className={TOOL_BUTTON}
+                  aria-label="Fit page"
+                  aria-pressed={zoom.kind === "fit"}
+                  onClick={() => setZoom({ kind: "fit" })}
+                  className={cn(toolButton, zoom.kind === "fit" && "bg-accent text-accent-foreground")}
                 >
-                  <MoreHorizontal className="h-3.5 w-3.5" />
+                  <Maximize2 className="h-3.5 w-3.5" />
                 </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-40">
-                <DropdownMenuItem onSelect={() => setZoom({ kind: "fit" })}>
-                  <Maximize2 className="h-3.5 w-3.5" /> Fit page
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setZoom({ kind: "fit-width" })}>
-                  <Maximize className="h-3.5 w-3.5" /> Fit width
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setZoom({ kind: "actual" })}>
-                  <Scaling className="h-3.5 w-3.5" /> Actual size
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setRotation((r) => (r + 90) % 360)}>
-                  <RotateCw className="h-3.5 w-3.5" /> Rotate 90°
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </TooltipIcon>
+            ) : null}
+            {plan.row.includes("fitWidth") ? (
+              <TooltipIcon label="Fit width">
+                <button
+                  type="button"
+                  aria-label="Fit width"
+                  aria-pressed={zoom.kind === "fit-width"}
+                  onClick={() => setZoom({ kind: "fit-width" })}
+                  className={cn(toolButton, zoom.kind === "fit-width" && "bg-accent text-accent-foreground")}
+                >
+                  <Maximize className="h-3.5 w-3.5" />
+                </button>
+              </TooltipIcon>
+            ) : null}
+            {plan.row.includes("actual") ? (
+              <TooltipIcon label="Actual size (100%)">
+                <button
+                  type="button"
+                  aria-label="Actual size"
+                  aria-pressed={zoom.kind === "actual"}
+                  onClick={() => setZoom({ kind: "actual" })}
+                  className={cn(toolButton, zoom.kind === "actual" && "bg-accent text-accent-foreground")}
+                >
+                  <Scaling className="h-3.5 w-3.5" />
+                </button>
+              </TooltipIcon>
+            ) : null}
+            {plan.row.includes("rotate") ? (
+              <TooltipIcon label="Rotate 90°">
+                <button
+                  type="button"
+                  aria-label="Rotate 90°"
+                  onClick={() => setRotation((r) => (r + 90) % 360)}
+                  className={toolButton}
+                >
+                  <RotateCw className="h-3.5 w-3.5" />
+                </button>
+              </TooltipIcon>
+            ) : null}
+            {plan.showMore ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button type="button" aria-label="More view options" className={toolButton}>
+                    <MoreHorizontal className="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-44">
+                  {plan.menu.includes("zoom") ? (
+                    <>
+                      <DropdownMenuItem
+                        disabled={currentScale >= MAX_SCALE}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          stepZoom(+STEP);
+                        }}
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Zoom in
+                        <span className="ml-auto tabular-nums text-muted-foreground">{zoomLabel}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={currentScale <= MIN_SCALE}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          stepZoom(-STEP);
+                        }}
+                      >
+                        <Minus className="h-3.5 w-3.5" /> Zoom out
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                  {plan.menu.includes("fitPage") ? (
+                    <DropdownMenuItem onSelect={() => setZoom({ kind: "fit" })}>
+                      <Maximize2 className="h-3.5 w-3.5" /> Fit page
+                    </DropdownMenuItem>
+                  ) : null}
+                  {plan.menu.includes("fitWidth") ? (
+                    <DropdownMenuItem onSelect={() => setZoom({ kind: "fit-width" })}>
+                      <Maximize className="h-3.5 w-3.5" /> Fit width
+                    </DropdownMenuItem>
+                  ) : null}
+                  {plan.menu.includes("actual") ? (
+                    <DropdownMenuItem onSelect={() => setZoom({ kind: "actual" })}>
+                      <Scaling className="h-3.5 w-3.5" /> Actual size
+                    </DropdownMenuItem>
+                  ) : null}
+                  {plan.menu.includes("rotate") ? (
+                    <DropdownMenuItem onSelect={() => setRotation((r) => (r + 90) % 360)}>
+                      <RotateCw className="h-3.5 w-3.5" /> Rotate 90°
+                    </DropdownMenuItem>
+                  ) : null}
+                  {plan.menu.includes("pager") ? (
+                    <>
+                      <DropdownMenuItem
+                        disabled={pageNumber <= 1}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          setPageNumber((p) => Math.max(1, p - 1));
+                        }}
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" /> Previous {pageLabel}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={pageNumber >= numPages}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          setPageNumber((p) => Math.min(numPages, p + 1));
+                        }}
+                      >
+                        <ChevronRight className="h-3.5 w-3.5" /> Next {pageLabel}
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-0.5">
+            {plan.pager !== "none" ? (
+              <div
+                className="flex shrink-0 items-center gap-0.5"
+                aria-label={`${pageLabelTitle} pagination`}
+              >
+                {plan.pager === "full" ? (
+                  <button
+                    type="button"
+                    onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                    disabled={pageNumber <= 1}
+                    aria-label={`Previous ${pageLabel}`}
+                    className={toolButton}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                ) : null}
+                <span
+                  className="shrink-0 text-center font-medium tabular-nums"
+                  style={{ width: plan.counterWidth }}
+                >
+                  {pageNumber} / {numPages}
+                </span>
+                {plan.pager === "full" ? (
+                  <button
+                    type="button"
+                    onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
+                    disabled={pageNumber >= numPages}
+                    aria-label={`Next ${pageLabel}`}
+                    className={toolButton}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            {toolbarEnd ? (
+              <>
+                {plan.pager !== "none" ? (
+                  <span className="mx-1 h-4 w-px shrink-0 bg-border" />
+                ) : null}
+                <div ref={endRef} className="flex shrink-0 items-center gap-0.5">
+                  {toolbarEnd}
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
-
-        <div className="flex shrink-0 items-center gap-0.5">
-          {pageNav && numPages > 1 ? (
-            <div
-              className="flex shrink-0 items-center gap-0.5"
-              aria-label={`${pageLabelTitle} pagination`}
-            >
-              <button
-                type="button"
-                onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
-                disabled={pageNumber <= 1}
-                aria-label={`Previous ${pageLabel}`}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 sm:h-7 sm:w-7"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <span className="min-w-[3rem] text-center font-medium tabular-nums">
-                {pageNumber} / {numPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
-                disabled={pageNumber >= numPages}
-                aria-label={`Next ${pageLabel}`}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 sm:h-7 sm:w-7"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </div>
-          ) : null}
-          {toolbarEnd ? (
-            <>
-              <span className="mx-1 h-4 w-px shrink-0 bg-border" />
-              <div className="flex shrink-0 items-center gap-0.5">{toolbarEnd}</div>
-            </>
-          ) : null}
-        </div>
-      </div>
       ) : null}
 
       {/* Viewport frame keeps floating deck controls anchored while the inner

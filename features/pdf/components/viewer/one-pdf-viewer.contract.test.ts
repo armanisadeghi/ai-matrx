@@ -15,7 +15,7 @@
  *   2. Only PdfPreview turns a cld file id into PDF.js bytes
  *      (`usePdfRemoteSource`) — every other host composes PdfPreview.
  *   3. No host embeds a PDF with the browser's native viewer.
- *   4. The renderer's toolbar is container-responsive and exposes the
+ *   4. The renderer's toolbar is drawn from the measured fold plan and exposes the
  *      host-chrome knobs (toolbar / pageNav / toolbarStart / toolbarEnd),
  *      and PdfPreview passes every one of them through.
  */
@@ -87,8 +87,11 @@ describe("one PDF viewer", () => {
 
   it("the renderer's toolbar adapts to its container and takes host chrome", () => {
     const src = readFileSync(join(ROOT, RENDERER), "utf8");
-    expect(src).toContain("@container/pdf-viewer");
-    expect(src).toMatch(/@\[26rem\]\/pdf-viewer:flex/);
+    // The row is drawn from the measured fold plan (toolbar/toolbar-plan.ts,
+    // proven by toolbar-plan.test.ts) — never from blind CSS breakpoints.
+    expect(src).toMatch(/planPdfToolbar\(\{\s*width: containerSize\.width/);
+    expect(src).not.toMatch(/@\[\d+rem\]\/pdf-viewer/);
+    expect(src).not.toMatch(/\bsm:h-7\b/);
     expect(src).toContain('aria-label="More view options"');
     for (const knob of ["toolbar?:", "pageNav?:", "toolbarStart?:", "toolbarEnd?:"]) {
       expect(src).toContain(knob);
