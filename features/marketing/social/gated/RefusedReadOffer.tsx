@@ -11,6 +11,7 @@
  *   useRefusedRead(orgId)                  a surface that only has a catch block: `show(err, target)`
  */
 
+import { asClause } from "@ai-matrx/kit/text";
 import { useCallback, useState, type ReactNode } from "react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -57,7 +58,7 @@ export function RefusedReadOffer({
   return (
     <div className="flex min-w-0 flex-col gap-1" role="group" aria-label={failure.title}>
       <p className="text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">{failure.title}.</span> {failure.reason}
+        <span className="font-medium text-foreground">{asClause(failure.title)}.</span> {failure.reason}
       </p>
       <GatedCaptureOffer
         organizationId={organizationId}

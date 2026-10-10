@@ -4,6 +4,7 @@
 // it the case is found by probing both, and the losing probe writes a denial
 // into `hr.access_audit` — correct behaviour, but a link should not cause it.
 
+import { hrHref, hrRelationsHref } from "@/features/hr/routes";
 import { Suspense } from "react";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
@@ -20,8 +21,9 @@ export default async function HrRelationsCasePage({
   searchParams,
 }: {
   params: Promise<{ caseId: string }>;
-  searchParams: Promise<{ kind?: string }>;
+  searchParams: Promise<{ org?: string; kind?: string }>;
 }) {
+  const org = (await searchParams).org;
   const { caseId } = await params;
 
   // 🚨 A MALFORMED ID IN THE URL IS REFUSED HERE, BEFORE ANY READ. Postgres casts
@@ -37,10 +39,10 @@ export default async function HrRelationsCasePage({
   return (
     <>
       <RecordPageHeader
-        backHref="/hr/people/relations"
+        backHref={hrRelationsHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
-          { label: "Employee relations", href: "/hr/people/relations" },
+          { label: "HR", href: hrHref(org) },
+          { label: "Employee relations", href: hrRelationsHref(org) },
         ]}
         record={{ name: "Case" }}
       />

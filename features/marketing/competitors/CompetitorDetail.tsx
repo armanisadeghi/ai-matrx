@@ -6,6 +6,7 @@
  * numbers only — never a key, an id or a JSON view.
  */
 
+import { asClause } from "@ai-matrx/kit/text";
 import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -128,7 +129,7 @@ export function CompetitorDetail({
       {found?.unreadable || model.accounts.length === 0 ? (
         <section className="space-y-2">
           <Heading>Add handles</Heading>
-          {found?.unreadable ? <p className="text-xs text-muted-foreground">{found.message}. Add their accounts here instead.</p> : null}
+          {found?.unreadable ? <p className="text-xs text-muted-foreground">{asClause(found.message)}. Add their accounts here instead.</p> : null}
           <AddHandlesForm row={current} brand={brand} />
         </section>
       ) : null}

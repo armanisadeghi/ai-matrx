@@ -5,6 +5,7 @@
 // The body owns its own scroll chain — `flex flex-col` all the way down to the `min-h-0 flex-1`
 // scroller, which is the only shape `pnpm check:scroll-chain` accepts.
 
+import { hrHref, hrMeHref } from "@/features/hr/routes";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MyClockSurface } from "@/features/hr/time/clock/MyClockSurface";
 import {
@@ -15,17 +16,18 @@ import {
 export default async function MyClockPage({
   searchParams,
 }: {
-  searchParams: Promise<{ case?: string; punchCase?: string; employmentId?: string }>;
+  searchParams: Promise<{ org?: string; case?: string; punchCase?: string; employmentId?: string }>;
 }) {
+  const org = (await searchParams).org;
   const params = await searchParams;
 
   return (
     <>
       <RecordPageHeader
-        backHref="/hr/me"
+        backHref={hrMeHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
-          { label: "My info", href: "/hr/me" },
+          { label: "HR", href: hrHref(org) },
+          { label: "My info", href: hrMeHref(org) },
         ]}
         record={{ name: "My time clock" }}
       />

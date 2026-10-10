@@ -8,6 +8,7 @@
 // 🚨 NO EXPORT ON THIS ROUTE IN V1. A CSV of complaints is exactly the artifact
 // that should not exist by accident.
 
+import { hrHref } from "@/features/hr/routes";
 import { Suspense } from "react";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
@@ -16,13 +17,14 @@ import { HrLoading } from "@/features/hr/shared/HrStates";
 
 export const metadata = { title: "Employee relations" };
 
-export default function HrRelationsPage() {
+export default async function HrRelationsPage({ searchParams }: { searchParams: Promise<{ org?: string }> }) {
+  const org = (await searchParams).org;
   return (
     <>
       <RecordPageHeader
-        backHref="/hr"
+        backHref={hrHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
+          { label: "HR", href: hrHref(org) },
         ]}
         record={{ name: "Employee relations" }}
       />

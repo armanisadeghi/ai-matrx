@@ -1,5 +1,6 @@
 // `/hr/performance/goals` — my goals and my team's goals, with alignment and progress.
 
+import { hrHref, hrPerformanceHref } from "@/features/hr/routes";
 import { Suspense } from "react";
 
 import { GoalsPage } from "@/features/employee-performance-reviews/standard/GoalsPage";
@@ -12,14 +13,15 @@ export const metadata = createRouteMetadata("/hr/performance/goals", {
   description: "Goals: yours, and your team's.",
 });
 
-export default function HrPerformanceGoalsPage() {
+export default async function HrPerformanceGoalsPage({ searchParams }: { searchParams: Promise<{ org?: string }> }) {
+  const org = (await searchParams).org;
   return (
     <>
       <RecordPageHeader
-        backHref="/hr/performance"
+        backHref={hrPerformanceHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
-          { label: "Performance", href: "/hr/performance" },
+          { label: "HR", href: hrHref(org) },
+          { label: "Performance", href: hrPerformanceHref(org) },
         ]}
         record={{ name: "Goals" }}
       />

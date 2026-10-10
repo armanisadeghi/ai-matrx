@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { hrHref, hrTasksHref } from "@/features/hr/routes";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { HrDecisionPanel } from "@/features/hr/tasks/components/HrDecisionPanel";
 import { notFound } from "next/navigation";
@@ -17,8 +18,9 @@ export default async function HrTaskInstancePage({
     searchParams,
 }: {
     params: Promise<{ instanceId: string }>;
-    searchParams: Promise<{ step?: string; notice?: string; failure?: string }>;
+    searchParams: Promise<{ org?: string; step?: string; notice?: string; failure?: string }>;
 }) {
+  const org = (await searchParams).org;
     const { instanceId } = await params;
 
     // 🚨 A MALFORMED ID IN THE URL IS REFUSED HERE, BEFORE ANY READ. Postgres casts
@@ -32,10 +34,10 @@ export default async function HrTaskInstancePage({
     return (
         <>
             <RecordPageHeader
-              backHref="/hr/tasks"
+              backHref={hrTasksHref(org)}
               parents={[
-                { label: "HR", href: "/hr" },
-                { label: "HR tasks", href: "/hr/tasks" },
+                { label: "HR", href: hrHref(org) },
+                { label: "HR tasks", href: hrTasksHref(org) },
               ]}
               record={{ name: "HR request" }}
             />

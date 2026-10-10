@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { hrHref, hrMeHref } from "@/features/hr/routes";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MyTimesheetContext } from "@/features/hr/me/MyTimesheetContext";
 
@@ -35,17 +36,18 @@ export const metadata = { title: "My timesheet" };
 export default async function MyTimesheetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ employment?: string; period?: string; punch?: string }>;
+  searchParams: Promise<{ org?: string; employment?: string; period?: string; punch?: string }>;
 }) {
+  const org = (await searchParams).org;
   const { employment, period, punch } = await searchParams;
 
   return (
     <>
       <RecordPageHeader
-        backHref="/hr/me"
+        backHref={hrMeHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
-          { label: "My info", href: "/hr/me" },
+          { label: "HR", href: hrHref(org) },
+          { label: "My info", href: hrMeHref(org) },
         ]}
         record={{ name: "My timesheet" }}
       />

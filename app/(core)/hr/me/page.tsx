@@ -4,6 +4,7 @@
 // resolved server-side from the caller's own employee id. There is no separate
 // "my profile" implementation.
 
+import { hrHref } from "@/features/hr/routes";
 import { Suspense } from "react";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
@@ -15,16 +16,17 @@ export const metadata = { title: "My info" };
 export default async function HrMePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ org?: string; tab?: string }>;
 }) {
+  const org = (await searchParams).org;
   const { tab } = await searchParams;
 
   return (
     <>
       <RecordPageHeader
-        backHref="/hr"
+        backHref={hrHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
+          { label: "HR", href: hrHref(org) },
         ]}
         record={{ name: "My info" }}
       />

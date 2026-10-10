@@ -20,6 +20,7 @@
 //   * Pretend a tracking-only capability stops anything. `enforced = false` is
 //     labelled in words wherever the number appears.
 
+import { asClause } from "@ai-matrx/kit/text";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -680,7 +681,7 @@ export function AccountAddonsPanel() {
         {assignmentsError && (
           // Source: billing.org_plan_list.
           <p className="text-xs text-warning">
-            Couldn&apos;t read each org&apos;s plan: {assignmentsError}. The
+            Couldn&apos;t read each org&apos;s plan: {asClause(assignmentsError)}. The
             Plan gives column is blank.
             <ErrorAlchemyMenu error={assignmentsError} />
           </p>

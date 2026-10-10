@@ -3,6 +3,7 @@
 // The three 360 review screens under /hr/performance: the HR manager's list, one review (both
 // halves side by side once both are in), and a respondent's own half in the existing editor.
 
+import { hrPerformanceReviewHref } from "@/features/hr/routes";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -73,7 +74,7 @@ const REVIEW_LIST_COLUMNS: MatrxColumnDef<Review360ListRow>[] = [
     width: 260,
     frozen: true,
     cell: (r) => (
-      <Link className="hover:underline" href={`/hr/performance/${r._id}?org=${r._organizationId}`}>
+      <Link className="hover:underline" href={hrPerformanceReviewHref(r._id, r._organizationId)}>
         {r.employee_name ?? "360 review"}
       </Link>
     ),

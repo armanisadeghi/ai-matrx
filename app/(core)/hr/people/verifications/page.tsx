@@ -4,6 +4,7 @@
 // the assertion into `snapshot`; a delivered letter is never edited, only
 // superseded by a new request.
 
+import { hrHref } from "@/features/hr/routes";
 import { Suspense } from "react";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
@@ -12,13 +13,14 @@ import { HrLoading } from "@/features/hr/shared/HrStates";
 
 export const metadata = { title: "Verification letters" };
 
-export default function HrVerificationsPage() {
+export default async function HrVerificationsPage({ searchParams }: { searchParams: Promise<{ org?: string }> }) {
+  const org = (await searchParams).org;
   return (
     <>
       <RecordPageHeader
-        backHref="/hr"
+        backHref={hrHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
+          { label: "HR", href: hrHref(org) },
         ]}
         record={{ name: "Verification letters" }}
       />

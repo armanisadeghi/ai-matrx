@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { hrHref } from "@/features/hr/routes";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { HrTaskInbox } from "@/features/hr/tasks/components/HrTaskInbox";
 import type { HrInboxScope } from "@/features/hr/tasks/types";
@@ -15,8 +16,9 @@ export const metadata = { title: "HR tasks" };
 export default async function HrTasksPage({
     searchParams,
 }: {
-    searchParams: Promise<{ scope?: string }>;
+    searchParams: Promise<{ org?: string; scope?: string }>;
 }) {
+  const org = (await searchParams).org;
     const { scope } = await searchParams;
     const initial: HrInboxScope =
         scope === "team" || scope === "queue" ? scope : "mine";
@@ -24,9 +26,9 @@ export default async function HrTasksPage({
     return (
         <>
             <RecordPageHeader
-              backHref="/hr"
+              backHref={hrHref(org)}
               parents={[
-                { label: "HR", href: "/hr" },
+                { label: "HR", href: hrHref(org) },
               ]}
               record={{ name: "HR tasks" }}
             />

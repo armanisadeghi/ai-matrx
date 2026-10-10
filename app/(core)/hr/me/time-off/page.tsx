@@ -14,19 +14,21 @@
 // crashed all four `/hr/me/*` routes with "Functions are not valid as a child of
 // Client Components". The composition lives in `MyTimeOffSurface`.
 
+import { hrHref, hrMeHref } from "@/features/hr/routes";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MyTimeOffSurface } from "@/features/hr/leave/components/MyTimeOffSurface";
 
 export const metadata = { title: "My time off" };
 
-export default function HrMeTimeOffPage() {
+export default async function HrMeTimeOffPage({ searchParams }: { searchParams: Promise<{ org?: string }> }) {
+  const org = (await searchParams).org;
   return (
     <>
       <RecordPageHeader
-        backHref="/hr/me"
+        backHref={hrMeHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
-          { label: "My info", href: "/hr/me" },
+          { label: "HR", href: hrHref(org) },
+          { label: "My info", href: hrMeHref(org) },
         ]}
         record={{ name: "My time off" }}
       />

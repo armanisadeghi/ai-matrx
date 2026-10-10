@@ -27,6 +27,7 @@ export const OUTSIDE_RENDER: Record<string, string> = {
   "features/agent-comparison/shared/battleSnapshot.ts": "snapshot text built on click",
   "features/organizations/components/OrgPrivacyTab.tsx": "edit/save click handlers",
   "features/crm/components/record/ContactCandidatesCard.tsx": "confirm dialog text built in a click handler",
+  "features/marketing/social/cost.ts": "confirmSocialSpendNow reads the rate after an await, in the click handler that asks for the spend",
   "features/audio/limits.ts": "async estimate built after an await, in the spend-gate handler",
   "features/hindsight/workspace/ReviewerChat.tsx": "toast text after an awaited call",
   "features/hindsight/hooks/useEnrollmentActions.ts": "toast text after an awaited call",

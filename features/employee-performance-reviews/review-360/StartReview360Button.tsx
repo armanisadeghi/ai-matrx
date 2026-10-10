@@ -3,6 +3,7 @@
 // "Start 360 review" on the employee's HR profile: finds the manager from the HR record the
 // profile already read (header.manager_employee_id → that profile's login), then starts.
 
+import { hrPerformance360Href } from "@/features/hr/routes";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardCheck } from "lucide-react";
@@ -59,7 +60,7 @@ function StartButton({ profile }: { profile: HrEmployeeProfile }) {
       });
       if (!started.ok) throw new Error(started.message);
       toast.success("360 review started");
-      router.push(`/hr/performance/360?org=${profile.organization_id}`);
+      router.push(hrPerformance360Href(profile.organization_id));
     } catch (thrown) {
       toast.error(thrown instanceof Error ? thrown.message : String(thrown));
     } finally {

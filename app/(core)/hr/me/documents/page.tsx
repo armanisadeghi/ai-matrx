@@ -12,19 +12,21 @@
 // through `hr.employee.current_employment_id`. Replace the placeholder body;
 // keep the shell.
 
+import { hrHref, hrMeHref } from "@/features/hr/routes";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MePillarSurface } from "@/features/hr/me/MeSurfaceShell";
 
 export const metadata = { title: "My documents" };
 
-export default function HrMeDocumentsPage() {
+export default async function HrMeDocumentsPage({ searchParams }: { searchParams: Promise<{ org?: string }> }) {
+  const org = (await searchParams).org;
   return (
     <>
       <RecordPageHeader
-        backHref="/hr/me"
+        backHref={hrMeHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
-          { label: "My info", href: "/hr/me" },
+          { label: "HR", href: hrHref(org) },
+          { label: "My info", href: hrMeHref(org) },
         ]}
         record={{ name: "My documents" }}
       />

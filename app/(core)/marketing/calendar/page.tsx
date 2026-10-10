@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { asClause } from "@ai-matrx/kit/text";
 import { redirect } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 
@@ -38,7 +39,7 @@ export default async function MarketingCalendarPage() {
           </div>
           {error ? (
             <p role="alert" className="text-sm text-destructive">
-              Your clients could not be read: {error.message}. Open one from{" "}
+              Your clients could not be read: {asClause(error.message)}. Open one from{" "}
               <Link className="underline" href={marketingRoutes.brands()}>
                 your client list
               </Link>{" "}

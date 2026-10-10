@@ -10,6 +10,7 @@
 // today for the signed-in person, and `hr.leave_ledger_view` re-checks the viewer
 // itself. A route that took an employment id here would be an access surface.
 
+import { hrHref, hrMeHref, hrMeTimeOffHref } from "@/features/hr/routes";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MyLeaveLedgerSurface } from "@/features/hr/leave/components/MyLeaveLedgerSurface";
 import { notFound } from "next/navigation";
@@ -19,9 +20,12 @@ export const metadata = { title: "Time-off ledger" };
 
 export default async function HrMeTimeOffLedgerPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ policyId: string }>;
+  searchParams: Promise<{ org?: string }>;
 }) {
+  const org = (await searchParams).org;
   const { policyId } = await params;
 
   // 🚨 A MALFORMED ID IN THE URL IS REFUSED HERE, BEFORE ANY READ. Postgres casts
@@ -34,11 +38,11 @@ export default async function HrMeTimeOffLedgerPage({
   return (
     <>
       <RecordPageHeader
-        backHref="/hr/me/time-off"
+        backHref={hrMeTimeOffHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
-          { label: "My info", href: "/hr/me" },
-          { label: "My time off", href: "/hr/me/time-off" },
+          { label: "HR", href: hrHref(org) },
+          { label: "My info", href: hrMeHref(org) },
+          { label: "My time off", href: hrMeTimeOffHref(org) },
         ]}
         record={{ name: "Time-off ledger" }}
       />

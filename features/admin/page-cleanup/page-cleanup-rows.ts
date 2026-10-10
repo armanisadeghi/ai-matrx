@@ -1,3 +1,4 @@
+import { hrMeDocumentsHref, hrMeScheduleHref, hrMeTrainingHref } from "@/features/hr/routes";
 /**
  * THE PAGE-CLEANUP LIST — every page the 2026-10-03 unreachable-routes audit recommended KILL or
  * ASK (nothing in the app links to them), plus the redirect-only aliases and the empty shells as a
@@ -168,7 +169,7 @@ export const PAGE_CLEANUP_ROWS: readonly CleanupRow[] = [
   { path: "/marketing/[brandId]/socials", area: "empty shells", what: "Socials placeholder", rec: "SHELL", reason: "Coming-soon placeholder; the promise is tracked in the registry", group: "lower", href: "/marketing", note: "needs a record id" , target: null, removes: null },
   { path: "/agent-connections/hooks", area: "empty shells", what: "Hooks placeholder", rec: "SHELL", reason: "Coming-soon placeholder; the promise is tracked in the registry", group: "lower", href: "/agent-connections/hooks", note: null , target: null, removes: null },
   { path: "/agent-connections/sub-agents", area: "empty shells", what: "Sub-agents placeholder", rec: "SHELL", reason: "Coming-soon placeholder; the promise is tracked in the registry", group: "lower", href: "/agent-connections/sub-agents", note: null , target: null, removes: null },
-  { path: "/hr/me/documents", area: "empty shells", what: "My documents placeholder", rec: "SHELL", reason: "Coming-soon placeholder; the promise is tracked in the registry", group: "lower", href: "/hr/me/documents", note: null , target: null, removes: null },
-  { path: "/hr/me/schedule", area: "empty shells", what: "My schedule placeholder", rec: "SHELL", reason: "Coming-soon placeholder; the promise is tracked in the registry", group: "lower", href: "/hr/me/schedule", note: null , target: null, removes: null },
-  { path: "/hr/me/training", area: "empty shells", what: "My training placeholder", rec: "SHELL", reason: "Coming-soon placeholder; the promise is tracked in the registry", group: "lower", href: "/hr/me/training", note: null , target: null, removes: null },
+  { path: "/hr/me/documents", area: "empty shells", what: "My documents placeholder", rec: "SHELL", reason: "Coming-soon placeholder; the promise is tracked in the registry", group: "lower", href: hrMeDocumentsHref(null), note: null , target: null, removes: null },
+  { path: "/hr/me/schedule", area: "empty shells", what: "My schedule placeholder", rec: "SHELL", reason: "Coming-soon placeholder; the promise is tracked in the registry", group: "lower", href: hrMeScheduleHref(null), note: null , target: null, removes: null },
+  { path: "/hr/me/training", area: "empty shells", what: "My training placeholder", rec: "SHELL", reason: "Coming-soon placeholder; the promise is tracked in the registry", group: "lower", href: hrMeTrainingHref(null), note: null , target: null, removes: null },
 ];

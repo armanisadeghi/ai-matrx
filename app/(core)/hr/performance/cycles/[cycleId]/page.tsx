@@ -1,6 +1,7 @@
 // `/hr/performance/cycles/[cycleId]` — one standard review cycle: who is in it, who is outstanding,
 // adding people, closing it.
 
+import { hrHref, hrPerformanceHref } from "@/features/hr/routes";
 import { Suspense } from "react";
 
 import { CyclePage } from "@/features/employee-performance-reviews/standard/CyclePage";
@@ -9,15 +10,16 @@ import { RecordPageHeader } from "@/features/shell/components/header/templates/R
 
 export const metadata = { title: "Review cycle" };
 
-export default async function HrPerformanceCyclePage({ params }: { params: Promise<{ cycleId: string }> }) {
+export default async function HrPerformanceCyclePage({ params, searchParams }: { params: Promise<{ cycleId: string }>; searchParams: Promise<{ org?: string }> }) {
+  const org = (await searchParams).org;
   const { cycleId } = await params;
   return (
     <>
       <RecordPageHeader
-        backHref="/hr/performance"
+        backHref={hrPerformanceHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
-          { label: "Performance", href: "/hr/performance" },
+          { label: "HR", href: hrHref(org) },
+          { label: "Performance", href: hrPerformanceHref(org) },
         ]}
         record={{ name: "Review cycle" }}
       />

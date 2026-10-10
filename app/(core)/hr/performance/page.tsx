@@ -1,6 +1,7 @@
 // `/hr/performance` — the STANDARD performance review: my reviews, the reviews I write, and (for an
 // HR seat) the employer's review cycles. The 360 review is a separate trial at `/hr/performance/360`.
 
+import { hrHref } from "@/features/hr/routes";
 import { Suspense } from "react";
 
 import { StandardHome } from "@/features/employee-performance-reviews/standard/StandardHome";
@@ -13,10 +14,11 @@ export const metadata = createRouteMetadata("/hr/performance", {
   description: "Performance reviews: yours, and your team's.",
 });
 
-export default function HrPerformancePage() {
+export default async function HrPerformancePage({ searchParams }: { searchParams: Promise<{ org?: string }> }) {
+  const org = (await searchParams).org;
   return (
     <>
-      <RecordPageHeader backHref="/hr" parents={[{ label: "HR", href: "/hr" }]} record={{ name: "Performance" }} />
+      <RecordPageHeader backHref={hrHref(org)} parents={[{ label: "HR", href: hrHref(org) }]} record={{ name: "Performance" }} />
       <Suspense fallback={<HrLoading variant="table" rows={5} />}>
         <StandardHome />
       </Suspense>

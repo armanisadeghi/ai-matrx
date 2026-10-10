@@ -3,6 +3,7 @@
 // 🚨 SELF ONLY, AND THIS ROUTE ACCEPTS NO `employeeId`. Somebody else's pay is
 // read at route 14's Compensation tab, which is audited.
 
+import { hrHref, hrMeHref } from "@/features/hr/routes";
 import { Suspense } from "react";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
@@ -11,14 +12,15 @@ import { HrLoading } from "@/features/hr/shared/HrStates";
 
 export const metadata = { title: "My pay" };
 
-export default function HrMyPayPage() {
+export default async function HrMyPayPage({ searchParams }: { searchParams: Promise<{ org?: string }> }) {
+  const org = (await searchParams).org;
   return (
     <>
       <RecordPageHeader
-        backHref="/hr/me"
+        backHref={hrMeHref(org)}
         parents={[
-          { label: "HR", href: "/hr" },
-          { label: "My info", href: "/hr/me" },
+          { label: "HR", href: hrHref(org) },
+          { label: "My info", href: hrMeHref(org) },
         ]}
         record={{ name: "My pay" }}
       />

@@ -7,6 +7,9 @@
 // guess; what each person may read comes from the door too (a hidden half carries no answers).
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { HR_ORG_PARAM } from "@/features/hr/constants";
+import { hrHref, hrPerformanceHref } from "@/features/hr/routes";
 import { Check, CircleDot, RotateCcw, Send, Ban } from "lucide-react";
 import { Badge, Button, EmptyState, Select } from "@ai-matrx/design-system/controls";
 import { TextInputDialog } from "@ai-matrx/design-system";
@@ -31,6 +34,7 @@ const NONE = "__none";
 type Dialog = "share" | "acknowledge" | "reopen" | "cancel" | "replace" | null;
 
 export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
+  const org = useSearchParams()?.get(HR_ORG_PARAM);
   const [detail, setDetail] = useState<ReviewDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -79,10 +83,10 @@ export function ReviewWorkspace({ reviewId }: { reviewId: string }) {
   return (
     <>
     <RecordPageHeader
-      backHref="/hr/performance"
+      backHref={hrPerformanceHref(org)}
       parents={[
-        { label: "HR", href: "/hr" },
-        { label: "Performance", href: "/hr/performance" },
+        { label: "HR", href: hrHref(org) },
+        { label: "Performance", href: hrPerformanceHref(org) },
       ]}
       record={{ name: review?.employeeName ?? "Review" }}
       status={review ? { label: statusLabel(review.status), tone: statusTone(review.status) } : undefined}
