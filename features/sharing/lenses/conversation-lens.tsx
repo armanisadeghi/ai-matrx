@@ -48,6 +48,7 @@ import {
 } from "./conversation-transcript";
 import { resourceTitle } from "./default-renderers";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // The chat's tool renderers are a large graph; keep them out of every other
 // share lens's chunk. Rendered on the server too (default ssr), so the tool
 // lines are in the first paint.
@@ -145,10 +146,10 @@ function MediaBlock({ block, token }: { block: MediaBlockData; token: string }) 
       return (
         <div className="inline-flex max-w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
           <ImageOff className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="truncate">
+          <span data-error-box className="truncate">
             {name} could not be loaded. Reload the page, or ask the person who
             shared it to send a new link.
-          </span>
+          <ErrorAlchemyMenu /></span>
         </div>
       );
     }
@@ -331,10 +332,10 @@ export function ConversationShareLens({
       </header>
 
       {!transcript ? (
-        <p className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+        <p data-error-box className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
           This chat&apos;s messages could not be loaded from the link. Ask the
           person who shared it to send a new link.
-        </p>
+        <ErrorAlchemyMenu /></p>
       ) : transcript.turns.length === 0 ? (
         <p className="text-sm text-muted-foreground">This chat has no messages yet.</p>
       ) : (

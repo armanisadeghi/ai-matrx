@@ -39,6 +39,7 @@ import type { ShownTo } from "@/lib/list-scope/shownTo";
 import { SHOWN_TO_ORDER, SHOWN_TO_WORDS } from "@/lib/list-scope/shownToWords";
 import { SearchEngineIndexedSwitch } from "@/features/sharing/indexed/SearchEngineIndexedSwitch";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface RowControlsProps {
   resourceType: ResourceType;
   resourceId: string;
@@ -106,7 +107,7 @@ export function RowControls({
     return (
       <p className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive-ink">
         Couldn&apos;t read this item&apos;s sharing options: {capsError}
-      </p>
+      <ErrorAlchemyMenu error={capsError} /></p>
     );
   }
   if (!caps || childRecord) return null;
