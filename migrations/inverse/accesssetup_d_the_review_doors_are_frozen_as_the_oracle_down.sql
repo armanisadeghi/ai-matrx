@@ -1,0 +1,53 @@
+-- chair-step: inverse of accesssetup_d — drops the 48 frozen hr._legacy_* oracle copies and their server-only door declarations. Run only after the swapped doors have been re-proven (plan step 9) or to abandon the access-setup plan; the live doors never call these.
+-- lane: access-setup
+-- lock: hr
+
+delete from platform.client_callable_door where schema_name = 'hr' and function_name like '\_legacy\_%';
+drop function if exists hr._legacy__rev_answer_problems(jsonb,jsonb);
+drop function if exists hr._legacy__rev_answer_problems(jsonb,jsonb,uuid[]);
+drop function if exists hr._legacy__rev_can_manage(uuid,uuid);
+drop function if exists hr._legacy__rev_close_step(uuid,text,text,uuid,text);
+drop function if exists hr._legacy__rev_default_rating_scale();
+drop function if exists hr._legacy__rev_default_sections();
+drop function if exists hr._legacy__rev_ensure_cadence(uuid);
+drop function if exists hr._legacy__rev_knob(uuid,text,jsonb);
+drop function if exists hr._legacy__rev_lane(uuid,uuid,text);
+drop function if exists hr._legacy__rev_mean_rating(jsonb);
+drop function if exists hr._legacy__rev_notify_peer(uuid);
+drop function if exists hr._legacy__rev_person_name(uuid);
+drop function if exists hr._legacy__rev_response_visible(text,uuid,uuid,uuid);
+drop function if exists hr._legacy__rev_review_goal_ids(uuid);
+drop function if exists hr._legacy__rev_review_json(uuid,uuid);
+drop function if exists hr._legacy__rev_seat(uuid,uuid);
+drop function if exists hr._legacy__rev_set_due(uuid,text,date);
+drop function if exists hr._legacy__rev_skip_level_on(uuid);
+drop function if exists hr._legacy__rev_template_problems(jsonb,jsonb);
+drop function if exists hr._legacy_hr_review_acknowledge(uuid,text);
+drop function if exists hr._legacy_hr_review_calibrate(uuid,text,text);
+drop function if exists hr._legacy_hr_review_calibration(uuid,jsonb);
+drop function if exists hr._legacy_hr_review_cancel(uuid,text);
+drop function if exists hr._legacy_hr_review_cycle_close(uuid);
+drop function if exists hr._legacy_hr_review_cycle_create(jsonb);
+drop function if exists hr._legacy_hr_review_cycle_get(uuid);
+drop function if exists hr._legacy_hr_review_cycle_launch(uuid,jsonb);
+drop function if exists hr._legacy_hr_review_cycle_list(uuid);
+drop function if exists hr._legacy_hr_review_get(uuid);
+drop function if exists hr._legacy_hr_review_history(uuid);
+drop function if exists hr._legacy_hr_review_list_mine(uuid);
+drop function if exists hr._legacy_hr_review_peer_approve(uuid,uuid[],boolean);
+drop function if exists hr._legacy_hr_review_peer_nominate(uuid,uuid[]);
+drop function if exists hr._legacy_hr_review_peer_requests_mine();
+drop function if exists hr._legacy_hr_review_peer_share(uuid,boolean);
+drop function if exists hr._legacy_hr_review_reopen(uuid,text);
+drop function if exists hr._legacy_hr_review_replace_manager(uuid,uuid);
+drop function if exists hr._legacy_hr_review_save_response(uuid,text,jsonb,integer);
+drop function if exists hr._legacy_hr_review_set_overall(uuid,text);
+drop function if exists hr._legacy_hr_review_share(uuid);
+drop function if exists hr._legacy_hr_review_submit_response(uuid,text);
+drop function if exists hr._legacy_hr_review_template_archive(uuid);
+drop function if exists hr._legacy_hr_review_template_ensure_default(uuid);
+drop function if exists hr._legacy_hr_review_template_get(uuid);
+drop function if exists hr._legacy_hr_review_template_list(uuid);
+drop function if exists hr._legacy_hr_review_template_save(jsonb);
+drop function if exists hr._legacy_review_wf_apply(uuid);
+drop function if exists hr._legacy_review_wf_digest(text,uuid);
