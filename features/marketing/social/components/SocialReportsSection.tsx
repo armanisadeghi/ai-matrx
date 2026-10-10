@@ -9,14 +9,16 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ExternalLink } from "lucide-react";
 
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { useRouter } from "next/navigation";
 import { socialRowOpen } from "../row-open";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
-import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
+import { SOCIAL_ROLLUP_SURFACE_NAME, createSocialRollupScope } from "@/features/surfaces/manifests/marketing-social-rollup.manifest";
 
 import { useAgencySocial } from "../hooks";
 import { relativeAge } from "../mappers";
@@ -34,6 +36,22 @@ function RowLink({ href, children }: { href: string | null; children: React.Reac
     </Link>
   ) : (
     <>{children}</>
+  );
+}
+
+/**
+ * An account with no brand has no page of ours to open, so its name opens the profile itself
+ * (a new tab, marked) - never plain text.
+ */
+function AccountLink({ row, children }: { row: { brandId: string | null; platform: string; profileId: string | null; profileUrl: string | null }; children: React.ReactNode }) {
+  const href = agencyAccountHref(row);
+  if (href) return <RowLink href={href}>{children}</RowLink>;
+  if (!row.profileUrl) return <>{children}</>;
+  return (
+    <a href={row.profileUrl} target="_blank" rel="noreferrer noopener" className="inline-flex min-w-0 items-center gap-1 underline-offset-2 hover:underline" data-clickable="">
+      <span className="truncate">{children}</span>
+      <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" aria-label="Opens in a new tab" />
+    </a>
   );
 }
 
@@ -60,9 +78,9 @@ const ACCOUNT_COLUMNS: MatrxColumnDef<AgencyAccountRow>[] = [
     cell: (r) => (
       <span className="flex min-w-0 items-center gap-2">
         <PlatformMark platform={r.platform} size={18} />
-        <RowLink href={agencyAccountHref(r)}>
+        <AccountLink row={r}>
           {formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}
-        </RowLink>
+        </AccountLink>
       </span>
     ),
   },
@@ -127,7 +145,7 @@ const OUTLIER_COLUMNS: MatrxColumnDef<AgencyOutlierRow>[] = [
       </a>
     ),
   },
-  { id: "creator", label: "Creator", header: "Creator", accessorFn: (r) => r.handle, filter: "text", cell: (r) => <RowLink href={agencyAccountHref(r)}>{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</RowLink> },
+  { id: "creator", label: "Creator", header: "Creator", accessorFn: (r) => r.handle, filter: "text", cell: (r) => <AccountLink row={r}>{formatSocialHandle({ platform: r.platform, handle: r.handle, url: r.profileUrl })}</AccountLink> },
   {
     id: "platform",
     label: "Platform",
@@ -164,9 +182,59 @@ export function SocialReportsSection() {
   const agency = useAgencySocial();
   const router = useRouter();
   const [view, setView] = useState<"accounts" | "outliers">("accounts");
+  // The agent surface: built from the rows already on screen (never a fetch).
+  const surfaceScope = () => {
+    if (agency.isError) {
+      return createSocialRollupScope({ rollup_loaded: false, view, load_error: agency.error instanceof Error ? agency.error.message : "Could not read the social roll-up." });
+    }
+    if (agency.isLoading || !agency.data) return createSocialRollupScope({ rollup_loaded: false, view });
+    const accounts = [...agency.data.accounts].sort((a, b) => (b.followers ?? -1) - (a.followers ?? -1));
+    const outliers = [...agency.data.outliers].sort((a, b) => b.score - a.score);
+    return createSocialRollupScope({
+      rollup_loaded: true,
+      view,
+      account_count: accounts.length,
+      brand_count: new Set(accounts.map((a) => a.brandId).filter(Boolean)).size,
+      accounts_by_role: Object.fromEntries(Object.keys(TRACKED_ROLE_LABELS).map((role) => [role, accounts.filter((a) => a.role === role).length])),
+      account_list: xmlList(
+        "accounts",
+        accounts,
+        (a) =>
+          xmlElement("account", {
+            brand: a.brandName,
+            platform: a.platform,
+            handle: a.handle,
+            role: a.role,
+            followers: a.followers,
+            has_page: agencyAccountHref(a) !== null,
+          }),
+        { maxRows: 40, attrs: { total: accounts.length } },
+      ),
+      accounts: accounts.map((a) => ({
+        tracked_account_id: a.trackedAccountId,
+        brand_id: a.brandId,
+        brand_name: a.brandName,
+        profile_id: a.profileId,
+        platform: a.platform,
+        handle: a.handle,
+        role: a.role,
+        followers: a.followers,
+        last_refreshed_at: a.lastRefreshedAt,
+      })),
+      outlier_count: outliers.length,
+      outlier_list: xmlList(
+        "outliers",
+        outliers,
+        (o) => xmlElement("outlier", { brand: o.brandName, platform: o.platform, handle: o.handle, multiple: o.score, views: o.views, posted: o.postedAt }),
+        { maxRows: 25, attrs: { total: outliers.length } },
+      ),
+    });
+  };
+  useSurfaceRuntimeRegistration({ surfaceName: SOCIAL_ROLLUP_SURFACE_NAME, getScope: surfaceScope, isEditable: false });
+
   return (
-    <SectionCard title="Social" action={{ label: "Brands", href: marketingRoutes.brands() }}>
-      <div className="flex flex-col gap-2 p-3">
+    <div>
+      <div className="flex flex-col gap-2">
         <SegmentedControl
           aria-label="Social view"
           value={view}
@@ -185,6 +253,7 @@ export function SocialReportsSection() {
             {...socialRowOpen<AgencyAccountRow>((r) => {
               const href = agencyAccountHref(r) ?? agencyBrandHref(r);
               if (href) router.push(href);
+              else if (r.profileUrl) window.open(r.profileUrl, "_blank", "noopener,noreferrer");
             })}
             isLoading={agency.isLoading}
             read={{
@@ -217,6 +286,6 @@ export function SocialReportsSection() {
           />
         )}
       </div>
-    </SectionCard>
+    </div>
   );
 }

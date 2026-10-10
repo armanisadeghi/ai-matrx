@@ -39,6 +39,12 @@ import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { brandKindCopy } from "@/features/marketing/lib/brand-kind";
 import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
+import {
+  COMPETITOR_DIRECTORY_SURFACE_NAME,
+  createCompetitorDirectoryScope,
+} from "@/features/surfaces/manifests/marketing-competitor-directory.manifest";
 import { toast } from "@/lib/toast";
 
 import {
@@ -389,6 +395,53 @@ export function BrandCompetitorDirectory() {
     );
     return cols;
   }, [platforms, brand.seg, brand.id, brand.organizationId, rivals.one]);
+
+  // The agent surface: built from the rows already on screen (never a fetch).
+  const surfaceScope = () => {
+    const base = { brand_id: brand.id, brand_name: brand.name, brand_kind: brand.kind };
+    if (list.isError) {
+      return createCompetitorDirectoryScope({ ...base, competitors_loaded: false, load_error: list.error instanceof Error ? list.error.message : "Could not read the competitors." });
+    }
+    if (list.isPending || sites.isPending) return createCompetitorDirectoryScope({ ...base, competitors_loaded: false });
+    const withAccounts = realRows.filter((r) => r.accounts.length > 0).length;
+    return createCompetitorDirectoryScope({
+      ...base,
+      competitors_loaded: true,
+      competitor_count: realRows.length,
+      with_accounts_count: withAccounts,
+      without_accounts_count: realRows.length - withAccounts,
+      competitor_list: xmlList(
+        "competitors",
+        realRows,
+        (r) =>
+          xmlElement("competitor", {
+            name: r.name,
+            website: r.domain,
+            accounts: r.accounts
+              .map((a) => `${PLATFORM_LABEL[a.platform] ?? a.platform} ${formatSocialHandle({ platform: a.platform, handle: a.handle, url: a.profileUrl })} ${a.followers ?? "unmeasured"}`)
+              .join("; "),
+            posts: postsTracked(r),
+            best_multiple: bestOutlier(r)?.score ?? null,
+            can_find_socials: Boolean(r.domain),
+          }),
+        { maxRows: 40, attrs: { brand: brand.name, total: realRows.length } },
+      ),
+      competitors: realRows.map((r) => ({
+        key: r.key,
+        name: r.name,
+        website: r.domain,
+        tracking: r.websiteTracking,
+        accounts: r.accounts.map((a) => ({
+          platform: a.platform,
+          handle: a.handle,
+          followers: a.followers,
+          posts_tracked: a.postsTracked,
+          best_multiple: a.topOutlier?.score ?? null,
+        })),
+      })),
+    });
+  };
+  useSurfaceRuntimeRegistration({ surfaceName: COMPETITOR_DIRECTORY_SURFACE_NAME, getScope: surfaceScope, isEditable: false });
 
   if (sites.isPending) return <LoadingSurface label={`Loading ${rivals.manyLower}…`} />;
   if (sites.isError) return <QueryError error={sites.error} />;

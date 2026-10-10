@@ -1,3 +1,5 @@
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { SocialReportsSection } from "@/features/marketing/social/components/SocialReportsSection";
 
 /**
@@ -7,10 +9,16 @@ import { SocialReportsSection } from "@/features/marketing/social/components/Soc
  */
 export default function MarketingSocialPage() {
   return (
-    <main className="h-full overflow-y-auto bg-textured px-3 pb-6 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
-      <div className="mx-auto w-full max-w-[1600px]">
-        <SocialReportsSection />
-      </div>
-    </main>
+    <>
+      <RouteHeader
+        left={<h1 className="ml-2 truncate text-sm font-medium text-foreground">Social</h1>}
+        center={<MarketingWorkspaceNav />}
+      />
+      <main className="h-full overflow-y-auto bg-textured px-3 pb-6 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
+        <div className="mx-auto w-full max-w-[1600px]">
+          <SocialReportsSection />
+        </div>
+      </main>
+    </>
   );
 }

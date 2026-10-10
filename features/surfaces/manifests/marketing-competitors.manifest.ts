@@ -161,7 +161,7 @@ export const marketingCompetitorsManifest: SurfaceManifest = {
     "",
   readiness: "verified",
   label: "Competitor Opportunity Autopsy",
-  urlPattern: "/marketing/competitors",
+  urlPattern: "/marketing/[brandId]/intelligence/competitors/run",
   intro: `<surface_intro>
 You are on the competitor opportunity autopsy workspace. The selected site is the client; competitors are only rivals supported by provider overlap or explicitly supplied by the user. Read latest_autopsy for the causal verdict and evidence limitations, competitors for stable threat assessments, and opportunities for the concrete work queue.
 Keep provider facts, crawler observations, AI judgments, and human workflow status separate. Never restate authority or keyword counts as strategy. Lead with why the competitor wins, what the client already has, and the smallest high-leverage action that closes the gap. Every owned page id and competitor URL is a real door; use it rather than naming an unreachable record.
