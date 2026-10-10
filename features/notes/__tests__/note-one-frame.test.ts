@@ -59,3 +59,31 @@ it("a single note has no tab strip", () => {
   expect(items.length).toBeGreaterThan(0);
   for (const item of items) expect(item).toMatch(/\bstandalone\b/);
 });
+
+it("the mode capsule and the note tools are one component everywhere", () => {
+  // The Write dropdown, and hand-rolled mode / outline / versions buttons, are
+  // the class: NOTE_VIEW_MODES is only mapped by NoteModeSwitch.
+  const mappers = files
+    .filter((f) => /NOTE_VIEW_MODES\.map\(/.test(readFileSync(f, "utf8")))
+    .map((f) => relative(ROOT, f));
+  expect(mappers).toEqual(["features/notes/components/NoteModeSwitch.tsx"]);
+  const controls = read("features/notes/components/NoteViewControls.tsx");
+  expect(controls).toMatch(/<NoteModeSwitch\b/);
+  expect(controls).toMatch(/<NoteRecordTools\b/);
+  expect(controls).not.toMatch(/DropdownMenu/);
+  const view = read("features/notes/components/NotesView.tsx");
+  expect(view).toMatch(/<NoteModeSwitch\b/);
+  expect(view).not.toMatch(/<(ListTapButton|HistoryTapButton)\b/);
+});
+
+it("hosts that show one note frame it with NoteWorkspace, not their own editor chrome", () => {
+  for (const rel of [
+    "features/files/virtual-sources/adapters/NotesInlinePreview.tsx",
+    "features/war-room/components/thread/ThreadNotesTab.tsx",
+    "features/education/study-guides/components/StudyGuideReader.tsx",
+  ]) {
+    const src = read(rel);
+    expect(src).toMatch(/<NoteWorkspace\b/);
+    expect(src).not.toMatch(/<NoteEditorCore\b/);
+  }
+});

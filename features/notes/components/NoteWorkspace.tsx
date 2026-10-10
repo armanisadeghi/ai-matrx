@@ -129,7 +129,7 @@ export function NoteWorkspace({ instanceId, noteId, title = "inline", titleSlot,
           {titleSlot ? (
             <div className="min-w-0 max-w-[12rem] shrink">{titleSlot}</div>
           ) : null}
-          {!titleSlot && title === "inline" && <NoteTitleField noteId={noteId} className="max-w-[12rem] shrink-0" />}
+          {!titleSlot && title === "inline" && <NoteTitleField noteId={noteId} className="hidden max-w-[12rem] shrink-0 @[28rem]:block" />}
           {/* The four modes never reach into the tools beside them: centred while
               they fit, start-aligned and scrollable below ~18rem (a narrow tile),
               so the capsule can not overlap the outline / versions group. */}
