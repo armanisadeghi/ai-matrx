@@ -2,7 +2,7 @@
 
 // features/start/useStartLayout.ts — read, seed and save this person's Start layout, and its versions.
 // Must sit under a records provider (StartPage's RecordsMount).
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { upsertAppRow, useRecordsClient, useTypedTable, type RecordHistoryEntry } from "@ai-matrx/records/react";
 import { readVersionNow, restoreAt } from "@ai-matrx/records/versions";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -13,6 +13,12 @@ import { parseStartDoc, serializeStartDoc } from "./widgets/doc";
 import { defaultStartDoc } from "./widgets/defaultDoc";
 import type { StartDoc } from "./widgets/types";
 
+/**
+ * People whose first layout this tab already wrote. Module scope, not a ref: a remount (route bounce,
+ * strict mode) before the row list re-reads would otherwise write the seed twice (two versions).
+ */
+const SEEDED_THIS_TAB = new Set<string>();
+
 export type SaveResult = { ok: true } | { ok: false; error: string };
 
 export function useStartLayout() {
@@ -21,7 +27,6 @@ export function useStartLayout() {
   const table = useTypedTable(startLayoutTable);
   const choice = useStartPage();
   const [saving, setSaving] = useState(false);
-  const seeded = useRef(false);
 
   const mine = table.rows
     .filter((r) => r.person === userId)
@@ -50,8 +55,8 @@ export function useStartLayout() {
   // First visit: write the default layout once (normal app first, then her old start data page).
   const needsSeed = !loading && !table.error && Boolean(userId) && !current && Boolean(homeOrg);
   useEffect(() => {
-    if (!needsSeed || seeded.current) return;
-    seeded.current = true;
+    if (!needsSeed || !userId || SEEDED_THIS_TAB.has(userId)) return;
+    SEEDED_THIS_TAB.add(userId);
     void save(defaultStartDoc(choice.pageId), "Starting layout");
   });
 
