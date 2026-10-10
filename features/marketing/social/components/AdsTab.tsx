@@ -29,6 +29,13 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
+import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
+import { useSurfaceClientTools, useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SOCIAL_ADS_SURFACE_NAME,
+  SOCIAL_ADS_TOOLS,
+  createSocialAdsScope,
+} from "@/features/surfaces/manifests/marketing-social-tabs.manifest";
 
 import { useSocialSpend } from "../cost";
 import { adFormatLabel, filterAds, formatMix, landingPageRanking, newSinceLook, sortAds, toAdCardModel, type AdSort } from "../ads";
@@ -184,6 +191,55 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
 
   const formats = useMemo(() => formatMix(ads).map((m) => m.format), [ads]);
   const shown = useMemo(() => sortAds(filterAds(ads, { activeOnly, format }), sort), [ads, activeOnly, format, sort]);
+  const brandName = useMarketingBrand().name;
+  useSurfaceRuntimeRegistration({
+    surfaceName: SOCIAL_ADS_SURFACE_NAME,
+    isEditable: false,
+    getScope: () =>
+      createSocialAdsScope({
+        ads_loaded: true,
+        ...(error ? { load_error: error.message } : {}),
+        brand_id: brandId,
+        brand_name: brandName,
+        section: "search",
+        library_options: AD_LIBRARIES.map((l) => ({ id: l, label: AD_LIBRARY_LABELS[l] })),
+        ...(asked ? { searched: { library: asked.library, by: asked.kind, text: asked.text } } : {}),
+        result_count: shown.length,
+        results: shown.map((a) => ({
+          ad_id: a.adId,
+          library: a.library,
+          advertiser: a.advertiser,
+          headline: a.headline,
+          body: a.body,
+          format: a.format,
+          status: a.status,
+          started_at: a.startedAt,
+          landing_url: a.landingUrl,
+        })),
+      }),
+  });
+  useSurfaceClientTools(SOCIAL_ADS_SURFACE_NAME, {
+    [SOCIAL_ADS_TOOLS.setFilters]: (input) => {
+      const a = (input ?? {}) as Record<string, unknown>;
+      if (typeof a.active_only === "boolean") setActiveOnly(a.active_only);
+      if (typeof a.format === "string") setFormat(a.format);
+      if (a.sort === "latest" || a.sort === "longest") setSort(a.sort);
+      return "Filters updated.";
+    },
+    [SOCIAL_ADS_TOOLS.search]: async (input) => {
+      const a = (input ?? {}) as { library?: unknown; by?: unknown; text?: unknown };
+      const lib = String(a.library ?? "");
+      const by = a.by === "advertiser" ? "advertiser" : "query";
+      const q = String(a.text ?? "").trim();
+      if (!isAdLibrary(lib)) throw new Error("library must be meta, tiktok, google or linkedin.");
+      if (q.length < 2) throw new Error("Give a keyword or advertiser of at least two characters.");
+      setLibrary(lib);
+      setKind(by);
+      setText(q);
+      await run({ library: lib, kind: by, text: q });
+      return "Search finished; see results.";
+    },
+  });
   const canSearch = text.trim().length > 1 && !busy;
   const country = meta?.effective_params?.country;
   const region = meta?.effective_params?.region;
@@ -291,6 +347,31 @@ function TrackedAdvertisers() {
   const tracked = useTrackedAdvertisers();
   const [openId, setOpenId] = useState<string | null>(null);
   const current = tracked.data?.find((t) => t.viewId === openId) ?? null;
+  const { brandId } = useSocials();
+  const brandName = useMarketingBrand().name;
+  useSurfaceRuntimeRegistration({
+    surfaceName: SOCIAL_ADS_SURFACE_NAME,
+    isEditable: false,
+    getScope: () =>
+      createSocialAdsScope(
+        tracked.isError
+          ? { ads_loaded: false, load_error: "Could not read the tracked advertisers.", brand_id: brandId, brand_name: brandName }
+          : tracked.isPending
+            ? ({ ads_loaded: false, brand_id: brandId, brand_name: brandName } as never)
+            : {
+                ads_loaded: true,
+                brand_id: brandId,
+                brand_name: brandName,
+                section: "tracked",
+                library_options: AD_LIBRARIES.map((l) => ({ id: l, label: AD_LIBRARY_LABELS[l] })),
+                tracked_advertisers: (tracked.data ?? []).map((t) => ({
+                  id: t.viewId,
+                  advertiser: t.definition.advertiser,
+                  library: t.definition.library,
+                })),
+              },
+      ),
+  });
 
   if (tracked.isPending) return <RegionSkeleton shape="cards" count={3} />;
   if (tracked.isError) {

@@ -37,6 +37,13 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
+import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
+import { useSurfaceClientTools, useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SOCIAL_KPIS_SURFACE_NAME,
+  SOCIAL_KPIS_TOOLS,
+  createSocialKpisScope,
+} from "@/features/surfaces/manifests/marketing-social-tabs.manifest";
 import { cn } from "@/lib/utils";
 import { BrandChannelPanel } from "@/features/marketing/youtube/components/BrandChannelPanel";
 
@@ -118,6 +125,82 @@ export function KpisTab() {
   const [now] = useState(() => Date.now());
   const accountRows = useAccountRows(organizationId, brandId);
   const { busyRow, trackAllOwn, costText } = useTrackOwn(organizationId, brandId);
+
+  // The agent surface: built from what is already on screen (never a fetch).
+  const brandName = useMarketingBrand().name;
+  useSurfaceRuntimeRegistration({
+    surfaceName: SOCIAL_KPIS_SURFACE_NAME,
+    isEditable: false,
+    getScope: () => {
+      if (data.isError || goals.isError)
+        return createSocialKpisScope({
+          kpis_loaded: false,
+          load_error: socialErrorMessage(data.error ?? goals.error, "Could not read the KPIs."),
+          brand_id: brandId,
+          brand_name: brandName,
+        });
+      if (data.isLoading || goals.isLoading)
+        return createSocialKpisScope({ kpis_loaded: false, brand_id: brandId, brand_name: brandName } as never);
+      const accs = data.data?.accounts ?? [];
+      const ps = data.data?.posts ?? [];
+      const snaps = data.data?.snapshots ?? [];
+      const kAccs = toKpiAccounts(accs);
+      return createSocialKpisScope({
+        kpis_loaded: true,
+        brand_id: brandId,
+        brand_name: brandName,
+        view,
+        goal_count: (goals.data ?? []).length,
+        goals: (goals.data ?? []).map((g) => {
+          const metric = goalMetricId(g);
+          if (!metric) return { id: g.id, metric: g.metric_label ?? g.metric, status: "not tracked here" };
+          const measured = measureGoal({ goal: g, metric, accounts: kAccs, posts: ps, now });
+          const progress = goalProgress({ goal: g, metric, current: measured.value, now });
+          return {
+            id: g.id,
+            metric: metricDefOf(metric).label,
+            scope: g.tracked_account_id ? "one account" : g.platform ? platformLabel(g.platform) : "own accounts",
+            period: g.period,
+            status: progress.status,
+            current: progress.current,
+            target: progress.target,
+            fraction: progress.fraction,
+          };
+        }),
+        own_trends: accs
+          .filter((a) => a.role === "own" && a.profileId)
+          .map((a) => {
+            const mine = snaps.filter((s) => s.profile_id === a.profileId);
+            return {
+              platform: a.platform,
+              handle: a.handle,
+              followers: a.followers,
+              growth_30d: judgeFollowerGrowth(mine, 30).fraction,
+              points: profileFollowerSeries(mine).map((p) => [new Date(p.t).toISOString().slice(0, 10), p.value]),
+            };
+          }),
+        benchmark: buildBenchmarkRows(accs, ps, snaps, now).map((r) => ({
+          platform: r.platform,
+          handle: r.handle,
+          role: r.role,
+          followers: r.followers,
+          growth_30d: r.growth,
+          posts_per_week: r.postsPerWeek,
+          median_views: r.medianViews,
+          engagement_rate: r.engagementRate,
+          outlier_rate: r.outlierRate,
+        })),
+      });
+    },
+  });
+  useSurfaceClientTools(SOCIAL_KPIS_SURFACE_NAME, {
+    [SOCIAL_KPIS_TOOLS.setView]: (input) => {
+      const v = (input as { view?: unknown } | null)?.view;
+      if (v !== "trend" && v !== "benchmark" && v !== "own") throw new Error("view must be trend, benchmark or own.");
+      setView(v);
+      return `Showing ${v}.`;
+    },
+  });
 
   if (data.isLoading || goals.isLoading) return <RegionSkeleton shape="cards" count={4} />;
   if (data.isError || goals.isError) {
@@ -415,20 +498,13 @@ function OwnTrend({
 // Benchmark
 // ---------------------------------------------------------------------------
 
-function BenchmarkTable({
-  accounts,
-  posts,
-  snapshots,
-  now,
-}: {
-  accounts: AccountRow[];
-  posts: BrandPost[];
-  snapshots: readonly import("../types").ProfileSnapshotRow[];
-  now: number;
-}) {
-  const router = useRouter();
-  const { brandSeg } = useSocials();
-  const rows: BenchmarkRow[] = sortBenchmark(
+function buildBenchmarkRows(
+  accounts: AccountRow[],
+  posts: BrandPost[],
+  snapshots: readonly import("../types").ProfileSnapshotRow[],
+  now: number,
+): BenchmarkRow[] {
+  return sortBenchmark(
     accounts
       .filter((a) => a.trackedAccountId)
       .map((a) => {
@@ -452,6 +528,22 @@ function BenchmarkTable({
         };
       }),
   );
+}
+
+function BenchmarkTable({
+  accounts,
+  posts,
+  snapshots,
+  now,
+}: {
+  accounts: AccountRow[];
+  posts: BrandPost[];
+  snapshots: readonly import("../types").ProfileSnapshotRow[];
+  now: number;
+}) {
+  const router = useRouter();
+  const { brandSeg } = useSocials();
+  const rows = buildBenchmarkRows(accounts, posts, snapshots, now);
   const pct = (v: number | null) => (v === null ? "—" : `${(v * 100).toFixed(1)}%`);
   const columns: MatrxColumnDef<BenchmarkRow>[] = [
     {

@@ -34,6 +34,14 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
+import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
+import { useSurfaceClientTools, useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
+import {
+  SOCIAL_OUTLIERS_SURFACE_NAME,
+  SOCIAL_OUTLIERS_TOOLS,
+  createSocialOutliersScope,
+} from "@/features/surfaces/manifests/marketing-social-tabs.manifest";
 
 import { useBrandSocialData, useInvalidateSocial, useWatchlistHits, useWatchlists } from "../hooks";
 import { relativeAge } from "../mappers";
@@ -388,6 +396,111 @@ export function OutliersTab() {
         ]
       : []),
   ];
+
+  // The agent surface: built from what is already on screen (never a fetch).
+  const brandName = useMarketingBrand().name;
+  const stateOf = (i: FeedItem) => i.state ?? "none";
+  useSurfaceRuntimeRegistration({
+    surfaceName: SOCIAL_OUTLIERS_SURFACE_NAME,
+    isEditable: false,
+    getScope: () =>
+      createSocialOutliersScope(
+        data.isError
+          ? { outliers_loaded: false, load_error: socialErrorMessage(data.error, "Could not read the posts."), brand_id: brandId, brand_name: brandName }
+          : data.isLoading
+            ? ({ outliers_loaded: false, brand_id: brandId, brand_name: brandName } as never)
+            : {
+                outliers_loaded: true,
+                brand_id: brandId,
+                brand_name: brandName,
+                filters: {
+                  watchlist: active ? active.name : "all",
+                  platform: platformValue,
+                  role: roleValue,
+                  window_days: filter.windowDays,
+                  min_multiple: filter.minMultiple,
+                  format: filter.format,
+                  sort,
+                  view: view === "grid" ? "cards" : "table",
+                },
+                platform_options: platformsPresent.map((p) => ({ id: p, label: platformLabel(p) })),
+                window_options: [...OUTLIER_WINDOWS],
+                min_multiple_options: [...OUTLIER_MIN_MULTIPLES],
+                post_count: posts.length,
+                outlier_count: items.length,
+                watchlists: lists.map((w) => ({ id: w.id, name: w.name, selected: w.id === selected })),
+                outlier_list: xmlList(
+                  "outliers",
+                  items,
+                  (i) =>
+                    xmlElement("outlier", {
+                      id: i.post.postId,
+                      platform: i.post.platform,
+                      handle: i.post.handle,
+                      hook: i.post.hookLine,
+                      views: i.post.views,
+                      multiple: i.post.outlierScore,
+                      age: relativeAge(i.post.postedAt),
+                      state: stateOf(i),
+                    }),
+                  { maxRows: 25, attrs: { brand: brandName } },
+                ),
+                outliers: items.map((i) => ({
+                  post_id: i.post.postId,
+                  platform: i.post.platform,
+                  handle: i.post.handle,
+                  role: i.post.role,
+                  hook_line: i.post.hookLine,
+                  views: i.post.views,
+                  multiple: i.post.outlierScore,
+                  percentile: i.post.percentile,
+                  format: i.post.format,
+                  posted_at: i.post.postedAt,
+                  state: stateOf(i),
+                  url: i.post.url,
+                })),
+              },
+      ),
+  });
+  useSurfaceClientTools(SOCIAL_OUTLIERS_SURFACE_NAME, {
+    [SOCIAL_OUTLIERS_TOOLS.setFilters]: (input) => {
+      const a = (input ?? {}) as Record<string, unknown>;
+      const next = { ...filter };
+      if (typeof a.platform === "string") next.platforms = a.platform === ALL ? [] : [a.platform];
+      if (typeof a.role === "string") next.roles = a.role === ALL ? [] : isTrackedRole(a.role) ? [a.role] : next.roles;
+      if (typeof a.window_days === "number" && (OUTLIER_WINDOWS as readonly number[]).includes(a.window_days)) next.windowDays = a.window_days as OutlierWindow;
+      if (typeof a.min_multiple === "number" && (OUTLIER_MIN_MULTIPLES as readonly number[]).includes(a.min_multiple)) next.minMultiple = a.min_multiple;
+      if (typeof a.format === "string") next.format = a.format;
+      setFilter(next);
+      if (a.sort === "multiple" || a.sort === "views" || a.sort === "newest") setSort(a.sort);
+      if (a.view === "cards") setView("grid");
+      if (a.view === "table") setView("table");
+      return "Filters updated.";
+    },
+    [SOCIAL_OUTLIERS_TOOLS.openPost]: (input) => {
+      const id = String((input as { post_id?: unknown } | null)?.post_id ?? "");
+      const item = items.find((i) => i.post.postId === id);
+      if (!item) throw new Error("That post is not in the feed. Use a post_id from outliers.");
+      openPost(item);
+      return "Opened the post.";
+    },
+    [SOCIAL_OUTLIERS_TOOLS.saveWatchlist]: async (input) => {
+      const name = String((input as { name?: unknown } | null)?.name ?? "").trim();
+      if (!name) throw new Error("Name the watchlist.");
+      const id = await createWatchlist({ organizationId, brandId, name, filter });
+      await invalidate();
+      setSelected(id);
+      rememberWatchlist(id);
+      return { id, name };
+    },
+    [SOCIAL_OUTLIERS_TOOLS.removeWatchlist]: async () => {
+      if (!active) throw new Error("No watchlist is selected.");
+      await archiveWatchlist(active.id);
+      await invalidate();
+      pickWatchlist(ALL);
+      return `Archived "${active.name}".`;
+    },
+  });
 
   if (data.isLoading) return <RegionSkeleton shape="cards" count={6} />;
   if (data.isError) {

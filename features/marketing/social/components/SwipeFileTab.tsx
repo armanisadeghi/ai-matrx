@@ -28,6 +28,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
+import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
+import { useSurfaceClientTools, useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { xmlElement, xmlList } from "@ai-matrx/chat/surfaces/runtime/context-bundle";
+import {
+  SOCIAL_SWIPE_SURFACE_NAME,
+  SOCIAL_SWIPE_TOOLS,
+  createSocialSwipeScope,
+} from "@/features/surfaces/manifests/marketing-social-tabs.manifest";
 import { cn } from "@/lib/utils";
 
 import { useAllSwipeCollections, useInvalidateSocial, useSwipeItems } from "../hooks";
@@ -224,6 +232,103 @@ export function SwipeFileTab() {
       setBulkBusy(false);
     }
   }
+
+  // The agent surface: built from what is already on screen (never a fetch).
+  const brandName = useMarketingBrand().name;
+  const noteOf = (i: SwipeItem) => itemNote(i, scope);
+  const tagsOf = (i: SwipeItem) => itemTags(i, scope);
+  useSurfaceRuntimeRegistration({
+    surfaceName: SOCIAL_SWIPE_SURFACE_NAME,
+    isEditable: false,
+    getScope: () =>
+      createSocialSwipeScope(
+        collections.isError || itemsQuery.isError
+          ? {
+              swipe_loaded: false,
+              load_error: socialErrorMessage(collections.error ?? itemsQuery.error, "Could not read the swipe file."),
+              brand_id: brandId,
+              brand_name: brandName,
+            }
+          : collections.isPending || itemsQuery.isPending
+            ? ({ swipe_loaded: false, brand_id: brandId, brand_name: brandName } as never)
+            : {
+                swipe_loaded: true,
+                brand_id: brandId,
+                brand_name: brandName,
+                collections: live.map((c) => ({
+                  id: c.id,
+                  name: c.name,
+                  item_count: counts.get(c.id) ?? 0,
+                  linked_to_brand: c.brand_id === brandId,
+                })),
+                scope,
+                filters: {
+                  search: effective.search,
+                  type: effective.type,
+                  platform: effective.platform,
+                  format: effective.format,
+                  tag: effective.tag,
+                  saved: effective.saved,
+                },
+                item_count: shown.length,
+                item_list: xmlList(
+                  "swipe_items",
+                  shown,
+                  (i) =>
+                    xmlElement("item", {
+                      key: i.key,
+                      type: i.itemType,
+                      platform: i.platform,
+                      title: i.title,
+                      handle: i.post?.handle ?? i.ad?.advertiser,
+                      note: noteOf(i),
+                      tags: tagsOf(i).join(","),
+                    }),
+                  { maxRows: 30, attrs: { brand: brandName } },
+                ),
+                items: shown.map((i) => ({
+                  key: i.key,
+                  item_type: i.itemType,
+                  item_id: i.itemId,
+                  platform: i.platform,
+                  title: i.title,
+                  handle: i.post?.handle ?? i.ad?.advertiser ?? null,
+                  url: i.post?.url ?? i.ad?.libraryUrl ?? null,
+                  note: noteOf(i),
+                  tags: tagsOf(i),
+                  collections: i.edges.map((e) => e.collectionId),
+                })),
+              },
+      ),
+  });
+  useSurfaceClientTools(SOCIAL_SWIPE_SURFACE_NAME, {
+    [SOCIAL_SWIPE_TOOLS.setFilters]: (input) => {
+      const a = (input ?? {}) as Record<string, unknown>;
+      const patch: Partial<SwipeFilters> = {};
+      if (typeof a.search === "string") patch.search = a.search;
+      if (a.type === "all" || a.type === "posts" || a.type === "ads") patch.type = a.type;
+      if (typeof a.platform === "string") patch.platform = a.platform;
+      if (typeof a.format === "string") patch.format = a.format;
+      if (typeof a.tag === "string") patch.tag = a.tag;
+      if (typeof a.collection_id === "string") patch.scope = a.collection_id === "all" ? ALL_SAVED : a.collection_id;
+      set(patch);
+      return "Filters updated.";
+    },
+    [SOCIAL_SWIPE_TOOLS.openItem]: (input) => {
+      const key = String((input as { key?: unknown } | null)?.key ?? "");
+      if (!items.some((i) => i.key === key)) throw new Error("That item is not saved here. Use a key from items.");
+      setSheetKey(key);
+      return "Opened the item.";
+    },
+    [SOCIAL_SWIPE_TOOLS.newCollection]: async (input) => {
+      const name = String((input as { name?: unknown } | null)?.name ?? "").trim();
+      if (!name) throw new Error("Name the collection.");
+      const made = await createCollection({ name, brandId }, { organizationId });
+      setFilters({ ...effective, scope: made.collection_id });
+      await invalidate();
+      return { id: made.collection_id, name };
+    },
+  });
 
   if (collections.isPending) {
     return <RegionSkeleton shape="cards" count={6} />;

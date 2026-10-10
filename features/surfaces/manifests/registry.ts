@@ -232,6 +232,12 @@ import {
 import { marketingSocialAccountsManifest } from "./marketing-social-accounts.manifest";
 import { marketingSocialRollupManifest } from "./marketing-social-rollup.manifest";
 import { marketingCompetitorDirectoryManifest } from "./marketing-competitor-directory.manifest";
+import {
+  marketingSocialAdsManifest,
+  marketingSocialKpisManifest,
+  marketingSocialOutliersManifest,
+  marketingSocialSwipeManifest,
+} from "./marketing-social-tabs.manifest";
 import { contextItemsManifest } from "./context-items.manifest";
 import { chatVoiceManifest } from "@ai-matrx/chat/surfaces/manifests/chat-voice.manifest";
 import { staffManifest } from "./staff.manifest";
@@ -507,6 +513,10 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingSocialAccountsManifest,
   marketingSocialRollupManifest,
   marketingCompetitorDirectoryManifest,
+  marketingSocialOutliersManifest,
+  marketingSocialKpisManifest,
+  marketingSocialSwipeManifest,
+  marketingSocialAdsManifest,
   socialPostManifest,
   socialProfileManifest,
   socialOutlierFeedManifest,
