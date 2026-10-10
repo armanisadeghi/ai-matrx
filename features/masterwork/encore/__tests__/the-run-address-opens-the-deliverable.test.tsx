@@ -152,7 +152,7 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "user-1",
 }));
 jest.mock("@/lib/redux/store-singleton", () => ({
-  getStoreSingleton: () => ({ dispatch: () => {} }),
+  getStoreSingleton: () => ({ dispatch: () => {}, getState: () => ({}) }),
 }));
 jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
   retryActiveOrgBootstrap: () => ({ type: "test/retry-organization-read" }),

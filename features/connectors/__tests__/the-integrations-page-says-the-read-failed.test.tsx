@@ -57,6 +57,7 @@ jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
 
 jest.mock("@/lib/redux/store-singleton", () => ({
   getStoreSingleton: () => ({
+    getState: () => ({}),
     dispatch: (action: unknown) => {
       dispatched.push(action);
       return action;

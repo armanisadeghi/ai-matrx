@@ -56,6 +56,7 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: (
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
   selectIsSuperAdmin: () => true,
+  selectAdminFeature: () => true,
 }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ replace: jest.fn() }), useSearchParams: () => new URLSearchParams() }));
 jest.mock("@/components/official/settings/SettingsDesignProvider", () => ({

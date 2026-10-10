@@ -14,11 +14,16 @@ jest.mock("@/features/trash/service", () => ({
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 jest.mock("@/features/matrx-envelope/recordReference", () => ({ buildRecordReferenceFence: jest.fn() }));
 
+import React, { act } from "react";
+import { createRoot } from "react-dom/client";
+
 import type { EntityListController } from "@/lib/entity-list/config";
 import type { ItemMenuEntry } from "@ai-matrx/chat/ui/item-types";
 import { archiveRecord } from "@/features/trash/service";
 import { useTranscriptRowActions } from "./useTranscriptRowActions";
 import type { TranscriptListRow } from "./types";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const row = { id: "t-1", kind: "transcript", title: "Tragedy of the commons", is_archived: false } as TranscriptListRow;
 
@@ -31,12 +36,25 @@ function controller(archived: "active" | "archived" | "all") {
 }
 
 async function archiveThrough(list: ReturnType<typeof controller>) {
-  const { actions } = useTranscriptRowActions(list);
+  // The hook is a real React hook now (useClipboard holds state), so it runs inside a component.
+  let actions!: ReturnType<typeof useTranscriptRowActions>["actions"];
+  function Harness() {
+    actions = useTranscriptRowActions(list).actions;
+    return null;
+  }
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(React.createElement(Harness));
+  });
   const menu = actions.menuFor!(row)();
   const item = menu.sections.flatMap((s) => s.items as ItemMenuEntry[]).find((i) => i.id === "archive");
   expect(item).toBeDefined();
-  (item as { onSelect: () => void }).onSelect();
-  await new Promise((r) => setTimeout(r, 0));
+  await act(async () => {
+    (item as { onSelect: () => void }).onSelect();
+    await new Promise((r) => setTimeout(r, 0));
+  });
+  act(() => root.unmount());
   expect(archiveRecord).toHaveBeenCalledWith("transcript", "t-1", "transcript");
 }
 

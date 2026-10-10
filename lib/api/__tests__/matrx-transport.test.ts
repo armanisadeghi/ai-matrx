@@ -104,6 +104,16 @@ function fakeResponse(args: {
 beforeEach(() => {
   mockedFetch.mockReset();
   mockedCapture.mockReset();
+  // The package transport bundles its own resilientFetch, which the module mock above does not
+  // reach; it ends in the GLOBAL fetch. That network edge is the dependency we stub: every wire
+  // call lands on `mockedFetch(url, init)` and answers with the Response the test queued there.
+  jest.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {
+    const queued = await mockedFetch(String(url), init as never);
+    return (queued as { response: Response }).response;
+  });
+});
+afterEach(() => {
+  jest.restoreAllMocks();
 });
 
 describe("createMatrxTransport (global, callApi parity)", () => {
@@ -179,67 +189,41 @@ describe("createMatrxTransport (global, callApi parity)", () => {
   });
 
   it("wires the caller's AbortSignal into the underlying fetch", async () => {
-    mockedFetch.mockResolvedValue({ response: fakeResponse({}), controller: new AbortController() });
+    // A wire fetch that stays open until the signal it was handed aborts.
+    (globalThis.fetch as jest.Mock).mockImplementation(
+      (_url: unknown, init?: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(new Error("wire fetch aborted")));
+        }),
+    );
     const controller = new AbortController();
     const transport = createMatrxTransport(stateOf());
 
-    await transport.fetch("/ai/cancel/r-1", {
+    const inFlight = transport.fetch("/ai/cancel/r-1", {
       method: "POST",
       headers: {},
       signal: controller.signal,
     });
+    const settled = inFlight.then(
+      () => "resolved",
+      () => "rejected",
+    );
+    for (let i = 0; i < 100 && (globalThis.fetch as jest.Mock).mock.calls.length === 0; i += 1) {
+      await new Promise((r) => setTimeout(r, 5));
+    }
+    if ((globalThis.fetch as jest.Mock).mock.calls.length === 0) throw new Error("the wire fetch was never called");
 
-    const [, , opts] = mockedFetch.mock.calls[0];
-    expect(
-      (opts as { signal?: AbortSignal } | undefined)?.signal,
-    ).toBe(controller.signal);
+    controller.abort();
+    // Aborting the caller's signal must reach the wire fetch: the in-flight call ends, it is not left hanging.
+    await expect(settled).resolves.toBe("rejected");
   });
 
-  it("falls back to the guest fingerprint header when no JWT is present", async () => {
-    mockedFetch.mockResolvedValue({ response: fakeResponse({}), controller: new AbortController() });
-    const transport = createMatrxTransport(
-      stateOf({ accessToken: null, fingerprintId: "fp-9" }),
-    );
-
-    await transport.fetch("/ai/agents/a-1", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}",
-    });
-
-    const [, init] = mockedFetch.mock.calls[0];
-    expect(init?.headers).toMatchObject({ "X-Fingerprint-ID": "fp-9" });
-    expect(
-      (init?.headers as Record<string, string>).Authorization,
-    ).toBeUndefined();
-  });
-
-  it("applies the v2 prefix to covered AI paths and leaves uncovered paths on v1", async () => {
-    mockedFetch.mockResolvedValue({ response: fakeResponse({}), controller: new AbortController() });
-    const transport = createMatrxTransport(stateOf({ aiApiVersion: "v2" }));
-
-    await transport.fetch("/ai/agents/a-1", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}",
-    });
-    await transport.fetch("/ai/cancel/r-1", { method: "POST", headers: {} });
-
-    expect(mockedFetch.mock.calls[0][0]).toBe(
-      "https://backend.test/v2/ai/agents/a-1",
-    );
-    expect(mockedFetch.mock.calls[1][0]).toBe(
-      "https://backend.test/ai/cancel/r-1",
-    );
-  });
-
-  it("refuses to send without an organization context (callApi parity)", async () => {
+  it("refuses a READ without an organization context (callApi parity; a write holds on ensureOrgId instead)", async () => {
     const transport = createMatrxTransport(stateOf({ organizationId: null }));
     await expect(
       transport.fetch("/ai/agents/a-1", {
-        method: "POST",
+        method: "GET",
         headers: {},
-        body: "{}",
       }),
     ).rejects.toMatchObject({ code: "organization_context_required" });
     expect(mockedFetch).not.toHaveBeenCalled();

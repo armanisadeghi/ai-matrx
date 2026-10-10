@@ -9,9 +9,10 @@ import type { CloudFile } from "@/features/files/types";
 import { normalize } from "./input/normalize";
 import { resolve } from "./resolver";
 
-jest.mock("@/lib/redux/store-singleton", () => ({
-  getStoreSingleton: () => ({ getState: () => ({}) }),
-}));
+jest.mock("@/lib/redux/store-singleton", () => {
+  const store = { getState: () => ({ cloudFiles: { filesById: {} } }) };
+  return { getStoreSingleton: () => store, getStore: () => store };
+});
 jest.mock("@ai-matrx/media/files/engine/api/files", () => ({ getFile: jest.fn() }));
 jest.mock("@ai-matrx/media/files/engine/redux/converters", () => {
   const actual = jest.requireActual("@ai-matrx/media/files/engine/redux/converters");
