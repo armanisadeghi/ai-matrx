@@ -2,7 +2,7 @@
 
 import { useBrandPersonas } from "@/features/marketing/data/personas";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -160,6 +160,48 @@ function externalHref(url: string): string {
 
 function factValueText(fact: BusinessFact): string {
   return businessFactValueText(fact.value);
+}
+
+/**
+ * A brand asset's image with a designed fallback: a URL that 404s (a dead
+ * favicon, a blocked hotlink) shows the asset's initial in a monogram tile,
+ * never the browser's broken-image alt text.
+ */
+function AssetTileImage({ src, label }: { src: string; label: string }) {
+  const [failed, setFailed] = useState(false);
+  const ref = useRef<HTMLImageElement | null>(null);
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+  useEffect(() => {
+    // A cached failure can settle before React attaches onError.
+    const img = ref.current;
+    if (img && img.complete && img.naturalWidth === 0) setFailed(true);
+  }, [src]);
+  if (failed) {
+    return (
+      <span
+        role="img"
+        aria-label={label}
+        title={label}
+        className="flex h-14 w-14 items-center justify-center rounded-md border border-border bg-muted text-lg font-semibold uppercase text-muted-foreground"
+      >
+        {label.trim().charAt(0) || "?"}
+      </span>
+    );
+  }
+  return (
+    // Confirmed assets reference the brand's own public URLs.
+    <img
+      ref={ref}
+      src={src}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+      className="max-h-full max-w-full object-contain"
+    />
+  );
 }
 
 function assetPreviewUrl(asset: BrandAsset): string | null {
@@ -1130,11 +1172,9 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                           >
                             {preview ? (
                               // Confirmed assets reference the brand's own public URLs.
-                              <img
+                              <AssetTileImage
                                 src={preview}
-                                alt={asset.title ?? asset.kind}
-                                className="max-h-full max-w-full object-contain"
-                                loading="lazy"
+                                label={asset.title ?? kindLabel}
                               />
                             ) : color ? (
                               <span

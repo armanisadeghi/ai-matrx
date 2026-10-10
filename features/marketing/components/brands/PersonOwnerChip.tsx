@@ -48,8 +48,8 @@ export function PersonOwnerChip({
     };
   }, [open, term, organizationId]);
 
-  if (ownerName) return <Badge>{ownerName}</Badge>;
-  if (!propertyId) return <Badge>Person</Badge>;
+  if (ownerName) return <span className="shrink-0"><Badge>{ownerName}</Badge></span>;
+  if (!propertyId) return <span className="shrink-0"><Badge>Person</Badge></span>;
 
   const link = async (partyId: string) => {
     try {
@@ -66,7 +66,7 @@ export function PersonOwnerChip({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="rounded-full text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          className="shrink-0 whitespace-nowrap rounded-full text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
         >
           Link person
         </button>

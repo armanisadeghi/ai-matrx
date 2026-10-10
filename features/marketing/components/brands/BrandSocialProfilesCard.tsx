@@ -243,19 +243,19 @@ function SocialRow({
       <div className="flex min-w-[200px] flex-1 flex-col leading-tight">
         <span className="flex min-w-0 items-center gap-1.5">
           {href ? (
-            <Link href={href} className="min-w-0 hover:underline">
+            <Link href={href} className="min-w-0 truncate hover:underline">
               {name}
             </Link>
           ) : (
-            name
+            <span className="min-w-0 truncate">{name}</span>
           )}
           {showOwnerChip(row, brandKind) ? (
             <PersonOwnerChip propertyId={row.propertyId} ownerName={row.ownerName ?? null} organizationId={organizationId} brandId={brandId} />
           ) : null}
           {tracked ? (
-            <Badge tone="success">Tracked</Badge>
+            <span className="shrink-0"><Badge tone="success">Tracked</Badge></span>
           ) : !canEdit ? null : (
-            <span title={hasReadings ? "Read once when the brand was set up. Track it to keep these numbers current." : undefined}>
+            <span className="shrink-0" title={hasReadings ? "Read once when the brand was set up. Track it to keep these numbers current." : undefined}>
               <Badge tone="warning">Not tracked</Badge>
             </span>
           )}
