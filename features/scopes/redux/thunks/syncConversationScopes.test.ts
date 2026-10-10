@@ -10,8 +10,10 @@ jest.mock(
   () => ({ waitForConversationPersisted: jest.fn() }),
 );
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
+  ...jest.requireActual("@/lib/redux/slices/appContextSlice"),
   selectScopeSelectionsContext: () => ({ topic: "scope-1" }),
   selectOrganizationId: () => "org-1",
+  selectOrganizationName: () => "Patel Family Dental",
 }));
 jest.mock("./ensureEntityScopes", () => ({
   ensureEntityScopes: jest.fn(() => async () => undefined),
