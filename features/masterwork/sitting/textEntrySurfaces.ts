@@ -142,12 +142,6 @@ export const TEXT_ENTRY_SURFACES: Record<string, SurfaceKeeping> = {
     module: "features/masterwork/sorting/SortingTablePage.tsx",
     keeps: "the pile dealt, which case she is on, and every case already sorted",
   },
-  "features/masterwork/capture-plan/CapturePlanPage.tsx": {
-    kind: "sitting",
-    module: "features/masterwork/capture-plan/CapturePlanPage.tsx",
-    keeps:
-      "the plan being set up before it is built — what the Expert wants covered and the minutes they have",
-  },
 
   // ── surfaces the lane registry never covered, found by walk 8's census ──
   "features/masterwork/components/masterworks/AuditionDialog.tsx": {
