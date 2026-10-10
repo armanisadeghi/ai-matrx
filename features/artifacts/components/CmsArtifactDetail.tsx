@@ -53,6 +53,7 @@ import {
   type ArtifactContentSnapshot,
 } from "@/features/artifacts/lib/artifacts-scope";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // ── CanvasItemPreview ─────────────────────────────────────────────────────────
 
 /**
@@ -204,7 +205,7 @@ function HtmlPagePreview({
     return (
       <p className="py-6 text-center text-xs text-destructive" title={current.error}>
         Could not load this page: {current.error}
-      </p>
+      <ErrorAlchemyMenu error={current.error} /></p>
     );
   }
   if (!current.html?.trim()) {
