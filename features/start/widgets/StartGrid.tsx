@@ -77,7 +77,7 @@ function StartSlot({
   ) : null;
   if (!type) {
     return (
-      <WidgetFrame type={widget.type} size={widget.size} icon={CircleSlash} title="Unavailable" controls={controls}>
+      <WidgetFrame type={widget.type} size={widget.size} icon={CircleSlash} title="Unavailable" controls={controls} editing={Boolean(editing)}>
         <WidgetNotice>{`"${widget.type}" is not available in this version`}</WidgetNotice>
       </WidgetFrame>
     );
@@ -90,6 +90,7 @@ function StartSlot({
       icon={type.icon}
       title={type.describe(widget.config)}
       controls={controls}
+      editing={Boolean(editing)}
       previewing={previewing}
     >
       {skeleton ? null : <Body config={widget.config} size={widget.size} />}

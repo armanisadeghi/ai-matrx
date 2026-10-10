@@ -33,6 +33,19 @@ const metricLabel = (key: string | undefined) =>
 
 export const START_WIDGET_CATALOG: readonly StartWidgetSpec[] = [
   {
+    key: "kpis",
+    label: "Counts",
+    icon: Gauge,
+    section: "data",
+    sizes: ["l"],
+    defaultConfig: { keys: "agents,conversations,knowledge_files,published_apps,notes,tasks" },
+    fields: [{ key: "keys", label: "Counts", picker: "metricKeys" }],
+    describe: (c) => {
+      const n = (c.keys || "").split(",").filter((k) => METRIC_CARDS.some((m) => m.key === k.trim())).length;
+      return n ? `Your counts (${n})` : "Your counts";
+    },
+  },
+  {
     key: "metric",
     label: "Count",
     icon: Gauge,
@@ -99,7 +112,7 @@ export const START_WIDGET_CATALOG: readonly StartWidgetSpec[] = [
     section: "data",
     sizes: ["m", "l"],
     defaultConfig: {},
-    fields: [{ key: "pageId", label: "Page id" }],
+    fields: [{ key: "pageId", label: "Page", picker: "dataPage" }],
     describe: (c) => (c.pageId ? "One of your data pages" : "Data page (none chosen)"),
   },
 ];

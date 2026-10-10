@@ -29,6 +29,8 @@ export interface StartWidgetField {
   key: string;
   label: string;
   options?: readonly { value: string; label: string }[];
+  /** A picker over live data instead of fixed options (`dataPage`: the person's data pages). */
+  picker?: "dataPage" | "metricKeys";
 }
 
 /** What a widget is, without its body — the catalog an agent and the history list read. */

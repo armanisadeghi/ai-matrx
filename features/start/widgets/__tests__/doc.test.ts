@@ -88,7 +88,7 @@ describe("parseStartDoc", () => {
 describe("default layout and edit note", () => {
   it("seeds the normal app first and the old start page last", () => {
     expect(defaultStartDoc(null).widgets.map((w) => w.type)).toEqual([
-      "metric", "metric", "metric", "metric", "tasks", "agenda", "recent", "favorites", "agents",
+      "kpis", "tasks", "agenda", "recent", "favorites", "agents",
     ]);
     const withPage = defaultStartDoc("p1").widgets;
     expect(withPage[withPage.length - 1]).toMatchObject({ type: "page", size: "l", config: { pageId: "p1" } });

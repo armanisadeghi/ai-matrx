@@ -1,4 +1,5 @@
 // The registry guard: every Start widget declares a Board section, its sizes, a describe line and a body.
+jest.mock("../bodies/KpisWidget", () => ({ KpisWidget: () => null }));
 jest.mock("../bodies/MetricWidget", () => ({ MetricWidget: () => null }));
 jest.mock("../bodies/RecentWidget", () => ({ RecentWidget: () => null }));
 jest.mock("../bodies/TasksWidget", () => ({ TasksWidget: () => null }));
@@ -33,10 +34,10 @@ describe("Start widget registry", () => {
     }
   });
 
-  it("has unique keys, and the seven Slice 1 widgets", () => {
+  it("has unique keys, and the Slice 1 + 2 widgets", () => {
     const keys = START_WIDGET_CATALOG.map((s) => s.key);
     expect(new Set(keys).size).toBe(keys.length);
-    expect(keys).toEqual(["metric", "recent", "tasks", "agenda", "favorites", "agents", "page"]);
+    expect(keys).toEqual(["kpis", "metric", "recent", "tasks", "agenda", "favorites", "agents", "page"]);
   });
 
   it("describes an unknown widget by name instead of dropping it", () => {

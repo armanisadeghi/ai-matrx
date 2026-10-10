@@ -2,8 +2,8 @@
 
 // features/start/useStartLayout.ts — read, seed and save this person's Start layout, and its versions.
 // Must sit under a records provider (StartPage's RecordsMount).
-import { useEffect, useState } from "react";
-import { upsertAppRow, useRecordsClient, useTypedTable, type RecordHistoryEntry } from "@ai-matrx/records/react";
+import { useEffect, useRef, useState } from "react";
+import { listAppRows, upsertAppRow, useRecordsClient, useTypedTable, type RecordHistoryEntry } from "@ai-matrx/records/react";
 import { readVersionNow, restoreAt } from "@ai-matrx/records/versions";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -11,13 +11,8 @@ import { startLayoutTable } from "./startLayout.typed-table";
 import { useStartPage } from "./useStartPage";
 import { parseStartDoc, serializeStartDoc } from "./widgets/doc";
 import { defaultStartDoc } from "./widgets/defaultDoc";
+import { browserLock, seedStartLayoutOnce } from "./widgets/seedOnce";
 import type { StartDoc } from "./widgets/types";
-
-/**
- * People whose first layout this tab already wrote. Module scope, not a ref: a remount (route bounce,
- * strict mode) before the row list re-reads would otherwise write the seed twice (two versions).
- */
-const SEEDED_THIS_TAB = new Set<string>();
 
 export type SaveResult = { ok: true } | { ok: false; error: string };
 
@@ -27,6 +22,7 @@ export function useStartLayout() {
   const table = useTypedTable(startLayoutTable);
   const choice = useStartPage();
   const [saving, setSaving] = useState(false);
+  const reloadedAfterSkip = useRef(false);
 
   const mine = table.rows
     .filter((r) => r.person === userId)
@@ -52,12 +48,25 @@ export function useStartLayout() {
     return answer.ok ? { ok: true } : { ok: false, error: answer.error.message };
   };
 
-  // First visit: write the default layout once (normal app first, then her old start data page).
+  // First visit: write the default layout exactly once (per tab, across tabs, re-read fresh in the lock).
   const needsSeed = !loading && !table.error && Boolean(userId) && !current && Boolean(homeOrg);
   useEffect(() => {
-    if (!needsSeed || !userId || SEEDED_THIS_TAB.has(userId)) return;
-    SEEDED_THIS_TAB.add(userId);
-    void save(defaultStartDoc(choice.pageId), "Starting layout");
+    if (!needsSeed || !userId) return;
+    void seedStartLayoutOnce({
+      userId,
+      lock: browserLock,
+      hasRow: async () => {
+        const listed = await listAppRows(client, startLayoutTable);
+        return listed.ok && listed.data.rows.some((r) => r.person === userId);
+      },
+      write: () => save(defaultStartDoc(choice.pageId), "Starting layout"),
+    }).then((outcome) => {
+      // Another tab (or an earlier mount) wrote it: read once more so this tab shows that row.
+      if (outcome === "skipped" && !reloadedAfterSkip.current) {
+        reloadedAfterSkip.current = true;
+        table.reload();
+      }
+    });
   });
 
   const doc: StartDoc | null = parsed?.ok ? parsed.doc : current ? null : defaultStartDoc(choice.pageId);
@@ -128,10 +137,25 @@ export function useStartHistory(recordId: string | null, open: boolean) {
   /** Make `version` the active layout — a NEW version; nothing is lost. */
   const setActive = async (version: number, seenVersion: number | null): Promise<SaveResult> => {
     if (!recordId) return { ok: false, error: "No saved layout yet." };
-    const answer = await restoreAt(client, { record_id: recordId, version, seenVersion });
+    const answer = await setActiveVersion(client, recordId, version, seenVersion);
     setRevision((n) => n + 1);
-    return answer.ok ? { ok: true } : { ok: false, error: answer.error.message };
+    return answer;
   };
 
   return { entries, error, preview, setActive, refresh: () => setRevision((n) => n + 1) };
+}
+
+/**
+ * Restore `version` as a new version. A preview's version read can be missing (the page remounted
+ * between preview and press, or that read failed): read it now instead of refusing the press.
+ */
+export async function setActiveVersion(
+  client: Parameters<typeof restoreAt>[0],
+  recordId: string,
+  version: number,
+  seenVersion: number | null,
+): Promise<SaveResult> {
+  const seen = seenVersion ?? (await readVersionNow(client, recordId));
+  const answer = await restoreAt(client, { record_id: recordId, version, seenVersion: seen });
+  return answer.ok ? { ok: true } : { ok: false, error: answer.error.message };
 }

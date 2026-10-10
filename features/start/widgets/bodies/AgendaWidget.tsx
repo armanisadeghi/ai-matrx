@@ -28,9 +28,32 @@ export function pickTodaysOccurrences<T extends OccurrenceLike>(occurrences: rea
     .sort((a, b) => a.occurrenceStart.localeCompare(b.occurrenceStart));
 }
 
+/**
+ * One row per series: meetings sharing a title (and host) today collapse to the NEXT one still to come
+ * (else the last), with how many there are. Seen live 2026-10-09: six separate one-off meetings named
+ * "Weekly product sync" (real rows, no recurrence rule) filled the whole slot.
+ */
+export function collapseSeries<T extends OccurrenceLike & { hostUserId?: string }>(
+  today: readonly T[],
+  now = new Date(),
+): (T & { count: number })[] {
+  const groups = new Map<string, T[]>();
+  for (const o of today) {
+    const key = `${o.hostUserId ?? ""}:${o.title.trim().toLowerCase()}`;
+    groups.set(key, [...(groups.get(key) ?? []), o]);
+  }
+  const at = now.getTime();
+  return [...groups.values()]
+    .map((list) => {
+      const next = list.find((o) => new Date(o.occurrenceStart).getTime() >= at) ?? list[list.length - 1]!;
+      return { ...next, count: list.length };
+    })
+    .sort((a, b) => a.occurrenceStart.localeCompare(b.occurrenceStart));
+}
+
 export function AgendaWidget({ size }: StartWidgetBodyProps) {
   const directory = useMeetingsDirectory();
-  const today = pickTodaysOccurrences(directory.occurrences);
+  const today = collapseSeries(pickTodaysOccurrences(directory.occurrences));
   return (
     <WidgetList
       type="agenda"
@@ -42,7 +65,7 @@ export function AgendaWidget({ size }: StartWidgetBodyProps) {
         key: `${o.meetingId}:${o.occurrenceStart}`,
         title: o.title || "Untitled meeting",
         href: `/meetings/${encodeURIComponent(o.meetingId)}`,
-        meta: new Date(o.occurrenceStart).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
+        meta: `${new Date(o.occurrenceStart).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}${o.count > 1 ? ` · ${o.count} today` : ""}`,
         icon: Video,
       }))}
     />

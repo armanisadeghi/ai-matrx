@@ -10,6 +10,9 @@ import { cn } from "@ai-matrx/design-system";
 import type { RecordHistoryEntry } from "@ai-matrx/records/react";
 import { BOARD_SECTIONS } from "@/features/board/items/types";
 import { START_WIDGET_CATALOG } from "./catalog";
+import { DataPagePicker } from "./DataPagePicker";
+import { METRIC_CARDS } from "@/features/dashboard/constants/metricCards";
+import { Switch } from "@ai-matrx/design-system/controls";
 import { START_WIDGET_SIZE_LABEL, type StartWidget, type StartWidgetSize, type StartWidgetSpec } from "./types";
 
 function PanelShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
@@ -98,7 +101,11 @@ export function ConfigureWidgetPanel({
         {spec?.fields.map((field) => (
           <label key={field.key} className="flex flex-col gap-1 text-xs text-muted-foreground">
             {field.label}
-            {field.options ? (
+            {field.picker === "metricKeys" ? (
+              <MetricKeysPicker value={widget.config[field.key] ?? ""} onChange={(v) => onConfigure(field.key, v)} />
+            ) : field.picker === "dataPage" ? (
+              <DataPagePicker value={widget.config[field.key] ?? ""} onChange={(v) => onConfigure(field.key, v)} />
+            ) : field.options ? (
               <Select
                 aria-label={field.label}
                 value={widget.config[field.key] ?? ""}
@@ -209,4 +216,26 @@ function relative(iso: string, now: number): string {
   const h = Math.round(m / 60);
   if (h < 48) return `${h}h ago`;
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+/** Which counts the strip shows: one switch per dashboard count, in the dashboard's order. */
+function MetricKeysPicker({ value, onChange }: { value: string; onChange: (keys: string) => void }) {
+  const on = new Set(value.split(",").map((k) => k.trim()).filter(Boolean));
+  return (
+    <ul className="flex flex-col">
+      {METRIC_CARDS.map((card) => (
+        <li key={card.key} className="flex h-8 items-center justify-between gap-2 text-sm text-foreground">
+          <span className="truncate">{card.label}</span>
+          <Switch
+            aria-label={card.label}
+            checked={on.has(card.key)}
+            onCheckedChange={(checked: boolean) => {
+              const next = METRIC_CARDS.map((c) => c.key).filter((k) => (k === card.key ? checked : on.has(k)));
+              onChange(next.join(","));
+            }}
+          />
+        </li>
+      ))}
+    </ul>
+  );
 }

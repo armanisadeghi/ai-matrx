@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import { START_WIDGET_CATALOG } from "./catalog";
 import type { StartWidgetBodyProps, StartWidgetType } from "./types";
+import { KpisWidget } from "./bodies/KpisWidget";
 import { MetricWidget } from "./bodies/MetricWidget";
 import { RecentWidget } from "./bodies/RecentWidget";
 import { TasksWidget } from "./bodies/TasksWidget";
@@ -12,6 +13,7 @@ import { AgentsWidget } from "./bodies/AgentsWidget";
 import { PageWidget } from "./bodies/PageWidget";
 
 const BODIES: Record<string, ComponentType<StartWidgetBodyProps>> = {
+  kpis: KpisWidget,
   metric: MetricWidget,
   recent: RecentWidget,
   tasks: TasksWidget,

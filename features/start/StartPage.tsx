@@ -88,6 +88,7 @@ function StartBody() {
     const result = await history.setActive(version, preview?.version === version ? preview.seenVersion : null);
     setBusy(false);
     if (!result.ok) return void toast.error(result.error);
+    toast.success(`Version ${version} is active again`);
     setPreview(null);
     layout.reload();
   };

@@ -64,7 +64,7 @@ import type { StartDoc, StartWidgetSize } from "../types";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let mounted: { root: Root; host: HTMLElement } | null = null;
 
-async function renderOne(type: string, size: StartWidgetSize, config: Record<string, string>) {
+async function renderOne(type: string, size: StartWidgetSize, config: Record<string, string>, editing = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const doc: StartDoc = { schema: 1, widgets: [{ id: "w", type, size, config }] };
   const host = document.createElement("div");
@@ -73,7 +73,10 @@ async function renderOne(type: string, size: StartWidgetSize, config: Record<str
   await act(async () => {
     root.render(
       <QueryClientProvider client={client}>
-        <StartGrid doc={doc} />
+        <StartGrid
+          doc={doc}
+          editing={editing ? { selectedId: null, onNudge: () => undefined, onRemove: () => undefined, onConfigure: () => undefined } : null}
+        />
       </QueryClientProvider>,
     );
   });
@@ -117,6 +120,15 @@ describe("Start widget slots hold their height", () => {
     expect(loadedSlot.querySelectorAll("li").length).toBeLessThanOrEqual(slotRows(type, size));
   });
 
+  it("the counts strip shows each configured count, and a zero shows its nudge", async () => {
+    world.loading = false;
+    const host = await renderOne("kpis", "l", { keys: "agents,knowledge_files" });
+    expect(host.querySelectorAll("li")).toHaveLength(2);
+    expect(host.textContent).toContain("7");
+    expect(host.textContent).toContain("Add to your knowledge base");
+    expect(host.querySelector('a[href="/agents/all"]')).not.toBeNull();
+  });
+
   it("a pinned agent that was deleted says Removed and offers no Run", async () => {
     world.loading = false;
     const host = await renderOne("agents", "m", {});
@@ -129,5 +141,17 @@ describe("Start widget slots hold their height", () => {
     const host = await renderOne("weather_from_the_future", "m", {});
     expect(host.textContent).toContain("Unavailable");
     expect(slotOf(host).style.height).toBe(`${slotHeightPx("x", "m")}px`);
+  });
+
+  it("edit mode keeps the controls in the header row and the title whole behind a tooltip", async () => {
+    world.loading = false;
+    const host = await renderOne("metric", "s", { metric: "conversations" }, true);
+    const header = host.querySelector<HTMLElement>("[data-start-slot-header]")!;
+    expect(header.style.height).toBe("36px");
+    const title = header.querySelector("h2")!;
+    expect(title.getAttribute("title")).toBe("Conversations count");
+    expect(title.className).toContain("flex-1");
+    expect(header.querySelector('[aria-label="Remove"]')).not.toBeNull();
+    expect(header.querySelector("svg.text-muted-foreground")).toBeNull();
   });
 });

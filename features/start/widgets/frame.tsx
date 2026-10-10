@@ -19,6 +19,7 @@ export const WIDGET_HEADER_PX = 36;
 const DEFAULT_SLOT_PX = 256;
 const SLOT_PX_BY_TYPE: Record<string, Partial<Record<StartWidgetSize, number>>> = {
   metric: { s: 112, m: 112 },
+  kpis: { l: 112 },
   page: { m: 520, l: 520 },
 };
 
@@ -47,6 +48,7 @@ export function WidgetFrame({
   controls,
   children,
   previewing,
+  editing,
 }: {
   type: string;
   size: StartWidgetSize;
@@ -56,6 +58,8 @@ export function WidgetFrame({
   controls?: ReactNode;
   children: ReactNode;
   previewing?: boolean;
+  /** Edit mode: the controls share the header row; the glyph steps aside so the title keeps its room. */
+  editing?: boolean;
 }) {
   return (
     <section
@@ -67,16 +71,23 @@ export function WidgetFrame({
         previewing && "opacity-90",
       )}
     >
-      <header style={{ height: WIDGET_HEADER_PX }} className="flex shrink-0 items-center gap-2 px-3">
-        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      <header
+        data-start-slot-header
+        style={{ height: WIDGET_HEADER_PX }}
+        className={cn("flex shrink-0 items-center gap-2", editing ? "pl-3 pr-1" : "px-3")}
+      >
+        {editing ? null : <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />}
+        {/* `title` = the tooltip, shown only where the slot is narrow enough to cut the name. */}
         {href ? (
-          <Link href={href} className="min-w-0 truncate text-sm font-medium hover:underline">
+          <Link href={href} title={title} className="min-w-0 flex-1 truncate text-sm font-medium hover:underline">
             {title}
           </Link>
         ) : (
-          <h2 className="min-w-0 truncate text-sm font-medium">{title}</h2>
+          <h2 title={title} className="min-w-0 flex-1 truncate text-sm font-medium">
+            {title}
+          </h2>
         )}
-        <div className="ml-auto flex shrink-0 items-center gap-1">{controls}</div>
+        {controls ? <div className="flex shrink-0 items-center">{controls}</div> : null}
       </header>
       <div className="min-h-0 flex-1 overflow-hidden px-1 pb-1">{children}</div>
     </section>
