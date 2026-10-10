@@ -97,6 +97,7 @@ import {
   type ConnectedReadDialogState,
 } from "@/features/connected-sources/components/ReadResultsDialog";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type BusyAction =
   | "connect-files"
   | "enable-gmail"
@@ -1023,11 +1024,11 @@ export function GoogleWorkspaceReviewWorkspace({
                             {recordAbsent && fresh?.record_absent_reason ? (
                               <p className="flex items-start gap-1.5 px-3 pb-2 text-xs text-muted-foreground">
                                 <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
-                                <span className="min-w-0 flex-1">
+                                <span data-error-box className="min-w-0 flex-1">
                                   {resource.display_name} is picked and usable,
                                   but its record could not be created:{" "}
                                   {fresh.record_absent_reason}
-                                </span>
+                                <ErrorAlchemyMenu /></span>
                               </p>
                             ) : null}
                             {syncReason ? (

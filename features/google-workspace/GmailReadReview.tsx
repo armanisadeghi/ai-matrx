@@ -498,7 +498,6 @@ export function GmailReadReview() {
               <p className="text-xs text-muted-foreground">
                 Shows at most 20 matches. Search terms and messages are not
                 saved by this screen.
-                <ErrorAlchemyMenu />
               </p>
             </form>
           ) : null}

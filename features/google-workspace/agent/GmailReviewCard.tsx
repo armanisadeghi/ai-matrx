@@ -474,7 +474,7 @@ export function GmailReviewCard({ ask, organizationId, preflight, plan }: GmailR
         ) : null}
         {currentSave?.state === "saved" ? <p className="text-xs text-muted-foreground">Saved in Gmail Drafts.</p> : null}
         {saveAttempt?.state === "saved" && !currentSave ? <p className="text-xs text-muted-foreground">Current edits are unsaved.</p> : null}
-        {currentSave?.state === "uncertain" ? <p className="text-xs text-warning">Check Gmail Drafts before trying again. <ErrorAlchemyMenu error={saveError ?? "Gmail draft status is uncertain."} /></p> : null}
+        {currentSave?.state === "uncertain" ? <p className="text-xs text-warning">Check Gmail Drafts before trying again. <ErrorAlchemyMenu input={{ message: saveError ?? "Gmail draft status is uncertain." }} /></p> : null}
         {currentSave?.state === "applying" ? <p className="text-xs text-muted-foreground">Gmail is saving this draft.</p> : null}
         {saveError && currentSave?.state !== "uncertain" && currentSave ? <p className="text-xs text-destructive">{saveError} <ErrorAlchemyMenu error={saveError} /></p> : null}
         {refusal ? (
