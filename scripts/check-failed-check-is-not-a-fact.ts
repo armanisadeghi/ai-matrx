@@ -94,9 +94,9 @@ const HONEST = /UNIFIED_DATA_CAMPAIGN_UNAVAILABLE_SENTENCE|UnifiedDataSwitchNoti
  *     missing. It is "could not check", with the refusal quoted as what got in
  *     the way.
  */
-const PROBE_FILES = [
-  "features/unified-data/test-bench/TryEverythingScreen.tsx",
-];
+// The test bench page that used to be probed here was removed (2026-10-09);
+// add a page to this list when another one asks live doors about real objects.
+const PROBE_FILES: string[] = [];
 
 /** An identifier nobody could have read from the live system. */
 const FABRICATED_ID = /["'`]0{8}-0{4}-0{4}-0{4}-0{12}["'`]/;
@@ -136,7 +136,7 @@ function catchReturnsABareDefault(source: string): string | null {
   return null;
 }
 
-function scan(root: string): Finding[] {
+function scan(root: string, probeFiles: readonly string[] = PROBE_FILES): Finding[] {
   const findings: Finding[] = [];
 
   for (const rel of READERS) {
@@ -180,7 +180,7 @@ function scan(root: string): Finding[] {
     }
   }
 
-  for (const rel of PROBE_FILES) {
+  for (const rel of probeFiles) {
     let source: string;
     try {
       source = readFileSync(join(root, rel), "utf8");
@@ -269,7 +269,7 @@ if (process.argv.includes("--self-test")) {
     ].join("\n"),
     "utf8",
   );
-  const findings = scan(dir);
+  const findings = scan(dir, ["features/unified-data/test-bench/TryEverythingScreen.tsx"]);
   const mustCatch = [
     "catch-returns-a-bare-default",
     "probe-asks-about-a-fabricated-id",

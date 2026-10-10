@@ -19,7 +19,6 @@ const DATA_DIR = path.join(ROOT, "app/(core)/data");
 /** Static /data pages deliberately reached by a link, not a menu row — each names its door. */
 const LINK_ONLY: Record<string, string> = {
   "/data/connect": "the Make hub's Connect a database tile and Settings > Integrations",
-  "/data/try-everything": "the unified-data test bench; switch-gated, not a destination",
 };
 
 function everyChild(children: ShellNavChild[] | undefined): ShellNavChild[] {

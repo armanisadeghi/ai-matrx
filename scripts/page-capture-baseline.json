@@ -357,7 +357,6 @@
   "app/(core)/d/[renderId]/page.tsx",
   "app/(core)/dashboard/page.tsx",
   "app/(core)/data/page.tsx",
-  "app/(core)/data/try-everything/page.tsx",
   "app/(core)/data/[id]/page.tsx",
   "app/(core)/data/create/page.tsx",
   "app/(core)/data/page.tsx",

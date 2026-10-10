@@ -429,6 +429,39 @@ export interface TableRowCount {
   visible_rows: number;
 }
 
+/** One Field of a Table as the Map reads it (`custom.table_map_fields`): a link, or one of the first columns. */
+export interface TableMapFieldRow {
+  table_id: string;
+  field_key: string;
+  field_label: string;
+  field_type: string;
+  /** The Table a link column points at; null for every other column. */
+  relation_target: string | null;
+  /** Set when the link is two-way: the name of its reverse column on the target. */
+  inverse_key: string | null;
+  field_sort: number | string | null;
+  is_link: boolean;
+}
+
+/** The Map's door counts at most this many Tables a call. */
+export const TABLE_MAP_MAX = 500;
+
+/**
+ * THE TABLES MAP IN ONE CALL PER ORGANIZATION (`custom.table_map_fields`, lane TABLE-MAP): every link
+ * column of the named Tables plus each one's first few columns, for the Tables the reader may know.
+ * A Table she may not know gets no rows, exactly as an invented id does.
+ */
+export async function tableMapFields(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+  tableIds: readonly string[],
+): Promise<DoorAnswer<TableMapFieldRow[]>> {
+  return call<TableMapFieldRow[]>(dataSource, "table_map_fields", {
+    p_organization_id: organizationId,
+    p_table_ids: [...tableIds],
+  });
+}
+
 /** The door counts at most this many Tables a call. */
 export const TABLE_ROW_COUNTS_MAX = 500;
 

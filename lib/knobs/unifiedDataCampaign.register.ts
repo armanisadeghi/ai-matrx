@@ -466,12 +466,6 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "THE unified data page: a person's tables from the new record store, in four lanes, with create and import. Served to users, so it reads the switch and shows the off sentence when it is off.",
     },
     {
-        id: "data-try-everything",
-        file: "features/unified-data/test-bench/TryEverythingScreen.tsx",
-        kind: "runtime",
-        why: "THE TEST BENCH at /data/try-everything: one page that mounts the real screens of every part of the store — tables and grid, sharing and the Access tab, relations and rollups, custom fields on a CRM contact, forms, the approval inbox, the agent's door, history, dashboards, documents and notify rules — against this organization's live data, with an honest note on each unfinished part. It is served to users and it reads the switch itself; its frames and labels live in TestBenchChrome.tsx, which reaches nothing and is deliberately not registered.",
-    },
-    {
         id: "rendered-document-page",
         file: "app/(core)/d/[renderId]/page.tsx",
         kind: "runtime",

@@ -32,9 +32,13 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 
 import { DataHomeList } from "./DataHomeList";
+import { DataHomeMap } from "@/features/unified-data/map/DataHomeMap";
+import { useDataHomeShowPlatformTables } from "./useDataHomeMarks";
 import type { DataHomeMaking } from "./DataHomeRoute";
 import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
+
+export const MAP_PARAM = "map";
 
 /** `making` is the route's: the header's presses open the route's one New table dialog. */
 export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
@@ -72,6 +76,18 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
   const dataSource = recordsConfig.dataSource;
 
 
+  // THE MAP (lane TABLE-MAP): the same tables as cards and lines. `?map=1` keeps it linkable and
+  // leaves the list's own filters alone; it follows the organization filter and the platform switch.
+  const mapOn = searchParams.get(MAP_PARAM) === "1";
+  const [showPlatformTables] = useDataHomeShowPlatformTables();
+  const toggleMap = useCallback(() => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (mapOn) next.delete(MAP_PARAM);
+    else next.set(MAP_PARAM, "1");
+    const query = next.toString();
+    router.replace(query ? `/data?${query}` : "/data");
+  }, [mapOn, router, searchParams]);
+
   const goBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
     else router.replace("/data");
@@ -87,6 +103,7 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
             ? {
                 actions: [
                   { icon: "Plus", label: "New table", onPress: () => making.ask("create") },
+                  { icon: mapOn ? "List" : "Network", label: mapOn ? "List" : "Map", onPress: toggleMap },
                   {
                     icon: "LayoutTemplate",
                     label: "Start from a template",
@@ -124,7 +141,11 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
             }}
           >
             <div className="min-h-0 flex-1">
-              <DataHomeList dataSource={dataSource} />
+              {mapOn ? (
+                <DataHomeMap dataSource={dataSource} organizationFilter={organizationId} showPlatformTables={showPlatformTables} />
+              ) : (
+                <DataHomeList dataSource={dataSource} />
+              )}
             </div>
           </RecordsMount>
         )}
