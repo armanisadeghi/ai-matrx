@@ -51,7 +51,7 @@ import {
   selectFileById,
   selectFolderById,
 } from "@/features/files/redux/selectors";
-import { useMediaResolution } from "@ai-matrx/media/core";
+import { useMediaBlob, useMediaResolution } from "@ai-matrx/media/core";
 import { useTreeReadStatus } from "@/features/files/hooks/useFilesReadStatus";
 import { ReadFailure } from "@ai-matrx/design-system";
 import type { SaveResult } from "@/features/image-studio/modes/shared/types";
@@ -89,7 +89,11 @@ export function ImageEditTab({ fileId, className }: ImageEditTabProps) {
   );
 
   const media = useMediaResolution(fileId ?? null);
-  const url = media.resolution?.src ?? null;
+  // The editor loads its pixels itself (an <img> / canvas), and a plain <img> on the durable URL
+  // rides the third-party file-session cookie: with that cookie blocked it answers 401 first and
+  // only then falls back to bytes. Hand it the bearer-read blob up front — one request, no 401.
+  const bytes = useMediaBlob(fileId ?? null);
+  const url = bytes.url;
   // The file record comes from the user's file tree read; a failed tree read
   // is said as a failure, never "File not loaded" forever (RC-B12).
   const tree = useTreeReadStatus();
@@ -148,6 +152,17 @@ export function ImageEditTab({ fileId, className }: ImageEditTabProps) {
       <ReadFailure
         error={new Error(UNAVAILABLE_COPY[media.reason ?? "unknown"])}
         what="this image"
+        className={className}
+      />
+    );
+  }
+
+  if (bytes.error) {
+    return (
+      <ReadFailure
+        error={new Error(bytes.error)}
+        what="this image"
+        onRetry={bytes.retry}
         className={className}
       />
     );

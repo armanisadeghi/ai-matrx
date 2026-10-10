@@ -61,6 +61,33 @@ it("the tabbed body's preview draws no action bar of its own", () => {
   expect(bars[0]).toMatch(/variant="inline"/);
 });
 
+it("every <FilePreview> host chooses its action bar out loud (no bare call)", () => {
+  // A bare call silently takes "all" — the stacked-chrome bug when the host already shows actions.
+  // The device console's own `./FilePreview` (SFTP sheet) is a different component.
+  const bare: string[] = [];
+  for (const f of files) {
+    const src = readSafe(f);
+    if (/devices\/console\//.test(f) || !/<FilePreview\b/.test(src)) continue;
+    // JSX opening tags only: skip comments and prose (`<FilePreview>` inside docs / `<FilePreview/>`).
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    for (const m of code.matchAll(/<FilePreview\b(?!>|\/>)([\s\S]*?)\/?>(?=[\s\S]|$)/g)) {
+      // Props end at the first `>` not inside braces (arrow bodies `=>` sit inside braces).
+      let depth = 0;
+      let props = "";
+      const start = (m.index ?? 0) + "<FilePreview".length;
+      for (let i = start; i < code.length; i++) {
+        const c = code[i];
+        if (c === "{") depth++;
+        else if (c === "}") depth--;
+        else if (c === ">" && depth === 0 && code[i - 1] !== "=") break;
+        props += c;
+      }
+      if (!/\bactionBar=/.test(props)) bare.push(`${relative(ROOT, f)}`);
+    }
+  }
+  expect(bare).toEqual([]);
+});
+
 it("a host with its own file actions asks the preview for the kind's only", () => {
   const mobile = read(`${SURFACES}/MobileStack.tsx`);
   const previews = mobile.match(/<FilePreview\b[^>]*>/g) ?? [];

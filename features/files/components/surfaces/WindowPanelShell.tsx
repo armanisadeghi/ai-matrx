@@ -203,7 +203,14 @@ function BrowseTab() {
         </div>
         <div className="flex-1 overflow-hidden">
           {activeFileId ? (
-            <FilePreview fileId={activeFileId} className="h-full w-full" />
+            /* The breadcrumb names the FOLDER, not the file, and the window has no
+                file actions of its own: the preview is the only chrome, so it
+                keeps the full action bar (chosen on purpose, not defaulted). */
+            <FilePreview
+              fileId={activeFileId}
+              actionBar="all"
+              className="h-full w-full"
+            />
           ) : (
             <FileList
               folderId={activeFolderId}

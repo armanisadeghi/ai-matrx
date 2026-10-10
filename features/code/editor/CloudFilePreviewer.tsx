@@ -44,8 +44,11 @@ export function CloudFilePreviewer({
   }
 
   return (
+    // The editor tab strip names the file but carries no file actions, so the
+    // preview is the only chrome: full action bar, chosen on purpose.
     <FilePreview
       fileId={tab.cloudFileId}
+      actionBar="all"
       className={className ?? "h-full w-full"}
     />
   );
