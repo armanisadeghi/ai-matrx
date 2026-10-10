@@ -49,7 +49,29 @@ export interface TableMap {
 export const KEY_COLUMNS = 3;
 const NO_ORG = "none";
 
-export function buildTableMap(tables: readonly MapTableInput[], fields: readonly TableMapFieldRow[]): TableMap {
+/**
+ * ONE CARD PER TABLE, ONE LINE PER LINK COLUMN. The data home lists a table once for every way a person
+ * reaches it (her own, an organization's, shared), so the same table id arrives twice; each id becomes a
+ * React key and a flow node id, and two of the same make the canvas log "two children with the same key"
+ * and draw one card twice. The first row wins (the list's own order). Fields the door answered twice are
+ * the same column and are kept once.
+ */
+export function uniqueTables<T extends { tableId: string }>(tables: readonly T[]): T[] {
+  const seen = new Set<string>();
+  return tables.filter((t) => (seen.has(t.tableId) ? false : (seen.add(t.tableId), true)));
+}
+
+function uniqueFields(fields: readonly TableMapFieldRow[]): TableMapFieldRow[] {
+  const seen = new Set<string>();
+  return fields.filter((f) => {
+    const id = `${f.table_id}:${f.field_key}`;
+    return seen.has(id) ? false : (seen.add(id), true);
+  });
+}
+
+export function buildTableMap(allTables: readonly MapTableInput[], allFields: readonly TableMapFieldRow[]): TableMap {
+  const tables = uniqueTables(allTables);
+  const fields = uniqueFields(allFields);
   const byTable = new Map<string, TableMapFieldRow[]>();
   for (const f of fields) {
     const list = byTable.get(f.table_id);

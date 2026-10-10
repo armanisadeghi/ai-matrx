@@ -75,3 +75,18 @@ describe("the tables map model", () => {
     expect(layoutMap(map).positions).toEqual(positions);
   });
 });
+
+describe("a table reached two ways is one card (DATA-DEFECTS-1)", () => {
+  it("keeps one card, one position and one line for a table the list gave twice", () => {
+    const map = buildTableMap(
+      [t("patients", "Patients"), t("visits", "Visits"), t("patients", "Patients", ROOFING, "Roofing Co")],
+      [link("visits", "patient", "patients"), link("visits", "patient", "patients"), col("patients", "name", 1), col("patients", "name", 1)],
+    );
+    const ids = map.groups.flatMap((g) => g.cards.map((c) => c.id));
+    expect(ids.sort()).toEqual(["patients", "visits"]);
+    expect(map.links.map((l) => l.id)).toEqual(["visits:patient"]);
+    expect(map.groups.flatMap((g) => g.cards).find((c) => c.id === "patients")?.keyColumns).toEqual(["Name"]);
+    const keys = [...layoutMap(map).positions.keys()];
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+});

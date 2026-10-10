@@ -13,7 +13,7 @@ import type { RecordsDataSource } from "@ai-matrx/records";
 import * as doors from "@/features/unified-data/hub/doors";
 import { createDataHomeCorpus } from "@/features/unified-data/home/dataHomeCorpus";
 import { createRecordCountStore } from "@/features/unified-data/home/dataHomeRecordCounts";
-import { buildTableMap, type MapTableInput, type TableMap } from "./tableMapModel";
+import { buildTableMap, uniqueTables, type MapTableInput, type TableMap } from "./tableMapModel";
 
 /**
  * A row that IS a table, whatever kind the store gives it. The tables the app keeps (a choice column's
@@ -51,7 +51,7 @@ export function useTableMap(args: {
     const corpus = createDataHomeCorpus(client, dataSource, { includePlatformTables: showPlatformTables });
     (async () => {
       const rows = await corpus.load();
-      const tables: MapTableInput[] = rows
+      const tables: MapTableInput[] = uniqueTables(rows
         .filter((r) => isATableRow(r) && !r.archived && r.tableId && (!organizationFilter || r.organizationId === organizationFilter))
         .map((r) => ({
           tableId: r.tableId as string,
@@ -59,7 +59,7 @@ export function useTableMap(args: {
           href: r.href,
           organizationId: r.organizationId,
           organizationName: r.organizationName,
-        }));
+        })));
       const byOrg = new Map<string, string[]>();
       for (const t of tables) {
         if (!t.organizationId) continue;
