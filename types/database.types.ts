@@ -8220,6 +8220,17 @@ export type Database = {
         Args: { p_org_id?: string }
         Returns: number
       }
+      spend_alarm_scan: {
+        Args: {
+          p_baseline_days?: number
+          p_lookback_minutes?: number
+          p_min_usd?: number
+          p_mult?: number
+          p_run_calls?: number
+          p_run_cost_usd?: number
+        }
+        Returns: Json
+      }
       spend_approval_draw: {
         Args: {
           p_allow_over?: boolean
@@ -22404,6 +22415,7 @@ export type Database = {
           p_before_sort_at?: string
           p_kind?: string
           p_limit?: number
+          p_unread_only?: boolean
           p_user_id: string
         }
         Returns: {
@@ -40718,6 +40730,19 @@ export type Database = {
             }
             Returns: Json
           }
+      table_map_fields: {
+        Args: { p_organization_id: string; p_table_ids: string[] }
+        Returns: {
+          field_key: string
+          field_label: string
+          field_sort: number
+          field_type: string
+          inverse_key: string
+          is_link: boolean
+          relation_target: string
+          table_id: string
+        }[]
+      }
       table_move: {
         Args: {
           p_expected_version?: number
@@ -66834,6 +66859,351 @@ export type Database = {
           },
         ]
       }
+      review: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledgment_comment: string | null
+          calibrated_rating: string | null
+          calibration_note: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by: string | null
+          cycle_id: string
+          deleted_at: string | null
+          employee_id: string
+          employee_user_id: string | null
+          employment_id: string
+          id: string
+          manager_employment_id: string | null
+          manager_submitted_at: string | null
+          manager_user_id: string | null
+          metadata: Json
+          organization_id: string
+          overall_rating: string | null
+          reopen_history: Json
+          self_submitted_at: string | null
+          shared_at: string | null
+          shared_by: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledgment_comment?: string | null
+          calibrated_rating?: string | null
+          calibration_note?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          cycle_id: string
+          deleted_at?: string | null
+          employee_id: string
+          employee_user_id?: string | null
+          employment_id: string
+          id?: string
+          manager_employment_id?: string | null
+          manager_submitted_at?: string | null
+          manager_user_id?: string | null
+          metadata?: Json
+          organization_id: string
+          overall_rating?: string | null
+          reopen_history?: Json
+          self_submitted_at?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledgment_comment?: string | null
+          calibrated_rating?: string | null
+          calibration_note?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          cycle_id?: string
+          deleted_at?: string | null
+          employee_id?: string
+          employee_user_id?: string | null
+          employment_id?: string
+          id?: string
+          manager_employment_id?: string | null
+          manager_submitted_at?: string | null
+          manager_user_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          overall_rating?: string | null
+          reopen_history?: Json
+          self_submitted_at?: string | null
+          shared_at?: string | null
+          shared_by?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "review_cycle"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "review_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "review_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      review_cycle: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          launched_at: string | null
+          launched_by: string | null
+          manager_due_on: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          self_due_on: string | null
+          share_due_on: string | null
+          status: string
+          template_id: string | null
+          template_snapshot: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          launched_at?: string | null
+          launched_by?: string | null
+          manager_due_on?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          self_due_on?: string | null
+          share_due_on?: string | null
+          status?: string
+          template_id?: string | null
+          template_snapshot?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          launched_at?: string | null
+          launched_by?: string | null
+          manager_due_on?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          period_end?: string
+          period_start?: string
+          self_due_on?: string | null
+          share_due_on?: string | null
+          status?: string
+          template_id?: string | null
+          template_snapshot?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_cycle_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "review_template"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_response: {
+        Row: {
+          answers: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          recorded_by: string | null
+          respondent_user_id: string | null
+          review_id: string
+          role: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          recorded_by?: string | null
+          respondent_user_id?: string | null
+          review_id: string
+          role: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          recorded_by?: string | null
+          respondent_user_id?: string | null
+          review_id?: string
+          role?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_response_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "review"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_template: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_default: boolean
+          metadata: Json
+          name: string
+          organization_id: string
+          rating_scale: Json
+          sections: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          metadata?: Json
+          name: string
+          organization_id: string
+          rating_scale?: Json
+          sections?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          rating_scale?: Json
+          sections?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       role_assignment: {
         Row: {
           created_at: string
@@ -72787,6 +73157,53 @@ export type Database = {
         }
         Returns: string
       }
+      _rev_answer_problems: {
+        Args: { p_answers: Json; p_snapshot: Json }
+        Returns: Json
+      }
+      _rev_can_manage: {
+        Args: { p_org: string; p_uid: string }
+        Returns: boolean
+      }
+      _rev_close_step: {
+        Args: {
+          p_decision: string
+          p_lane: string
+          p_review_id: string
+          p_step_key: string
+          p_uid: string
+        }
+        Returns: Json
+      }
+      _rev_default_rating_scale: { Args: never; Returns: Json }
+      _rev_default_sections: { Args: never; Returns: Json }
+      _rev_lane: {
+        Args: { p_review_id: string; p_role: string; p_uid: string }
+        Returns: string
+      }
+      _rev_person_name: { Args: { p_employment_id: string }; Returns: string }
+      _rev_response_visible: {
+        Args: {
+          p_response_id: string
+          p_review_id: string
+          p_seat: string
+          p_uid: string
+        }
+        Returns: boolean
+      }
+      _rev_review_json: {
+        Args: { p_review_id: string; p_uid: string }
+        Returns: Json
+      }
+      _rev_seat: {
+        Args: { p_review_id: string; p_uid: string }
+        Returns: string
+      }
+      _rev_set_due: {
+        Args: { p_due: string; p_instance: string; p_step_key: string }
+        Returns: undefined
+      }
+      _rev_skip_level_on: { Args: { p_org: string }; Returns: boolean }
       _rules_evidence: { Args: { p_ids: string[] }; Returns: Json }
       _run_fixture_probe: {
         Args: { p_input: Json; p_probe: string }
@@ -73531,6 +73948,61 @@ export type Database = {
           line_no: number
           schema_name: string
         }[]
+      }
+      hr_review_acknowledge: {
+        Args: { p_comment?: string; p_review_id: string }
+        Returns: Json
+      }
+      hr_review_cancel: {
+        Args: { p_reason: string; p_review_id: string }
+        Returns: Json
+      }
+      hr_review_cycle_close: { Args: { p_cycle_id: string }; Returns: Json }
+      hr_review_cycle_create: { Args: { p_payload: Json }; Returns: Json }
+      hr_review_cycle_get: { Args: { p_cycle_id: string }; Returns: Json }
+      hr_review_cycle_launch: {
+        Args: { p_cycle_id: string; p_payload: Json }
+        Returns: Json
+      }
+      hr_review_cycle_list: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      hr_review_get: { Args: { p_review_id: string }; Returns: Json }
+      hr_review_history: { Args: { p_employment_id: string }; Returns: Json }
+      hr_review_list_mine: {
+        Args: { p_organization_id?: string }
+        Returns: Json
+      }
+      hr_review_reopen: {
+        Args: { p_reason: string; p_review_id: string }
+        Returns: Json
+      }
+      hr_review_replace_manager: {
+        Args: { p_manager_employment_id: string; p_review_id: string }
+        Returns: Json
+      }
+      hr_review_save_response: {
+        Args: {
+          p_answers: Json
+          p_expected_version?: number
+          p_review_id: string
+          p_role: string
+        }
+        Returns: Json
+      }
+      hr_review_set_overall: {
+        Args: { p_rating: string; p_review_id: string }
+        Returns: Json
+      }
+      hr_review_share: { Args: { p_review_id: string }; Returns: Json }
+      hr_review_submit_response: {
+        Args: { p_review_id: string; p_role: string }
+        Returns: Json
+      }
+      hr_review_template_ensure_default: {
+        Args: { p_organization_id: string }
+        Returns: Json
       }
       incident_excluded: {
         Args: { p_incident: string; p_user: string }
@@ -74392,6 +74864,11 @@ export type Database = {
           p_purpose: string
         }
         Returns: Json
+      }
+      review_wf_apply: { Args: { p_instance_id: string }; Returns: Json }
+      review_wf_digest: {
+        Args: { p_target_id: string; p_target_token: string }
+        Returns: string
       }
       rollup_overtime_undisclosed: {
         Args: never
@@ -84770,11 +85247,19 @@ export type Database = {
         Args: { p_at: string; p_slug_pattern: string; p_text: string }
         Returns: Json
       }
+      perf_page_bundle_report: { Args: { p_report: Json }; Returns: Json }
+      perf_page_probe_report: { Args: { p_report: Json }; Returns: Json }
+      perf_page_probe_settings: { Args: never; Returns: Json }
       perf_probe_group: { Args: { p_subject: Json }; Returns: string }
       perf_probe_group_run: {
         Args: { p_group?: string; p_only_check?: string }
         Returns: Json
       }
+      perf_probe_heavy_group_run: {
+        Args: { p_group: string; p_only_check?: string }
+        Returns: Json
+      }
+      perf_probe_heavy_run: { Args: { p_only_check?: string }; Returns: Json }
       perf_probe_run: { Args: { p_only_check?: string }; Returns: Json }
       perf_record_sample: {
         Args: {
@@ -84787,8 +85272,10 @@ export type Database = {
       }
       perf_route_template: { Args: { p_route: string }; Returns: string }
       perf_sample_retention: { Args: never; Returns: number }
+      perf_slow_pages: { Args: { p_days?: number }; Returns: Json }
       perf_statement_collect: { Args: never; Returns: Json }
       perf_subject_names: { Args: { p_subject: Json }; Returns: Json }
+      perf_vital_rate_plan: { Args: never; Returns: Json }
       perf_vital_rollup: { Args: never; Returns: Json }
       perf_watch_board: {
         Args: { p_days?: number; p_points?: number }
@@ -96929,6 +97416,15 @@ export type Database = {
         }
         Returns: number
       }
+      record_store_kind: {
+        Args: { p_token: string }
+        Returns: {
+          refusal: string
+          schema_name: string
+          table_name: string
+        }[]
+      }
+      record_store_refusal: { Args: { p_token: string }; Returns: string }
       record_view: {
         Args: { p_entity_id: string; p_entity_token: string }
         Returns: undefined
@@ -115715,6 +116211,7 @@ export type Database = {
           cadence: string
           created_at: string
           enabled: boolean
+          guardrails: Json
           id: string
           instructions_path: string
           notes: string | null
@@ -115729,6 +116226,7 @@ export type Database = {
           cadence: string
           created_at?: string
           enabled?: boolean
+          guardrails?: Json
           id?: string
           instructions_path: string
           notes?: string | null
@@ -115743,6 +116241,7 @@ export type Database = {
           cadence?: string
           created_at?: string
           enabled?: boolean
+          guardrails?: Json
           id?: string
           instructions_path?: string
           notes?: string | null
@@ -115961,6 +116460,7 @@ export type Database = {
           description: string | null
           enabled: boolean
           expires_at: string | null
+          guardrails: Json
           id: string
           kind: string
           last_run_at: string | null
@@ -115990,6 +116490,7 @@ export type Database = {
           description?: string | null
           enabled?: boolean
           expires_at?: string | null
+          guardrails?: Json
           id?: string
           kind: string
           last_run_at?: string | null
@@ -116019,6 +116520,7 @@ export type Database = {
           description?: string | null
           enabled?: boolean
           expires_at?: string | null
+          guardrails?: Json
           id?: string
           kind?: string
           last_run_at?: string | null
@@ -116200,6 +116702,38 @@ export type Database = {
           turns: number
           workflow_run_id: string
         }[]
+      }
+      automation_guardrail_defaults: {
+        Args: { p_organization_id?: string; p_user_id?: string }
+        Returns: Json
+      }
+      automation_guardrail_keys: { Args: never; Returns: string[] }
+      automation_guardrail_pause: {
+        Args: {
+          p_breach: string
+          p_detail?: Json
+          p_id: string
+          p_kind: string
+          p_reason: string
+          p_run_id?: string
+        }
+        Returns: boolean
+      }
+      automation_guardrail_resume: {
+        Args: { p_id: string; p_kind: string }
+        Returns: boolean
+      }
+      automation_guardrail_status: {
+        Args: { p_id: string; p_kind: string }
+        Returns: Json
+      }
+      automation_guardrails_filled: {
+        Args: {
+          p_guardrails: Json
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       realtime_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       sch_run_claim: {
@@ -143241,6 +143775,7 @@ export type Database = {
           description: string | null
           event_source: Json | null
           fire_count: number
+          guardrails: Json
           id: string
           is_active: boolean
           kind: string
@@ -143277,6 +143812,7 @@ export type Database = {
           description?: string | null
           event_source?: Json | null
           fire_count?: number
+          guardrails?: Json
           id?: string
           is_active?: boolean
           kind: string
@@ -143313,6 +143849,7 @@ export type Database = {
           description?: string | null
           event_source?: Json | null
           fire_count?: number
+          guardrails?: Json
           id?: string
           is_active?: boolean
           kind?: string
