@@ -25,16 +25,17 @@ const I_QME = "054c12b6-fac9-45b3-a022-5cedc24ed2b2";
 const I_ANALYSIS = "7d1e2f30-4a5b-4c6d-8e7f-90a1b2c3d4e5";
 const HEAD = "Panel QME Dr. Miriam Okafor, orthopedic surgery: lumbar L4-L5 disc protrusion. ".repeat(13).slice(0, 1000);
 
-function item(id: string, key: string, display_name: string) {
-  return { id, key, slug: key, display_name, description: "", category: null, value_type: "text", scope_type_id: TYPE };
-}
-function value(itemId: string, text: string, incomplete?: unknown) {
+function item(id: string, key: string, label: string) {
   return {
-    id: `v-${itemId}`, scope_id: MATTER, context_item_id: itemId, version: 4, is_current: true,
-    value_text: text, value_number: null, value_boolean: null, value_date: null, value_json: null,
-    value_document_url: null, value_document_size_bytes: null, value_reference_id: null, value_reference_type: null,
-    source_type: "manual", authored_by: null, created_at: "2026-09-25T09:12:24.305Z",
-    ...(incomplete ? { value_incomplete: incomplete } : {}),
+    id, key, label, description: "", category: null, kind: "string", sort: 0, scope_type_id: TYPE,
+    context_policy: "include", sensitivity: "internal", status: "active", tags: [],
+  };
+}
+function value(fieldId: string, text: string, incomplete?: unknown) {
+  return {
+    scope_id: MATTER, field_id: fieldId, key: fieldId, kind: "string", value: text, references: [],
+    version: 4, set_at: "2026-09-25T09:12:24.305Z", source_type: "manual", authored_by: null,
+    whole_value: null, incomplete: incomplete ?? null,
   };
 }
 
@@ -90,15 +91,16 @@ const { ScopeFieldInput } = require("@/features/scope-system/components/ScopeFie
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const PARTIAL = 'data-testid="scope-value-partial"';
-const rows = () => selectValuesByScope(state, MATTER) as Array<{ item_id: string; value_incomplete?: unknown }>;
+const rows = () =>
+  selectValuesByScope(state, MATTER) as Array<{ field: { id: string }; value: { incomplete: unknown } | null }>;
 
 describe("a scope value not read whole shows Partial", () => {
-  it("the derived view carries value_incomplete onto the row (and only onto that row)", () => {
+  it("the derived view carries the value's incomplete onto the row (and only onto that row)", () => {
     const r = rows();
-    expect(r.find((x) => x.item_id === I_QME)?.value_incomplete).toEqual({
+    expect(r.find((x) => x.field.id === I_QME)?.value?.incomplete).toEqual({
       head: HEAD, chars: 139950, file_id: "ebad7d37-bde9-5f14-b96f-0e43f2e1fe40",
     });
-    expect(r.find((x) => x.item_id === I_ANALYSIS)?.value_incomplete ?? null).toBeNull();
+    expect(r.find((x) => x.field.id === I_ANALYSIS)?.value?.incomplete ?? null).toBeNull();
   });
 
   it("the value editor shows Partial with its tooltip for the cut report", () => {
@@ -114,7 +116,7 @@ describe("a scope value not read whole shows Partial", () => {
   });
 
   it("the inline field shows Partial for the cut report and nothing for the whole one", () => {
-    const [qme, analysis] = [I_QME, I_ANALYSIS].map((id) => rows().find((x) => x.item_id === id));
+    const [qme, analysis] = [I_QME, I_ANALYSIS].map((id) => rows().find((x) => x.field.id === id));
     expect(renderToStaticMarkup(<ScopeFieldInput scopeId={MATTER} row={qme} />)).toContain(PARTIAL);
     expect(renderToStaticMarkup(<ScopeFieldInput scopeId={MATTER} row={analysis} />)).not.toContain(PARTIAL);
   });

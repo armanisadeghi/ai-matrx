@@ -40,18 +40,18 @@ afterEach(() => {
 
 describe("ContextValueDisplay", () => {
   it.each([
-    ["markdown text", { value_text: SET_JSON }, "markdown"],
-    ["plain text", { value_text: SET_JSON }, null],
-    ["json", { value_json: JSON.parse(SET_JSON) }, null],
-  ])("a kind in %s renders as the kind", (_label, value, valueType) => {
-    const host = mount(<ContextValueDisplay value={value as never} valueType={valueType as never} />);
+    ["markdown text", { kind: "markdown", value: SET_JSON, references: [] }, "markdown"],
+    ["plain text", { kind: "string", value: SET_JSON, references: [] }, null],
+    ["json", { kind: "object", value: JSON.parse(SET_JSON), references: [] }, null],
+  ] as const)("a kind in %s renders as the kind", (_label, value, kind) => {
+    const host = mount(<ContextValueDisplay value={value} kind={kind} />);
     expect(host.textContent).not.toContain("__kind");
     expect(host.querySelector('[data-testid="answer-value-view"]')).not.toBeNull();
   });
 
   it("kindless markdown and text keep their rendering", () => {
-    expect(mount(<ContextValueDisplay value={{ value_text: "**hi**" }} valueType="markdown" />).querySelector('[data-testid="basic-md"]')).not.toBeNull();
+    expect(mount(<ContextValueDisplay value={{ kind: "markdown", value: "**hi**", references: [] }} />).querySelector('[data-testid="basic-md"]')).not.toBeNull();
     act(() => root?.unmount());
-    expect(mount(<ContextValueDisplay value={{ value_text: "plain" }} />).textContent).toBe("plain");
+    expect(mount(<ContextValueDisplay value={{ kind: "string", value: "plain", references: [] }} />).textContent).toBe("plain");
   });
 });

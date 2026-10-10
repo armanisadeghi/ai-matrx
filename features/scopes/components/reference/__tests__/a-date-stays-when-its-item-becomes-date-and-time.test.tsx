@@ -18,7 +18,7 @@ it("a date-only value shows as that day in a date-and-time item", async () => {
   document.body.appendChild(host);
   const root: Root = createRoot(host);
   await act(async () => {
-    root.render(<ContextValueInput valueType="datetime" value="1984-03-12" onChange={() => undefined} />);
+    root.render(<ContextValueInput kind="datetime" value="1984-03-12" onChange={() => undefined} />);
   });
   const input = host.querySelector('input[type="datetime-local"]') as HTMLInputElement | null;
   expect(input).not.toBeNull();

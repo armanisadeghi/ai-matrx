@@ -8,14 +8,11 @@ import { configureStore } from "@reduxjs/toolkit";
 import reducer from "@/features/scopes/redux/scopesSlice";
 import { ensureScopeSkeleton, ensureTypeScopes } from "@/features/scopes/redux/thunks/ensureScopeSkeleton";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import * as reads from "@/features/scopes/service/storeScopeReads";
 
 jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "4060701e-706a-4c76-b3ca-0bbc69fa5a14" }));
 jest.mock("@/features/scopes/service/scopesService", () => ({ scopesService: { getScopeTree: jest.fn() } }));
-jest.mock("@/features/scopes/service/storeScopeReads", () => ({
-  ...jest.requireActual("@/features/scopes/service/storeScopeReads"),
-  readTypeScopesPage: jest.fn(),
-}));
+const typeScopesPage = jest.fn();
+jest.mock("@/features/scopes/service/scopeDoors", () => ({ scopeDoors: () => ({ typeScopesPage }) }));
 
 const ORG = "org-cedar-ridge";
 const PATIENTS = "type-patients";
@@ -34,7 +31,7 @@ afterEach(() => {
 
 it("the skeleton lands beside the whole tree, and a type's page lands in it", async () => {
   getScopeTree.mockResolvedValue({ ok: true, data: skeleton });
-  (reads.readTypeScopesPage as jest.Mock).mockResolvedValue({ ok: true, data: { scopes: [dana], total: 1, nextOffset: null } });
+  typeScopesPage.mockResolvedValue({ ok: true, data: { scopes: [dana], total: 1, next_offset: null } });
   const s = store();
   await s.dispatch(ensureScopeSkeleton() as never);
   expect(getScopeTree).toHaveBeenCalledWith({ shape: "skeleton" });
@@ -43,7 +40,7 @@ it("the skeleton lands beside the whole tree, and a type's page lands in it", as
   expect(st.organizationIds).toEqual([]);
   expect(st.skeletonOrganizationIds).toEqual([ORG]);
   await s.dispatch(ensureTypeScopes(PATIENTS) as never);
-  expect(reads.readTypeScopesPage).toHaveBeenCalledWith(PATIENTS, 0, 200);
+  expect(typeScopesPage).toHaveBeenCalledWith(PATIENTS, 0, 200);
   expect(s.getState().scopesTree.skeletonOrganizations[ORG].scope_types[0].scopes.map((x) => x.name)).toEqual(["Dana Whitfield"]);
   expect(s.getState().scopesTree.typeScopes[PATIENTS].status).toBe("complete");
 });

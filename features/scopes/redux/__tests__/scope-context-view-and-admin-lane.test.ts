@@ -38,9 +38,9 @@ import {
   selectAllScopeTypes,
   selectScopeTypesByOrg,
 } from "@/features/scopes/redux/selectors/admin";
-import type { ContextItemRow, OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import type { OrgNode } from "@/features/scopes/types";
+import type { ContextField, ContextValue, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { scopeStore } from "@/features/scopes/service/scopeStore";
 
 jest.mock("@/utils/auth/getUserId", () => ({
   getUserId: () => "a3c1d2e4-5f60-4718-9a2b-3c4d5e6f7081",
@@ -48,27 +48,33 @@ jest.mock("@/utils/auth/getUserId", () => ({
 }));
 
 jest.mock("@/features/scopes/service/scopesService", () => ({
+  forgetSharedScopeBootRead: jest.fn(),
   scopesService: {
     getScopeTree: jest.fn(),
     getOrganizationTreeForAdmin: jest.fn(),
-    listContextItems: jest.fn(),
-    listSystemContextItems: jest.fn(),
-    listContextValues: jest.fn(),
-    getScopeHome: jest.fn(),
   },
 }));
 
-// SCOPES-WRITE-THROUGH: the writes go through the one store-backed writer (scopeStore).
-jest.mock("@/features/scopes/service/scopeStore", () => ({
-  scopeStore: {
-    setContextValue: jest.fn(),
-    updateContextItem: jest.fn(),
+// Every scope read and write goes through the one binding of the records package's scope doors.
+const doors = {
+  fields: jest.fn(),
+  values: jest.fn(),
+  systemItems: jest.fn(),
+  scopes: jest.fn(),
+  writeValue: jest.fn(),
+  updateField: jest.fn(),
+};
+jest.mock("@/features/scopes/service/scopeDoors", () => ({
+  scopeDoors: () => doors,
+  readScopeFileText: jest.fn(),
+  unwrapRecords: (r: { ok: boolean; data?: unknown; error?: { message: string } }) => {
+    if (r.ok) return r.data;
+    throw new Error(r.error?.message);
   },
 }));
 
 const svc = jest.mocked(scopesService);
-// The writer is scopeStore (a field edit lives only there since SCOPES-OLD-WRITERS).
-const writer = jest.mocked(scopeStore);
+const writer = doors;
 
 const ORG = "f9cb3e35-2a65-4f2a-8525-088d6551071c";
 const OTHER_ORG = "7721ceda-72f0-4e4c-b712-00cf9dc8f117";
@@ -76,7 +82,7 @@ const TYPE = "0f5a6b7c-1d2e-4f30-8a41-b52c63d74e85";
 const SCOPE = "2b7c8d9e-0f1a-4b2c-9d3e-4f5a6b7c8d90";
 const STAMP = "2026-09-25T10:00:00.000Z";
 
-function clientType(orgId = ORG, id = TYPE): ScopeTypeNode {
+function clientType(orgId = ORG, id = TYPE): ScopeTypeWithScopes {
   return {
     id,
     organization_id: orgId,
@@ -86,7 +92,7 @@ function clientType(orgId = ORG, id = TYPE): ScopeTypeNode {
     color: "blue",
     max_assignments_per_entity: null,
     sort_order: 1,
-    parent_type_id: null,
+    created_by: null,
     default_variable_keys: [],
     slug: "clients",
     description: "Companies the practice serves",
@@ -108,10 +114,10 @@ function clientType(orgId = ORG, id = TYPE): ScopeTypeNode {
         updated_at: STAMP,
       },
     ],
-  } as unknown as ScopeTypeNode;
+  } as ScopeTypeWithScopes;
 }
 
-function org(id: string, name: string, types: ScopeTypeNode[], extra: Partial<OrgNode> = {}): OrgNode {
+function org(id: string, name: string, types: ScopeTypeWithScopes[], extra: Partial<OrgNode> = {}): OrgNode {
   return {
     id,
     name,
@@ -124,18 +130,28 @@ function org(id: string, name: string, types: ScopeTypeNode[], extra: Partial<Or
   } as OrgNode;
 }
 
-function item(over: Partial<ContextItemRow> = {}): ContextItemRow {
+const BRAND = "9e8d7c6b-5a49-4382-b716-05f4e3d2c1b0";
+const PHONE = "8d7c6b5a-4938-4271-a605-f4e3d2c1b0a9";
+
+function item(over: Partial<ContextField> = {}): ContextField {
   return {
-    id: "9e8d7c6b-5a49-4382-b716-05f4e3d2c1b0",
+    id: BRAND,
     scope_type_id: TYPE,
     key: "brand_voice",
-    display_name: "Brand voice",
+    label: "Brand voice",
     description: "How the practice sounds in writing",
-    value_type: "string",
-    sort_order: 1,
-    is_active: true,
+    kind: "string",
+    sort: 1,
+    status: "active",
     ...over,
-  } as unknown as ContextItemRow;
+  } as ContextField;
+}
+
+function cell(fieldId: string, value: unknown, over: Partial<ContextValue> = {}): ContextValue {
+  return {
+    scope_id: SCOPE, field_id: fieldId, key: "brand_voice", kind: "string", value, references: [], version: 3,
+    set_at: STAMP, source_type: "manual", authored_by: null, whole_value: null, incomplete: null, ...over,
+  };
 }
 
 async function bootedStore() {
@@ -159,104 +175,97 @@ beforeEach(() => jest.clearAllMocks());
 describe("1. the catalog is the tree's", () => {
   it("loads a type's items once, into scopesTree.contextItemsByTypeId", async () => {
     const store = await bootedStore();
-    svc.listContextItems.mockResolvedValue({ ok: true, data: { items: [item()] } });
+    doors.fields.mockResolvedValue({ ok: true, data: [item()] });
 
     await store.dispatch(listScopeTypeItems(TYPE));
     await store.dispatch(listScopeTypeItems(TYPE));
 
-    expect(svc.listContextItems).toHaveBeenCalledTimes(1);
+    expect(doors.fields).toHaveBeenCalledTimes(1);
+    expect(doors.fields).toHaveBeenCalledWith([TYPE]);
     expect(st(store).scopesTree.contextItemsByTypeId[TYPE]?.items).toHaveLength(1);
-    expect(selectItemsByType(st(store), TYPE).map((i) => i.display_name)).toEqual(["Brand voice"]);
+    expect(selectItemsByType(st(store), TYPE).map((i) => i.label)).toEqual(["Brand voice"]);
     expect(selectItemsLoadedForType(st(store), TYPE)).toBe(true);
     expect((st(store) as unknown as Record<string, unknown>).contextItems).toBeUndefined();
   });
 
-  it("loads System Context through the same loader and service door", async () => {
+  it("loads System Context through the same loader, as fields of the system pseudo-type", async () => {
     const store = await bootedStore();
-    svc.listSystemContextItems.mockResolvedValue({
+    doors.systemItems.mockResolvedValue({
       ok: true,
-      data: {
-        items: [
-          { id: "11111111-2222-4333-8444-555555555555", key: "current_date", display_name: "Today's date", description: null, item_class: "ambient", value_type: "date", sensitivity: "public", sort_order: 1 },
-        ],
-      },
+      data: [
+        { id: "11111111-2222-4333-8444-555555555555", key: "current_date", display_name: "Today's date", description: null, item_class: "ambient", value_type: "date", sensitivity: "public", sort_order: 1 },
+      ],
     });
 
     await store.dispatch(listSystemContextItems());
 
     const sys = selectItemsByType(st(store), SYSTEM_ITEMS_KEY);
     expect(sys).toHaveLength(1);
-    expect(sys[0]).toMatchObject({ scope_type_id: SYSTEM_ITEMS_KEY, system_item_class: "ambient", description: "" });
+    expect(sys[0]).toMatchObject({ scope_type_id: SYSTEM_ITEMS_KEY, label: "Today's date", kind: "date", description: "", config: { item_class: "ambient" } });
   });
 });
 
 describe("2. the scope-context view is derived, and its writes use the one door", () => {
   async function storeWithView() {
     const store = await bootedStore();
-    svc.listContextItems.mockResolvedValue({
+    doors.fields.mockResolvedValue({
       ok: true,
-      data: { items: [item(), item({ id: "8d7c6b5a-4938-4271-a605-f4e3d2c1b0a9", key: "phone", display_name: "Main phone", sort_order: 2 })] },
+      data: [item(), item({ id: PHONE, key: "phone", label: "Main phone", sort: 2 })],
     });
-    svc.listContextValues.mockResolvedValue({
-      ok: true,
-      data: {
-        values: [
-          { context_item_id: "9e8d7c6b-5a49-4382-b716-05f4e3d2c1b0", id: "v1", version: 3, is_current: true, value_text: "Warm, plain-spoken, never salesy", value_number: null, value_boolean: null, value_date: null, value_json: null, value_document_url: null, value_document_size_bytes: null, value_reference_id: null, value_reference_type: null, source_type: "manual", authored_by: null, created_at: STAMP },
-        ],
-      },
-    });
+    doors.values.mockResolvedValue({ ok: true, data: [cell(BRAND, "Warm, plain-spoken, never salesy")] });
     const res = await store.dispatch(getScopeContext({ scope_id: SCOPE, include_empty: true })).unwrap();
     return { store, res };
   }
 
   it("joins the type's catalog to the scope's values, in catalog order", async () => {
     const { store, res } = await storeWithView();
-    expect(res.rows.map((r) => [r.display_name, r.has_value, r.value_text])).toEqual([
+    expect(res.rows.map((r) => [r.field.label, r.has_value, r.value?.value ?? null])).toEqual([
       ["Brand voice", true, "Warm, plain-spoken, never salesy"],
       ["Main phone", false, null],
     ]);
     expect(selectFilledCount(st(store), SCOPE)).toEqual({ filled: 1, total: 2 });
     expect((st(store) as unknown as Record<string, unknown>).scopeValues).toBeUndefined();
-    expect(svc.getScopeHome).not.toHaveBeenCalled();
+    expect(doors.scopes).not.toHaveBeenCalled();
   });
 
   it("a definition edit shows in the view with no re-read", async () => {
     const { store } = await storeWithView();
-    writer.updateContextItem.mockResolvedValue({ ok: true, data: item({ display_name: "Tone of voice" }) });
+    writer.updateField.mockResolvedValue({ ok: true, data: item({ label: "Tone of voice" }) });
 
-    await store.dispatch(updateContextItem({ id: "9e8d7c6b-5a49-4382-b716-05f4e3d2c1b0", display_name: "Tone of voice" })).unwrap();
+    await store.dispatch(updateContextItem({ id: BRAND, label: "Tone of voice" })).unwrap();
 
-    expect(selectValuesByScope(st(store), SCOPE)?.map((r) => r.display_name)).toContain("Tone of voice");
-    expect(svc.listContextItems).toHaveBeenCalledTimes(1);
-    expect(svc.listContextValues).toHaveBeenCalledTimes(1);
+    expect(writer.updateField).toHaveBeenCalledWith(BRAND, TYPE, { label: "Tone of voice" });
+    expect(selectValuesByScope(st(store), SCOPE)?.map((r) => r.field.label)).toContain("Tone of voice");
+    expect(doors.fields).toHaveBeenCalledTimes(1);
+    expect(doors.values).toHaveBeenCalledTimes(1);
   });
 
-  it("a person's cell write goes through scopeStore.setContextValue as `manual` and lands in the view", async () => {
+  it("a person's cell write goes through scopeDoors().writeValue as `manual` and lands in the view", async () => {
     const { store } = await storeWithView();
-    writer.setContextValue.mockResolvedValue({
+    writer.writeValue.mockResolvedValue({
       ok: true,
-      data: { id: "v2", context_item_id: "8d7c6b5a-4938-4271-a605-f4e3d2c1b0a9", scope_id: SCOPE, version: 1, value_text: "(619) 555-0142", source_type: "manual" },
+      data: { scope_id: SCOPE, field_id: PHONE, version: 1, source_type: "manual" },
     });
 
     await store
-      .dispatch(setScopeContextValue({ scope_id: SCOPE, context_item_id: "8d7c6b5a-4938-4271-a605-f4e3d2c1b0a9", value_text: "(619) 555-0142" }))
+      .dispatch(setScopeContextValue({ scope_id: SCOPE, field_id: PHONE, kind: "phone", value: "(619) 555-0142" }))
       .unwrap();
 
-    expect(writer.setContextValue).toHaveBeenCalledWith(
-      expect.objectContaining({ scope_id: SCOPE, source_type: "manual", value_text: "(619) 555-0142" }),
-    );
-    const phone = selectValuesByScope(st(store), SCOPE)?.find((r) => r.key === "phone");
-    expect(phone).toMatchObject({ has_value: true, value_text: "(619) 555-0142" });
+    expect(writer.writeValue).toHaveBeenCalledWith({
+      scope_id: SCOPE, field_id: PHONE, kind: "phone", value: "(619) 555-0142", source_type: "manual",
+    });
+    const phone = selectValuesByScope(st(store), SCOPE)?.find((r) => r.field.key === "phone");
+    expect(phone).toMatchObject({ has_value: true, value: { value: "(619) 555-0142", version: 1 } });
   });
 
-  it("a refused cell write rejects with the database's sentence", async () => {
+  it("a refused cell write rejects with the store's sentence", async () => {
     const { store } = await storeWithView();
-    writer.setContextValue.mockResolvedValue({
+    writer.writeValue.mockResolvedValue({
       ok: false,
-      error: { code: "forbidden_org", message: "You can view this client but not edit it." },
+      error: { code: "door", message: "You can view this client but not edit it." },
     });
     await expect(
-      store.dispatch(setScopeContextValue({ scope_id: SCOPE, context_item_id: "8d7c6b5a-4938-4271-a605-f4e3d2c1b0a9", value_text: "x" })).unwrap(),
+      store.dispatch(setScopeContextValue({ scope_id: SCOPE, field_id: PHONE, kind: "phone", value: "x" })).unwrap(),
     ).rejects.toMatchObject({ message: "You can view this client but not edit it." });
   });
 });

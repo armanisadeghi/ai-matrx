@@ -1,5 +1,8 @@
+import type { ContextField } from "@ai-matrx/records/scopes";
 import type { InstanceContextEntry } from "@ai-matrx/chat/agents/types/instance.types";
-import type { ContextItemRow, OrgNode } from "@/features/scopes/types";
+import type {
+  OrgNode,
+} from "@/features/scopes/types";
 import {
   attachedScopeContextItemRef,
   buildScopeContextItemAttachment,
@@ -23,7 +26,7 @@ const organizations = [
         color: "green",
         max_assignments_per_entity: null,
         sort_order: 0,
-        parent_type_id: null,
+        created_by: null,
         default_variable_keys: [],
         slug: null,
         description: "",
@@ -53,8 +56,8 @@ const organizations = [
 const item = {
   id: "item-1",
   key: "general_brand_profile",
-  display_name: "General Brand Profile",
-} as ContextItemRow;
+  label: "General Brand Profile",
+} as ContextField;
 
 it("builds a lazy pointer for the exact selected scope cell", () => {
   const attachment = buildScopeContextItemAttachment(

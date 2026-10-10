@@ -43,14 +43,9 @@ import {
   selectItemsByType,
   updateContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
-import type {
-  ContextItemRow,
-  OrgNode,
-  ScopeNode,
-  ScopeTypeNode,
-} from "@/features/scopes/types";
+import type { OrgNode } from "@/features/scopes/types";
+import type { ContextField, Scope, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { supabase } from "@/utils/supabase/client";
 
 jest.mock("@/utils/auth/getUserId", () => ({
@@ -65,27 +60,43 @@ jest.mock("@/utils/supabase/client", () => ({
 jest.mock("@/features/scopes/service/scopesService", () => ({
   scopesService: {
     getScopeTree: jest.fn(),
-    listContextItems: jest.fn(),
   },
 }));
 
-// SCOPES-WRITE-THROUGH: the writes go through the one store-backed writer (scopeStore).
-jest.mock("@/features/scopes/service/scopeStore", () => ({
-  scopeStore: {
-    createScopeType: jest.fn(),
-    updateScopeType: jest.fn(),
-    deleteScopeType: jest.fn(),
-    createScope: jest.fn(),
-    updateScope: jest.fn(),
-    deleteScope: jest.fn(),
-    createContextItem: jest.fn(),
-    updateContextItem: jest.fn(),
-    deleteContextItem: jest.fn(),
+// Every scope write goes through the one binding of the records package's scope doors.
+const doors = {
+  fields: jest.fn(),
+  createType: jest.fn(),
+  updateType: jest.fn(),
+  archiveType: jest.fn(),
+  createScope: jest.fn(),
+  updateScope: jest.fn(),
+  archiveScope: jest.fn(),
+  createField: jest.fn(),
+  updateField: jest.fn(),
+  archiveField: jest.fn(),
+};
+jest.mock("@/features/scopes/service/scopeDoors", () => ({
+  scopeDoors: () => doors,
+  readScopeFileText: jest.fn(),
+  unwrapRecords: (r: { ok: boolean; data?: unknown; error?: { message: string } }) => {
+    if (r.ok) return r.data;
+    throw new Error(r.error?.message);
   },
 }));
 
 const svc = jest.mocked(scopesService);
-const writer = jest.mocked(scopeStore);
+const writer = {
+  createScopeType: doors.createType,
+  updateScopeType: doors.updateType,
+  deleteScopeType: doors.archiveType,
+  createScope: doors.createScope,
+  updateScope: doors.updateScope,
+  deleteScope: doors.archiveScope,
+  createContextItem: doors.createField,
+  updateContextItem: doors.updateField,
+  deleteContextItem: doors.archiveField,
+};
 // A plain mock: `jest.mocked(supabase.rpc)` instantiates the whole generated
 // RPC overload set (TS2589).
 const rpc = supabase.rpc as unknown as jest.Mock;
@@ -93,7 +104,7 @@ const rpc = supabase.rpc as unknown as jest.Mock;
 const ORG = "f9cb3e35-2a65-4f2a-8525-088d6551071c";
 const STAMP = "2026-09-25T10:00:00.000Z";
 
-function typeNode(over: Partial<ScopeTypeNode> = {}): ScopeTypeNode {
+function typeNode(over: Partial<ScopeTypeWithScopes> = {}): ScopeTypeWithScopes {
   return {
     id: "0f5a6b7c-1d2e-4f30-8a41-b52c63d74e85",
     organization_id: ORG,
@@ -103,7 +114,7 @@ function typeNode(over: Partial<ScopeTypeNode> = {}): ScopeTypeNode {
     color: "blue",
     max_assignments_per_entity: null,
     sort_order: 1,
-    parent_type_id: null,
+    created_by: null,
     default_variable_keys: [],
     slug: "clients",
     description: "Companies the practice serves",
@@ -114,7 +125,7 @@ function typeNode(over: Partial<ScopeTypeNode> = {}): ScopeTypeNode {
   };
 }
 
-function scopeNode(over: Partial<ScopeNode> = {}): ScopeNode {
+function scopeNode(over: Partial<Scope> = {}): Scope {
   return {
     id: "2b7c8d9e-0f1a-4b2c-9d3e-4f5a6b7c8d90",
     scope_type_id: "0f5a6b7c-1d2e-4f30-8a41-b52c63d74e85",
@@ -132,7 +143,7 @@ function scopeNode(over: Partial<ScopeNode> = {}): ScopeNode {
   };
 }
 
-function org(scopeTypes: ScopeTypeNode[]): OrgNode {
+function org(scopeTypes: ScopeTypeWithScopes[]): OrgNode {
   return {
     id: ORG,
     name: "Harbor Consulting",
@@ -144,20 +155,20 @@ function org(scopeTypes: ScopeTypeNode[]): OrgNode {
   } as unknown as OrgNode;
 }
 
-function contextItem(over: Partial<ContextItemRow> = {}): ContextItemRow {
+function contextItem(over: Partial<ContextField> = {}): ContextField {
   return {
     id: "9e8d7c6b-5a49-4382-b716-05f4e3d2c1b0",
     scope_type_id: "0f5a6b7c-1d2e-4f30-8a41-b52c63d74e85",
     key: "brand_voice",
-    display_name: "Brand voice",
+    label: "Brand voice",
     description: "",
-    sort_order: 1,
-    is_active: true,
+    sort: 1,
+    status: "active",
     ...over,
-  } as unknown as ContextItemRow;
+  } as unknown as ContextField;
 }
 
-async function bootedStore(scopeTypes: ScopeTypeNode[]) {
+async function bootedStore(scopeTypes: ScopeTypeWithScopes[]) {
   const store = configureStore({
     reducer: createSlimRootReducer(),
     middleware: (getDefault) =>
@@ -197,7 +208,7 @@ describe("scope-type writes patch the tree in place", () => {
 
     const res = await store.dispatch(
       createScopeType({
-        org_id: ORG,
+        organization_id: ORG,
         label_singular: "Client",
         label_plural: "Clients",
         description: "Companies the practice serves",
@@ -243,7 +254,7 @@ describe("scope-type writes patch the tree in place", () => {
     const before = state(store).scopesTree.organizations;
     writer.deleteScopeType.mockResolvedValue({
       ok: false,
-      error: { code: "forbidden_org", message: "organization admin required" },
+      error: { code: "door", message: "organization admin required" },
     });
 
     const res = await store.dispatch(deleteScopeType({ type_id: typeNode().id }));
@@ -261,8 +272,8 @@ describe("scope writes patch the tree in place", () => {
 
     await store.dispatch(
       createScope({
-        org_id: ORG,
-        type_id: typeNode().id,
+        organization_id: ORG,
+        scope_type_id: typeNode().id,
         name: "Harbor Dental Group",
         description: "Three-location dental practice in San Diego",
       }),
@@ -303,15 +314,15 @@ describe("scope writes patch the tree in place", () => {
 });
 
 describe("context-item console writes go through scopesService and update the ONE catalog", () => {
-  async function storeWithLoadedCatalogs(items: ContextItemRow[]) {
+  async function storeWithLoadedCatalogs(items: ContextField[]) {
     const store = await bootedStore([typeNode()]);
     // The one catalog read (lane SCOPE-ADMIN-2: the console's second cache is
     // gone; `listScopeTypeItems` IS `ensureScopeTypeItems`, so the second
     // dispatch reads nothing).
-    svc.listContextItems.mockResolvedValueOnce({ ok: true, data: { items } } as never);
+    doors.fields.mockResolvedValueOnce({ ok: true, data: items });
     await store.dispatch(listScopeTypeItems(typeNode().id));
     await store.dispatch(ensureScopeTypeItems(typeNode().id));
-    expect(svc.listContextItems).toHaveBeenCalledTimes(1);
+    expect(doors.fields).toHaveBeenCalledTimes(1);
     expect(rpc).not.toHaveBeenCalled();
     return store;
   }
@@ -328,7 +339,7 @@ describe("context-item console writes go through scopesService and update the ON
         createContextItem({
           scope_type_id: typeNode().id,
           key: "brand_voice",
-          display_name: "Brand voice",
+          label: "Brand voice",
         }),
       )
       .unwrap();
@@ -342,19 +353,16 @@ describe("context-item console writes go through scopesService and update the ON
     const store = await storeWithLoadedCatalogs([contextItem()]);
     writer.updateContextItem.mockResolvedValue({
       ok: true,
-      data: contextItem({ display_name: "Tone of voice" }),
+      data: contextItem({ label: "Tone of voice" }),
     });
 
     await store
-      .dispatch(updateContextItem({ id: contextItem().id, display_name: "Tone of voice" }))
+      .dispatch(updateContextItem({ id: contextItem().id, label: "Tone of voice" }))
       .unwrap();
 
-    expect(writer.updateContextItem).toHaveBeenCalledWith({
-      item_id: contextItem().id,
-      display_name: "Tone of voice",
-    });
-    expect(selectItemsByType(state(store), typeNode().id)[0].display_name).toBe("Tone of voice");
-    expect(treeItems(store)[0].display_name).toBe("Tone of voice");
+    expect(writer.updateContextItem).toHaveBeenCalledWith(contextItem().id, typeNode().id, { label: "Tone of voice" });
+    expect(selectItemsByType(state(store), typeNode().id)[0].label).toBe("Tone of voice");
+    expect(treeItems(store)[0].label).toBe("Tone of voice");
   });
 
   it("archive", async () => {
@@ -372,12 +380,12 @@ describe("context-item console writes go through scopesService and update the ON
     const store = await storeWithLoadedCatalogs([contextItem()]);
     writer.updateContextItem.mockResolvedValue({
       ok: false,
-      error: { code: "forbidden_org", message: "organization admin required" },
+      error: { code: "door", message: "organization admin required" },
     });
 
     await expect(
-      store.dispatch(updateContextItem({ id: contextItem().id, display_name: "X" })).unwrap(),
+      store.dispatch(updateContextItem({ id: contextItem().id, label: "X" })).unwrap(),
     ).rejects.toMatchObject({ message: "organization admin required" });
-    expect(treeItems(store)[0].display_name).toBe("Brand voice");
+    expect(treeItems(store)[0].label).toBe("Brand voice");
   });
 });

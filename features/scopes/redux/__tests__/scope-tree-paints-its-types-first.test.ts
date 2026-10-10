@@ -12,6 +12,7 @@
  *   - a skeleton arriving after the whole tree changes nothing;
  *   - a cache written from the skeleton is never adopted as the tree on the next boot.
  */
+import type { Scope, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import reducer, { scopesActions, scopesTreePolicy, type ScopesState } from "@/features/scopes/redux/scopesSlice";
 import {
   makeSelectTypeScopesState,
@@ -19,27 +20,29 @@ import {
   selectPagedOrganizationsList,
 } from "@/features/scopes/redux/selectors/tree";
 import { buildRehydrateAction } from "@/lib/sync/engine/rehydrate";
-import type { OrgNode, ScopeNode, ScopeTypeNode } from "@/features/scopes/types";
+import type {
+  OrgNode,
+} from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 const ORG = "6f0c2a3e-0000-4000-8000-000000000001";
 const MATTERS = "6f0c2a3e-0000-4000-8000-0000000000a1";
 const CLIENTS = "6f0c2a3e-0000-4000-8000-0000000000a2";
 
-function type(id: string, label: string, scopes: ScopeNode[] = []): ScopeTypeNode {
+function type(id: string, label: string, scopes: Scope[] = []): ScopeTypeWithScopes {
   return {
     id, organization_id: ORG, label_singular: label, label_plural: `${label}s`, icon: "folder", color: "",
     max_assignments_per_entity: null, sort_order: 0, parent_type_id: null, default_variable_keys: [],
     slug: label.toLowerCase(), description: "", created_at: "", updated_at: "", scopes,
   };
 }
-function scope(id: string, typeId: string, name: string): ScopeNode {
-  return { id, scope_type_id: typeId, organization_id: ORG, name } as ScopeNode;
+function scope(id: string, typeId: string, name: string): Scope {
+  return { id, scope_type_id: typeId, organization_id: ORG, name } as Scope;
 }
-function org(types: ScopeTypeNode[]): OrgNode {
+function org(types: ScopeTypeWithScopes[]): OrgNode {
   return { id: ORG, name: "Castellano & Reyes", slug: "castellano-reyes", scope_types: types, projects: [] } as unknown as OrgNode;
 }
-const tree = (types: ScopeTypeNode[]) => ({ organizations: [org(types)], fetched_at: new Date(5_000).toISOString() });
+const tree = (types: ScopeTypeWithScopes[]) => ({ organizations: [org(types)], fetched_at: new Date(5_000).toISOString() });
 const reyes = scope("6f0c2a3e-0000-4000-8000-00000000b001", MATTERS, "Reyes v. Pinnacle");
 const doe = scope("6f0c2a3e-0000-4000-8000-00000000b002", MATTERS, "Doe v. CSV");
 const golden = scope("6f0c2a3e-0000-4000-8000-00000000b003", CLIENTS, "Golden State Indemnity Co.");

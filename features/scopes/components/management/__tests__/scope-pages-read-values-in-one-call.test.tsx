@@ -23,7 +23,9 @@ import { createSlimRootReducer, type RootState } from "@/lib/redux/rootReducer";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import type { ContextField, ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
-import type { OrgNode } from "@/features/scopes/types";
+import type {
+  OrgNode,
+} from "@/features/scopes/types";
 import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
 import { ScopesList } from "@/features/scope-system/components/ScopesList";
 

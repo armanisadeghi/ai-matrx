@@ -6,11 +6,14 @@
  *   - opening a type asks for that type's scopes; a type with more than one page offers the rest;
  *   - a search finds a scope that is in no loaded page (the server searches every scope).
  */
+import type { Scope } from "@ai-matrx/records/scopes";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ContextTree } from "@/features/scopes/components/active-context/context-tree/ContextTree";
 import type { ContextTreeData } from "@/features/scopes/components/active-context/context-tree/shared";
-import type { OrgNode, ScopeNode } from "@/features/scopes/types";
+import type {
+  OrgNode,
+} from "@/features/scopes/types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 // jsdom has no layout: the tree scrolls its active row into view.
@@ -18,10 +21,10 @@ Element.prototype.scrollIntoView = function scrollIntoView() {};
 
 const ORG = "org-castellano";
 const MATTERS = "type-matters";
-const reyes = { id: "scope-reyes", scope_type_id: MATTERS, organization_id: ORG, name: "Reyes v. Pinnacle" } as ScopeNode;
-const doe = { id: "scope-doe", scope_type_id: MATTERS, organization_id: ORG, name: "Doe v. CSV" } as ScopeNode;
+const reyes = { id: "scope-reyes", scope_type_id: MATTERS, organization_id: ORG, name: "Reyes v. Pinnacle" } as Scope;
+const doe = { id: "scope-doe", scope_type_id: MATTERS, organization_id: ORG, name: "Doe v. CSV" } as Scope;
 
-function data(over: Partial<NonNullable<ContextTreeData["paged"]>> = {}, loaded: ScopeNode[] = []): ContextTreeData {
+function data(over: Partial<NonNullable<ContextTreeData["paged"]>> = {}, loaded: Scope[] = []): ContextTreeData {
   const org = {
     id: ORG, name: "Castellano & Reyes", slug: "castellano-reyes", projects: [],
     scope_types: [{ id: MATTERS, organization_id: ORG, label_singular: "Matter", label_plural: "Matters", icon: "folder", color: "", scopes: loaded }],

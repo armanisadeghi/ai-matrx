@@ -3,6 +3,7 @@
  * of the Miller Columns / DrillDeck primitive (lane CONTEXT-INSPECTOR-3).
  * Pure functions; no mocks.
  */
+import type { ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import {
   COLUMN_SEARCH_THRESHOLD,
   EMPTY_DRILL_PATH,
@@ -16,7 +17,9 @@ import {
   scopeNodeOf,
   typeNodeOf,
 } from "../engine";
-import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import type {
+  OrgNode,
+} from "@/features/scopes/types";
 
 const CLIENT_NAMES = [
   "Golden State Indemnity Co.",
@@ -31,7 +34,7 @@ const CLIENT_NAMES = [
   "Escondido Citrus Growers",
 ];
 
-function clientsType(): ScopeTypeNode {
+function clientsType(): ScopeTypeWithScopes {
   return {
     id: "type-clients",
     organization_id: "org-castellano",

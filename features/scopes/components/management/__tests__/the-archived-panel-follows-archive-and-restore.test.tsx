@@ -60,6 +60,7 @@ jest.mock("@/features/overlays/openers/contextItemsWindow", () => ({
   useOpenContextItemsWindow: () => jest.fn(),
 }));
 jest.mock("@/features/scopes/service/scopesService", () => ({
+  ...jest.requireActual("@/features/scopes/service/scopesService"),
   scopesService: {
     getScopeTree: jest.fn(),
     listContextItems: jest.fn(),
@@ -70,7 +71,12 @@ jest.mock("@/features/scopes/service/scopesService", () => ({
     listArchivedScopeTypes: jest.fn(),
   },
 }));
-const mockDoors = { archiveType: jest.fn(), restoreType: jest.fn() };
+const mockDoors = {
+  archiveType: jest.fn(),
+  restoreType: jest.fn(),
+  fields: jest.fn(async () => ({ ok: true, data: [] })),
+  values: jest.fn(async () => ({ ok: true, data: [] })),
+};
 jest.mock("@/features/scopes/service/scopeDoors", () => ({
   ...jest.requireActual("@/features/scopes/service/scopeDoors"),
   scopeDoors: () => mockDoors,
