@@ -16,6 +16,7 @@ import { useRecordsClient, type Field } from "@ai-matrx/records/react";
 
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** How many runs the history shows: the `spaces.automation_runs_shown` knob (admin → org → person). */
 const RUNS_KNOB = { feature: "spaces", key: "automation_runs_shown" } as const;
 
@@ -184,7 +185,7 @@ function RunHistory({ automationId, limit }: { automationId: string; limit: numb
       live = false;
     };
   }, [client, automationId, limit]);
-  if (problem) return <p className="type-secondary text-destructive">{problem}</p>;
+  if (problem) return <p className="type-secondary text-destructive">{problem}<ErrorAlchemyMenu error={problem} /></p>;
   if (!runs) return <div aria-busy="true" className="h-6" />;
   if (runs.length === 0) return <p className="type-secondary text-muted-foreground">No runs yet</p>;
   return (
@@ -323,7 +324,7 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
     reread();
   };
 
-  if (problem) return <div className="spaces-db-automations" data-testid="spaces-automations" data-state="failed"><p className="type-secondary text-destructive">{problem}</p></div>;
+  if (problem) return <div className="spaces-db-automations" data-testid="spaces-automations" data-state="failed"><p className="type-secondary text-destructive">{problem}<ErrorAlchemyMenu error={problem} /></p></div>;
   if (!list) return <div className="spaces-db-automations h-8" data-testid="spaces-automations" aria-busy="true" />;
 
   return (

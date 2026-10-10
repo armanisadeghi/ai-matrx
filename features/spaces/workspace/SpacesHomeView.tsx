@@ -17,6 +17,7 @@ import { editedAgo } from "../page/time";
 import { useSpacesKnob } from "../state/knobs";
 import { useSpaces } from "../state/SpacesProvider";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface Upcoming {
   space_id: string;
   due_at: string;
@@ -119,7 +120,7 @@ export function SpacesHomeView() {
             })}
           </div>
         ) : (
-          <p className="spaces-home-empty">{upcoming.failed ? "Upcoming reminders could not be read." : "No reminders coming up. Add one with @remind on any page."}</p>
+          <p data-error-box className="spaces-home-empty">{upcoming.failed ? "Upcoming reminders could not be read." : "No reminders coming up. Add one with @remind on any page."}<ErrorAlchemyMenu /></p>
         )}
       </section>
 

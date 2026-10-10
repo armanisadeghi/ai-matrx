@@ -20,6 +20,7 @@ import { installAgencySample, pageOrganizationId, type AgencyToken } from "./age
 import { AGENCY_SPEC } from "./agency-spec";
 import { BUILT_IN_SOURCES } from "./sources";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const BUILT_IN_ICON = { task: CircleCheckBig, project: FolderKanban, deal: Handshake, employee: Contact } as const;
 
 export interface PickedSource {
@@ -99,7 +100,7 @@ function Lists({ query, onPick, spaceId }: { query: string; onPick: (s: PickedSo
           <span className="type-secondary text-muted-foreground">{t.rows.length} rows</span>
         </Button>
       ))}
-      {failed ? <div className="px-3 py-2 type-body text-destructive">{failed}</div> : null}
+      {failed ? <div className="px-3 py-2 type-body text-destructive">{failed}<ErrorAlchemyMenu /></div> : null}
     </div>
   );
 }

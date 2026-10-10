@@ -22,12 +22,13 @@ import { useSpaces } from "../state/SpacesProvider";
 import { fromEngine, plainText, type EngineBlock } from "./convert";
 import { storedSpec } from "./stored-blocks";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type Ctx = { blockId: string; editor: never; update: (next: Record<string, unknown>) => void };
 
 function Streaming({ conversationId }: { conversationId: string }) {
   const { requestId, isActive, statusText, errorMessage } = useLiveRunStatus(conversationId);
   useRetainRequestForViewer(requestId, "spaces-ai-block");
-  if (errorMessage) return <p className="spaces-ai-block-error">{errorMessage}</p>;
+  if (errorMessage) return <p className="spaces-ai-block-error">{errorMessage}<ErrorAlchemyMenu error={errorMessage} /></p>;
   if (!requestId)
     return (
       <p className="spaces-ai-block-status">

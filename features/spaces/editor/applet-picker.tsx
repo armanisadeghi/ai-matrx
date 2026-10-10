@@ -16,6 +16,7 @@ import { listPlaceableApplets, NEW_APPLET_HREF, type AppletCardInfo } from "@/fe
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type Pick = (applet: AppletCardInfo) => void;
 
 let current: Pick | null = null;
@@ -87,7 +88,7 @@ function Lists({ onPick }: { onPick: Pick }) {
             <RegionSkeleton shape="rows" count={6} aria-label="Loading Applets" />
           </div>
         ) : null}
-        {failed ? <div className="px-3 py-2 type-body text-destructive">{failed}</div> : null}
+        {failed ? <div className="px-3 py-2 type-body text-destructive">{failed}<ErrorAlchemyMenu /></div> : null}
         {rows && !shown.length ? <div className="px-3 py-2 type-body text-muted-foreground">No Applets</div> : null}
         {shown.map((a) => (
           <Button variant="quiet" icon={<AppWindow size={15} />} key={a.id} onClick={() => onPick(a)} data-applet-option={a.id}>

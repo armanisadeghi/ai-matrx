@@ -21,6 +21,7 @@ import { createClient } from "@/utils/supabase/client";
 
 import { useSpaces } from "../state/SpacesProvider";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type Item = { kind: string; item: string | null; reason: string | null };
 
 interface Finished {
@@ -214,7 +215,7 @@ export function NotionImportDialog({ state, onOpenPage, onFinished, onOpenTable 
             <Progress value={stage.total ? (100 * stage.done) / stage.total : 0} />
           </div>
         ) : null}
-        {stage?.phase === "failed" ? <p className="type-secondary text-destructive">{stage.message}</p> : null}
+        {stage?.phase === "failed" ? <p className="type-secondary text-destructive">{stage.message}<ErrorAlchemyMenu error={stage.message} /></p> : null}
         {stage?.phase === "finished" ? <Report report={stage.report} onOpen={(id) => (close(), onOpenPage(id))} onOpenTable={onOpenTable ? (id) => (close(), onOpenTable(id)) : undefined} /> : null}
         {stage?.phase === "failed" || stage?.phase === "finished" ? (
           <div className="flex justify-end">

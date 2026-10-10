@@ -23,6 +23,7 @@ import {
   type PublishState,
 } from "../publish/publish-doors";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 function Toggle({
   label,
   checked,
@@ -113,7 +114,7 @@ export function PublishPanel({ spaceId }: { spaceId: string }) {
   if (error) {
     return (
       <div className="grid gap-2 p-1 text-sm">
-        <span className="text-destructive">{error}</span>
+        <span className="text-destructive">{error}<ErrorAlchemyMenu error={error} /></span>
         <Button variant="outline" onClick={load}>
           Try again
         </Button>

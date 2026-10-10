@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 
 import type { LoadAccess } from "../state/load-access";
 
+import { ErrorNotice } from "@ai-matrx/design-system";
 export function signInHref(pathname: string | null): string {
   return `/login?next=${encodeURIComponent(pathname || "/spaces")}`;
 }
@@ -31,7 +32,7 @@ export function LoadAccessState({ access, onRetry }: { access: LoadAccess | "fau
       ) : access === "no-access" ? (
         <EmptyState icon={<Lock />} title="You don't have access to Spaces" action={onRetry ? <Button variant="outline" onClick={onRetry}>Try again</Button> : undefined} />
       ) : (
-        <EmptyState icon={<FileWarning />} title="We couldn't load your pages" action={onRetry ? <Button variant="outline" onClick={onRetry}>Try again</Button> : undefined} />
+        <ErrorNotice title="We couldn't load your pages" actions={onRetry ? <Button variant="outline" onClick={onRetry}>Try again</Button> : undefined} />
       )}
     </div>
   );
