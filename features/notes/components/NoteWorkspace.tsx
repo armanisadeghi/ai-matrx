@@ -30,7 +30,7 @@
  * sends each key to the note being worked in.
  */
 
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -65,10 +65,16 @@ export interface NoteWorkspaceProps {
   noteId: string;
   /** Where the note's title is shown — see the header comment. */
   title?: "inline" | "host";
+  /**
+   * Host-supplied start of the top row INSTEAD of the title field — for a host
+   * whose note name is a control of its own (the War Room's thread note
+   * dropdown: switch, rename, unlink, new). Wins over `title`.
+   */
+  titleSlot?: ReactNode;
   className?: string;
 }
 
-export function NoteWorkspace({ instanceId, noteId, title = "inline", className }: NoteWorkspaceProps) {
+export function NoteWorkspace({ instanceId, noteId, title = "inline", titleSlot, className }: NoteWorkspaceProps) {
   const dispatch = useAppDispatch();
   const rootRef = useRef<HTMLDivElement>(null);
   const editorMode = useNoteEditorMode(noteId);
@@ -120,7 +126,10 @@ export function NoteWorkspace({ instanceId, noteId, title = "inline", className 
         onKeyDown={onKeyDown}
       >
         <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-border/40 px-1.5">
-          {title === "inline" && <NoteTitleField noteId={noteId} className="max-w-[12rem] shrink-0" />}
+          {titleSlot ? (
+            <div className="min-w-0 max-w-[12rem] shrink">{titleSlot}</div>
+          ) : null}
+          {!titleSlot && title === "inline" && <NoteTitleField noteId={noteId} className="max-w-[12rem] shrink-0" />}
           {/* The four modes never reach into the tools beside them: centred while
               they fit, start-aligned and scrollable below ~18rem (a narrow tile),
               so the capsule can not overlap the outline / versions group. */}

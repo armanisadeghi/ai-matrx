@@ -982,11 +982,11 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
       {/* At a narrow sidebar the row scrolls sideways instead of overflowing. */}
       <div className="shrink-0 flex min-h-[47px] items-center gap-1 overflow-x-auto px-2 py-1 border-b border-border/20 [scrollbar-width:none]">
         {/* Group-by selector */}
-        <div className="relative">
+        <div className="relative shrink-0">
           <SimpleTooltip text="Group notes by">
             <button
               onClick={() => setGroupByDropdown((v) => !v)}
-              className="flex items-center gap-1 h-6 px-1.5 rounded-md text-xs font-medium text-muted-foreground bg-muted/40 hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap h-6 px-1.5 rounded-md text-xs font-medium text-muted-foreground bg-muted/40 hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
             >
               <Layers />
               <span>
@@ -1031,7 +1031,7 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
         <SimpleTooltip text={`Sorted by ${sortLabel} \u2014 click to change`}>
           <button
             onClick={cycleSortField}
-            className="flex items-center gap-1 h-6 px-1.5 rounded-md text-xs font-medium text-muted-foreground bg-muted/40 hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap h-6 px-1.5 rounded-md text-xs font-medium text-muted-foreground bg-muted/40 hover:bg-muted hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
           >
             <ArrowUpDown />
             <span>{sortLabel}</span>

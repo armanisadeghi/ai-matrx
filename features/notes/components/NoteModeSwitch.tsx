@@ -18,9 +18,11 @@ export interface NoteModeSwitchProps {
   /**
    * `always` (default) shows every label. `container` shows labels only when
    * the nearest `@container` ancestor is at least 26rem wide — for hosts that
-   * can be narrow (a board tile), so the four modes never overflow.
+   * can be narrow (a board tile), so the four modes never overflow. `none`
+   * shows icons only (a compact header); the names stay in the tooltip and
+   * the accessible label.
    */
-  labels?: "always" | "container";
+  labels?: "always" | "container" | "none";
   className?: string;
 }
 
@@ -41,7 +43,15 @@ export function NoteModeSwitch({
     label: (
       <>
         <Icon className="h-3.5 w-3.5" />
-        <span className={labels === "container" ? "hidden @[26rem]:inline" : undefined}>
+        <span
+          className={
+            labels === "container"
+              ? "hidden @[26rem]:inline"
+              : labels === "none"
+                ? "sr-only"
+                : undefined
+          }
+        >
           {label}
         </span>
       </>
