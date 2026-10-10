@@ -113,7 +113,11 @@ function TrackInSocials({ brandId, url }: { brandId: string | null; url: string 
           Track in Socials <ArrowUpRight className="h-3 w-3" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-3">
+      <PopoverContent
+        /* sizing: fixed — a brand picker needs a steady measure */
+        align="start"
+        className="w-64 p-3"
+      >
         <BrandPicker
           organizationId={null}
           value={null}

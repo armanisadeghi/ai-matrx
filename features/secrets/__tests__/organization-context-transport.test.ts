@@ -55,6 +55,8 @@ function installContext(organizationId: string | null): void {
     getState: () => ({
       appContext: {
         organization_id: organizationId,
+        // The load ladder has answered: a write now carries the active organization.
+        orgBootstrapResolved: true,
       },
     }),
   } as never);

@@ -180,7 +180,7 @@ export function buildPermissionsReviewPlan({
   );
   if (isolatedByPurpose || isolatedByScope) {
     return refuse(
-      "Review this dedicated Ads or YouTube connection from its own Google settings.",
+      "Review this dedicated connection from its own Google settings.",
     );
   }
 

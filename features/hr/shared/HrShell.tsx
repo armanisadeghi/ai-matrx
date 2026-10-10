@@ -273,7 +273,11 @@ function EmployerSwitcher({
         </button>
       </PopoverTrigger>
       {/* Fixed width: the list searches as you type. */}
-      <PopoverContent sizing="fixed" align="start" className="matrx-touch-targets w-80 p-1">
+      <PopoverContent
+        /* sizing: fixed — a steady-width list of people; the width is the layout */
+        align="start"
+        className="matrx-touch-targets w-80 p-1"
+      >
         {activeOrganizationId ? (
           <Link
             href={hrSwitchEmployerHref(pathname, null)}

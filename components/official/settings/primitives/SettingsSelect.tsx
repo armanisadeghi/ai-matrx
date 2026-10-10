@@ -1,7 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check } from "lucide-react";
+import { SelectChevron } from "@ai-matrx/design-system";
 import {
   Command,
   CommandEmpty,
@@ -135,7 +136,7 @@ export function SettingsSelect<T extends string = string>({
                   placeholder ??
                   value}
               </span>
-              <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+              <SelectChevron size="sm" />
             </button>
           </PopoverTrigger>
           <PopoverContent sizing="content" className="p-0" align="end">

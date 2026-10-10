@@ -12,7 +12,8 @@
  * package recognises this tab on the canvas by the same identity.
  */
 
-import { ChevronsUpDown, NotebookPen } from "lucide-react";
+import { NotebookPen } from "lucide-react";
+import { SelectChevron } from "@ai-matrx/design-system";
 import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import { defineCanvasKind } from "@ai-matrx/canvas/react";
 import type { CanvasJson } from "@ai-matrx/canvas";
@@ -32,7 +33,7 @@ export function readScratchpadGate(data: CanvasJson | undefined | null): string 
 function ScratchpadHeaderAction() {
   return (
     <ScratchpadSwitcherMenu
-      trigger={<TapTargetButtonTransparent ariaLabel="Switch scratchpad" icon={<ChevronsUpDown className="h-4 w-4" />} />}
+      trigger={<TapTargetButtonTransparent ariaLabel="Switch scratchpad" icon={<SelectChevron size="sm" />} />}
     />
   );
 }

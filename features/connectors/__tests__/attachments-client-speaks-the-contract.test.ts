@@ -27,7 +27,7 @@ jest.mock("@/lib/redux/store-singleton", () => ({
   // The organization gate (lib/organization/organization-gate.ts) reads
   // `state.appContext.organization_id` itself, so the store answers in that shape.
   getStoreSingleton: () => ({
-    getState: () => ({ appContext: { organization_id: "org-1" } }),
+    getState: () => ({ appContext: { organization_id: "org-1", orgBootstrapResolved: true } }),
   }),
 }));
 

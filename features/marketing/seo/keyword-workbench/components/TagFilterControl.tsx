@@ -67,7 +67,7 @@ export function TagFilterControl({
             ) : null}
           </button>
         </PopoverTrigger>
-        <PopoverContent sizing="content" align="start" className="flex w-56 flex-col gap-2 p-2">
+        <PopoverContent sizing="content" align="start" className="flex flex-col gap-2 p-2">
           <SegmentedControl
             aria-label="Match"
             value={match}

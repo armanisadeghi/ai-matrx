@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { CostBadge } from "@/components/cost/CostBadge";
 import { InfoHint } from "@/components/official/InfoHint";
 import { callApi } from "@/lib/api/call-api";
+import { postgrestError } from "@/lib/failure/postgrestError";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { paths } from "@ai-matrx/agents/generated/api-types";
 import { supabase } from "@/utils/supabase/client";
@@ -77,7 +78,7 @@ export async function readLastRunCost(
   const { data: runs, error } = await runQuery
     .order("created_at", { ascending: false })
     .limit(FINISHED_RUNS_PRICED_FROM);
-  if (error) throw error;
+  if (error) throw postgrestError(error, { action: "pricing the finished runs", fallback: "The database refused the read with no reason given." });
   const ids = (runs ?? []).map((r) => String(r.id));
   if (ids.length === 0) return null;
   const { data: outcomes, error: outcomeError } = await supabase

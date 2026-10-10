@@ -2386,11 +2386,11 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                       door, Esc cancels, an empty name is refused. */}
                   <h2
                     ref={nameHeadingRef}
+                    className="line-clamp-2 min-w-0 text-base font-semibold text-foreground sm:truncate"
+                    data-surface-value="rulebook_name"
                     // The inline rename keeps focus when a panel opens on the
                     // same load (`?interview=1&rename=1`, focusOnOpen.ts).
                     {...{ [KEEP_FOCUS_ATTRIBUTE]: "" }}
-                    className="line-clamp-2 min-w-0 text-base font-semibold text-foreground sm:truncate"
-                    data-surface-value="rulebook_name"
                   >
                     {canEdit ? (
                       <EditableLabel

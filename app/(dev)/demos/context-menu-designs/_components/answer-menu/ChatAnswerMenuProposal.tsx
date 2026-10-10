@@ -133,7 +133,7 @@ function PanelPopover({ def, icon }: { def: MockPanelDef; icon: Icon }) {
       <PopoverTrigger asChild>
         <TriggerButton icon={icon} label={`Open ${def.title.replace("…", "")}`} data-mock-trigger={def.key} />
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-0">
+      <PopoverContent sizing="content" align="start" className="p-0">
         <MockPanel def={def} onClose={() => setOpen(false)} />
       </PopoverContent>
     </Popover>

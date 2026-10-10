@@ -679,8 +679,8 @@ export function DailyDripDialog({
                 </>
               ) : null}
               {stopped ? (
+                // read-gate-exempt: drip is the loaded Rulebook's own record (a prop) updated by this dialog's action results — no read here can fail into it
                 <span className="self-center text-xs text-muted-foreground">
-                  {/* read-gate-exempt: drip is the loaded Rulebook's own record (a prop) updated by this dialog's action results — no read here can fail into it */}
                   Stopped — your {answered.length} answer
                   {answered.length === 1 ? "" : "s"} are still here.
                 </span>

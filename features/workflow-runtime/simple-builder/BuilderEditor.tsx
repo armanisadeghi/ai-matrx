@@ -387,7 +387,7 @@ function FieldsChooser({
       <PopoverContent
         sizing="content"
         align="start"
-        className="max-h-80 w-64 overflow-y-auto p-1"
+        className="max-h-80 overflow-y-auto p-1"
       >
         {fields.map((f) => {
           const id = String(f.id);

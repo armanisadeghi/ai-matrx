@@ -11,6 +11,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { postgrestError } from "@/lib/failure/postgrestError";
 
 /** The key `aidream/services/masterworks/build.py` stamps on every Masterwork. */
 const BUILT_FROM_RULEBOOK = "built_from_rulebook";
@@ -64,7 +65,7 @@ async function readRulebookIdForMasterwork(
     .select("metadata")
     .eq("id", masterworkId)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw postgrestError(error, { action: "finding the Rulebook this Masterwork was built from", fallback: "The database refused the read with no reason given." });
   if (!data) return null;
   return rulebookIdFromMetadata(data.metadata);
 }
@@ -81,7 +82,7 @@ async function readRulebookIdForRun(runId: string): Promise<string | null> {
     .select("definition_id")
     .eq("id", runId)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw postgrestError(error, { action: "finding the Masterwork this run belongs to", fallback: "The database refused the read with no reason given." });
   if (!data?.definition_id) return null;
   return rulebookIdForMasterwork(String(data.definition_id));
 }

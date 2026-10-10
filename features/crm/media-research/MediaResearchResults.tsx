@@ -7,7 +7,7 @@
 // cuts with their reasons. Partial is labeled partial. An address is shown only
 // when it is verified, or quarantined together with the reason it failed.
 
-import Link from "next/link";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 import {
@@ -120,9 +120,7 @@ function journalistColumns(cuts: boolean): MatrxColumnDef<MediaResearchRow>[] {
       frozen: true,
       cell: (row) => (
         <div>
-          <Link href={`/crm/${row.party_id}`} className="font-medium text-foreground hover:underline">
-            {row.name}
-          </Link>
+          <EntityRef token="party" id={row.party_id} name={row.name} />
           {row.first_wave ? (
             <span className="ml-1 rounded bg-primary/10 px-1 text-[10px] text-primary-ink">first wave</span>
           ) : null}

@@ -2,7 +2,7 @@
  * 🚨 `useSensor` OPTIONS ARE MODULE CONSTANTS — never an object literal at the call site.
  *
  * dnd-kit keys a sensor on the IDENTITY of its options. An inline
- * `useSensor(PointerSensor, { activationConstraint: { distance: 6 } })` builds a
+ * options object handed to `useSensor` (a distance constraint written at the call site) builds a
  * new sensor list on every render, which changes `DndContext`'s internal
  * context, which re-renders EVERY `useDraggable` / `useSortable` / `useDroppable`
  * item under it — `memo` cannot stop a context. Measured on /files/all
