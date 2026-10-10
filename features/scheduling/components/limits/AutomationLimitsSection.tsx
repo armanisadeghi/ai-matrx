@@ -170,7 +170,7 @@ export function AutomationLimitsSection({
           <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive" role="alert">
             <OctagonAlert className="h-3.5 w-3.5" aria-hidden />
             {`Required: ${missing.map((k) => LABEL[k]).join(", ")}`}
-          </span>
+          <ErrorAlchemyMenu /></span>
         )}
         <div className="ml-auto flex items-center gap-2">
           {status?.paused && !readOnly && (
