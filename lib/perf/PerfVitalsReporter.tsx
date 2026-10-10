@@ -20,16 +20,21 @@ import { supabase } from "@/utils/supabase/client";
 import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import {
   addVital,
+  effectiveRate,
   isSampled,
   loadIsSampled,
+  routeRatesOf,
   routeTemplate,
   sampleRateOf,
   writeStoredRate,
+  writeStoredRouteRates,
+  type RouteRates,
   type VitalName,
   type VitalSample,
 } from "./vitals";
 
 const RATE_KNOB = "perf.client_sample_rate";
+const ROUTE_RATES_KNOB = "perf.client_sample_rate_by_route";
 
 function deviceStorage(): Storage | null {
   try {
@@ -41,7 +46,7 @@ function deviceStorage(): Storage | null {
 
 // The one draw of this page load, and the one decision it buys.
 const DRAW = typeof window === "undefined" ? 1 : Math.random();
-const SAMPLED = typeof window !== "undefined" && loadIsSampled(DRAW, deviceStorage());
+const SAMPLED = typeof window !== "undefined" && loadIsSampled(DRAW, deviceStorage(), window.location.pathname);
 
 const batch = new Map<VitalName, VitalSample>();
 let sent = false;
@@ -96,12 +101,14 @@ function SampledReporter() {
   useEffect(() => {
     // Resolve the knob now: refresh the stored rate for the next load, and drop this one if the
     // knob has since been lowered below this load's draw.
-    void resolveSessionKnob(RATE_KNOB)
-      .then((v) => {
-        if (v === undefined) return;
-        const rate = sampleRateOf(v);
+    void Promise.all([resolveSessionKnob(RATE_KNOB), resolveSessionKnob(ROUTE_RATES_KNOB)])
+      .then(([globalKnob, routeKnob]) => {
+        if (globalKnob === undefined) return;
+        const rate = sampleRateOf(globalKnob);
+        const routeRates: RouteRates = routeRatesOf(routeKnob);
         writeStoredRate(deviceStorage(), rate);
-        if (!isSampled(DRAW, rate)) {
+        if (routeKnob !== undefined) writeStoredRouteRates(deviceStorage(), routeRates);
+        if (!isSampled(DRAW, effectiveRate(window.location.pathname, rate, routeRates))) {
           dropped = true;
           batch.clear();
         }

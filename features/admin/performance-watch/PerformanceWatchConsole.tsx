@@ -34,6 +34,7 @@ import {
   PERF_STATE_LABELS,
   collectorCapSeconds,
   collectorUse,
+  flaggedPageCount,
   judgedValue,
   measuresLine,
   sparklinePoints,
@@ -52,8 +53,10 @@ import {
   type PerfWatch,
   type PerfWatchEdit,
   type PerfState,
+  type SlowPages,
   type WatchRow,
 } from "./model";
+import { SlowPagesBoard } from "./SlowPagesBoard";
 import { livePerfSource, type PerfSnapshot, type PerfSource } from "./service";
 
 type Load<T> = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; data: T };
@@ -80,7 +83,22 @@ function ConsoleBody({ source = livePerfSource }: { source?: PerfSource }) {
 
   const [snapshot, setSnapshot] = useState<Load<PerfSnapshot>>({ status: "loading" });
   const [history, setHistory] = useState<Load<PerfSample[]>>({ status: "loading" });
+  const [slowPages, setSlowPages] = useState<Load<SlowPages>>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
+  const view = params.get("view") === "pages" ? "pages" : "watches";
+
+  useEffect(() => {
+    if (view !== "pages" || watchId) return;
+    let live = true;
+    setSlowPages({ status: "loading" });
+    source.loadSlowPages(7).then(
+      (data) => live && setSlowPages({ status: "ready", data }),
+      (error: unknown) => live && setSlowPages({ status: "error", message: messageOf(error) }),
+    );
+    return () => {
+      live = false;
+    };
+  }, [source, view, watchId, reloadKey]);
 
   useEffect(() => {
     let live = true;
@@ -106,6 +124,14 @@ function ConsoleBody({ source = livePerfSource }: { source?: PerfSource }) {
       live = false;
     };
   }, [source, watchId, reloadKey]);
+
+  const setView = (next: "watches" | "pages") => {
+    const query = new URLSearchParams(params.toString());
+    if (next === "pages") query.set("view", "pages");
+    else query.delete("view");
+    const href = query.size ? `${pathname}?${query.toString()}` : pathname;
+    startTransition(() => router.replace(href));
+  };
 
   const navigate = (next: string | null, push: boolean) => {
     const query = new URLSearchParams(params.toString());
@@ -155,10 +181,31 @@ function ConsoleBody({ source = livePerfSource }: { source?: PerfSource }) {
           {snapshot.status === "ready" ? (
             <CollectorsPopover collectors={snapshot.data.collectors} vitals={snapshot.data.vitals} />
           ) : null}
+          {!watchId ? (
+            <div role="tablist" aria-label="Performance view" className="ml-auto flex items-center gap-0.5 rounded-md border border-border p-0.5 text-xs">
+              {(["watches", "pages"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === v}
+                  className={`rounded px-2 py-0.5 ${view === v ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setView(v)}
+                >
+                  {v === "watches" ? "Watches" : "Slowest pages"}
+                  {v === "pages" ? (
+                    <span className="ml-1 inline-block min-w-[2ch] text-center tabular-nums text-warning">
+                      {slowPages.status === "ready" && flaggedPageCount(slowPages.data.rows) > 0 ? formatCount(flaggedPageCount(slowPages.data.rows)) : ""}
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <Button
             icon={<RefreshCw className={`h-3.5 w-3.5 ${snapshot.status === "loading" ? "animate-spin" : ""}`} />}
             variant="quiet"
-            className="ml-auto"
+            className={watchId ? "ml-auto" : undefined}
             onClick={() => setReloadKey((k) => k + 1)}
             disabled={snapshot.status === "loading"}
           >
@@ -180,6 +227,17 @@ function ConsoleBody({ source = livePerfSource }: { source?: PerfSource }) {
               setReloadKey((k) => k + 1);
             }}
           />
+        ) : view === "pages" ? (
+          slowPages.status === "error" ? (
+            <LoadError what="the slowest pages" message={slowPages.message} onRetry={() => setReloadKey((k) => k + 1)} />
+          ) : (
+            <SlowPagesBoard
+              rows={slowPages.status === "ready" ? slowPages.data.rows : []}
+              minN={slowPages.status === "ready" ? slowPages.data.min_n : 30}
+              loading={slowPages.status === "loading"}
+              onOpenWatch={(id) => navigate(id, true)}
+            />
+          )
         ) : (
           <WatchBoard
             rows={rows}

@@ -2,7 +2,7 @@
 
 **Status:** `active` (wave 2)
 **Tier:** `2`
-**Last updated:** `2026-10-08`
+**Last updated:** `2026-10-10`
 
 ## Purpose
 
@@ -36,9 +36,16 @@ Surface: `matrx-admin/reporting`, `reporting_section: "performance"`.
 - `model.ts` + `model.test.ts` — pure: judged value, budget tone, stale tone, per-watch summary,
   state counts and history, sparkline points, readable subject fields, reason, large-twin test.
 - `PerformanceWatchConsole.tsx` — list (`MatrxDataTable`) and drill (inline SVG chart).
+- `SlowPagesBoard.tsx` — the Slowest pages table.
 
 ## Change log
 
+- 2026-10-10 PERF-WATCH-2 pages: header tabs Watches / Slowest pages (`?view=pages`); the second is one `MatrxDataTable` fed by
+  `ops.perf_slow_pages(7)` (`SlowPagesBoard.tsx`): per route real-user p75 LCP / INP / TTFB with n against `perf.vital_min_n`,
+  the sibling `pageprobe:<route>` watch's synthetic TTFB p95, HTML and first-load JS, a daily LCP trend, and flags
+  (`big_bundle`, `slow_server`, `slow_db_door`, `slow_client`, computed in SQL) that open the watch behind them (`?watch=<id>`).
+  Pure helpers in `model.ts` (`vitalTone`, `pageSampleNote`, `pageTrendValues`, `orderedFlags`, `bundleTone`, `flaggedPageCount`).
+  Quiet routes now report every load (`lib/perf/vitals.ts` `routeRateFor`, knob `perf.client_sample_rate_by_route`).
 - 2026-10-09 PERF-WATCH-TAIL: the header's Collectors popover shows every perf cron job (the door probe is two jobs, admin and member
   seat, each with doors, last run and seconds taken of its cap) and the page-speed routes under the roll-up minimum with n
   ("not enough samples yet"); the board returns only judged numbers per sparkline point (30 asked, 120 cap) and no edit log;

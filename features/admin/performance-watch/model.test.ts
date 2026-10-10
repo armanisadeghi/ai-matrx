@@ -1,4 +1,11 @@
 import {
+  bundleTone,
+  flaggedPageCount,
+  orderedFlags,
+  pageSampleNote,
+  pageTrendValues,
+  vitalTone,
+  type PageFlag,
   budgetTone,
   collectorCapSeconds,
   collectorUse,
@@ -288,5 +295,35 @@ describe("page-speed progress", () => {
     ] };
     expect(vitalsWaiting(v).map((r) => r.route)).toEqual(["/c", "/a"]);
     expect(vitalsWaiting(null)).toEqual([]);
+  });
+});
+
+describe("slowest pages", () => {
+  it("judges a real-user p75 against the web.dev line, and says nothing for no data", () => {
+    expect(vitalTone("LCP", 2501)).toBe("over");
+    expect(vitalTone("LCP", 2500)).toBe("ok");
+    expect(vitalTone("INP", 201)).toBe("over");
+    expect(vitalTone("TTFB", 800)).toBe("ok");
+    expect(vitalTone("TTFB", null)).toBe("none");
+  });
+  it("shows n against the roll-up minimum", () => {
+    expect(pageSampleNote(12, 30)).toEqual({ label: "n 12 of 30", enough: false });
+    expect(pageSampleNote(30, 30)).toEqual({ label: "n 30", enough: true });
+    expect(pageSampleNote(1234, 30).label).toBe("n 1,234");
+  });
+  it("drops days with no loads from the trend instead of drawing zeros", () => {
+    expect(pageTrendValues([null, 2100, null, 2600])).toEqual([2100, 2600]);
+    expect(pageTrendValues(null)).toEqual([]);
+  });
+  it("orders flags server, door, bundle, client and counts flagged pages", () => {
+    const f = (why: PageFlag["why"]): PageFlag => ({ why, watch_id: "w", detail: "" });
+    expect(orderedFlags([f("slow_client"), f("big_bundle"), f("slow_server")]).map((x) => x.why)).toEqual(["slow_server", "big_bundle", "slow_client"]);
+    expect(orderedFlags(null)).toEqual([]);
+    expect(flaggedPageCount([{ flags: [f("big_bundle")] }, { flags: [] }])).toBe(1);
+  });
+  it("judges the bundle against its budget", () => {
+    expect(bundleTone(900, 500)).toBe("over");
+    expect(bundleTone(400, 500)).toBe("ok");
+    expect(bundleTone(400, null)).toBe("none");
   });
 });

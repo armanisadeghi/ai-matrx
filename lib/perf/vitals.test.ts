@@ -1,4 +1,4 @@
-import { addVital, isSampled, loadIsSampled, readStoredRate, RATE_STORAGE_KEY, writeStoredRate, routeTemplate, sampleRateOf, type VitalName, type VitalSample } from "./vitals";
+import { addVital, effectiveRate, isSampled, loadIsSampled, readStoredRouteRates, ROUTE_RATES_STORAGE_KEY, routeRateFor, routeRatesOf, writeStoredRouteRates, readStoredRate, RATE_STORAGE_KEY, writeStoredRate, routeTemplate, sampleRateOf, type VitalName, type VitalSample } from "./vitals";
 
 describe("routeTemplate", () => {
   it("names dynamic params instead of their values", () => {
@@ -58,5 +58,47 @@ describe("the stored rate", () => {
     expect(loadIsSampled(0.04, store(null))).toBe(true);
     expect(loadIsSampled(0.06, store(null))).toBe(false);
     expect(loadIsSampled(0.001, store("0"))).toBe(false);
+  });
+});
+
+describe("per-route sample rates (quiet routes report every load)", () => {
+  const store = (global: string | null, routes: string | null) => ({
+    getItem: (k: string) => (k === RATE_STORAGE_KEY ? global : k === ROUTE_RATES_STORAGE_KEY ? routes : null),
+  });
+  const rates = { "/meetings": 1, "/data/[tableId]": 1, "/data/new": 0.2, "/docs/[...slug]": 0.5 };
+
+  it("a route in the map is sampled at its own rate while every other route keeps the global rate", () => {
+    const s = store("0.05", JSON.stringify(rates));
+    expect(loadIsSampled(0.99, s, "/meetings")).toBe(true); // the old behaviour drew against 0.05 and said no
+    expect(loadIsSampled(0.99, s, "/data/7ea2340a-f0a8-4a4f-a8f6-29c8604d63cd")).toBe(true);
+    expect(loadIsSampled(0.99, s, "/hr")).toBe(false);
+    expect(loadIsSampled(0.04, s, "/hr")).toBe(true);
+  });
+  it("with no map, or no pathname, a load is decided by the global rate alone", () => {
+    expect(loadIsSampled(0.99, store("0.05", null), "/meetings")).toBe(false);
+    expect(loadIsSampled(0.99, store("0.05", JSON.stringify(rates)))).toBe(false);
+    expect(loadIsSampled(0.99, store("0.05", "not json"), "/meetings")).toBe(false);
+  });
+  it("the most specific template wins and a catch-all takes the rest of the path", () => {
+    expect(routeRateFor("/data/new", rates)).toBe(0.2);
+    expect(routeRateFor("/data/abc", rates)).toBe(1);
+    expect(routeRateFor("/docs/a/b/c", rates)).toBe(0.5);
+    expect(routeRateFor("/docs", rates)).toBeNull();
+    expect(routeRateFor("/meetings/", rates)).toBe(1);
+    expect(routeRateFor("/meetings/extra", rates)).toBeNull();
+    expect(effectiveRate("/hr", 0.05, rates)).toBe(0.05);
+  });
+  it("only well-formed entries survive, clamped to [0, 1]", () => {
+    expect(routeRatesOf({ "/a": 2, "/b": "0.3", bad: 1, "/c": "x", "/d": -1 })).toEqual({ "/a": 1, "/b": 0.3, "/d": 0 });
+    expect(routeRatesOf([1, 2])).toEqual({});
+    expect(routeRatesOf(null)).toEqual({});
+  });
+  it("storage round-trips and never throws when blocked", () => {
+    let kept = "";
+    writeStoredRouteRates({ setItem: (_k, v) => { kept = v; } }, { "/a": 1 });
+    expect(readStoredRouteRates({ getItem: () => kept })).toEqual({ "/a": 1 });
+    const blocked = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
+    expect(readStoredRouteRates(blocked)).toEqual({});
+    expect(() => writeStoredRouteRates(blocked, { "/a": 1 })).not.toThrow();
   });
 });

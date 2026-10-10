@@ -106,13 +106,99 @@ export function writeStoredRate(storage: Pick<Storage, "setItem"> | null, rate: 
   }
 }
 
+/** Where a sampled load keeps the per-route rate map (route template -> rate) it resolved. */
+export const ROUTE_RATES_STORAGE_KEY = "matrx.perf.client_sample_rate_by_route";
+
+export type RouteRates = Record<string, number>;
+
+/** A route-rate map from whatever the knob returned: only `/…` keys with a rate in [0, 1]. Never throws. */
+export function routeRatesOf(knob: unknown): RouteRates {
+  let v: unknown = knob;
+  if (typeof v === "string") {
+    try {
+      v = JSON.parse(v);
+    } catch {
+      return {};
+    }
+  }
+  if (v === null || typeof v !== "object" || Array.isArray(v)) return {};
+  const out: RouteRates = {};
+  for (const [route, raw] of Object.entries(v as Record<string, unknown>)) {
+    const n = typeof raw === "string" ? Number(raw) : raw;
+    if (route.startsWith("/") && typeof n === "number" && Number.isFinite(n)) out[route] = Math.min(1, Math.max(0, n));
+  }
+  return out;
+}
+
+export function readStoredRouteRates(storage: Pick<Storage, "getItem"> | null): RouteRates {
+  try {
+    const raw = storage?.getItem(ROUTE_RATES_STORAGE_KEY);
+    return raw == null ? {} : routeRatesOf(raw);
+  } catch {
+    return {};
+  }
+}
+
+export function writeStoredRouteRates(storage: Pick<Storage, "setItem"> | null, rates: RouteRates): void {
+  try {
+    storage?.setItem(ROUTE_RATES_STORAGE_KEY, JSON.stringify(rates));
+  } catch {
+    // A cache of the knob; a blocked store only costs the next load the global rate.
+  }
+}
+
+function templateMatches(template: string, pathname: string): boolean {
+  const t = template.split("/");
+  const p = pathname.split("/");
+  for (let i = 0; i < t.length; i++) {
+    const seg = t[i];
+    if (seg.startsWith("[...") && seg.endsWith("]")) return p.length > i; // catch-all takes the rest
+    if (i >= p.length) return false;
+    if (seg.startsWith("[") && seg.endsWith("]")) {
+      if (p[i] === "") return false;
+      continue;
+    }
+    if (seg !== p[i]) return false;
+  }
+  return t.length === p.length;
+}
+
 /**
- * The whole decision of an UNSAMPLED load: one random draw against the stored (or default) rate.
- * No observer, no settings read, no network. A sampled load then resolves the real knob and
- * refreshes the stored rate (a raised rate reaches every device through its sampled loads).
+ * The rate of the route this pathname belongs to, else null. Templates are matched against the raw
+ * pathname (no React params needed at load time); the most specific one wins (fewest wildcard
+ * segments, then the longest), so `/data/new` beats `/data/[tableId]`.
  */
-export function loadIsSampled(draw: number, storage: Pick<Storage, "getItem"> | null): boolean {
-  return isSampled(draw, readStoredRate(storage));
+export function routeRateFor(pathname: string, rates: RouteRates): number | null {
+  const path = ((pathname || "/").split(/[?#]/)[0] || "/").replace(/(.)\/+$/, "$1");
+  let best: string | null = null;
+  const wild = (t: string) => t.split("/").filter((s) => s.startsWith("[")).length;
+  for (const template of Object.keys(rates)) {
+    if (!templateMatches(template, path)) continue;
+    if (best === null || wild(template) < wild(best) || (wild(template) === wild(best) && template.length > best.length)) best = template;
+  }
+  return best === null ? null : rates[best];
+}
+
+/** The rate this load is judged against: its route's own rate (quiet routes report every load), else the global one. */
+export function effectiveRate(pathname: string, globalRate: number, rates: RouteRates): number {
+  const own = routeRateFor(pathname, rates);
+  return own === null ? globalRate : own;
+}
+
+/**
+ * The whole decision of an UNSAMPLED load: one random draw against the stored rate of its route (else the
+ * stored global rate, else the default). No observer, no settings read, no network — two local-storage
+ * reads. A sampled load then resolves the real knobs and refreshes both stored values (a raised rate reaches
+ * every device through its sampled loads).
+ */
+export function loadIsSampled(
+  draw: number,
+  storage: Pick<Storage, "getItem"> | null,
+  pathname: string = "",
+): boolean {
+  const rate = readStoredRate(storage);
+  if (!pathname) return isSampled(draw, rate);
+  return isSampled(draw, effectiveRate(pathname, rate, readStoredRouteRates(storage)));
 }
 
 /**

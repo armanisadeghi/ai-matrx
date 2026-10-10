@@ -10,7 +10,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import type { PerfCollector, PerfSample, PerfVitals, PerfWatch, PerfWatchEdit } from "./model";
+import type { PerfCollector, PerfSample, PerfVitals, PerfWatch, PerfWatchEdit, SlowPages } from "./model";
 
 
 export interface PerfSnapshot {
@@ -30,6 +30,8 @@ export interface PerfSource {
   loadSnapshot: () => Promise<PerfSnapshot>;
   /** Every sample of one watch, newest first. */
   loadHistory: (watchId: string) => Promise<PerfSample[]>;
+  /** The Slowest pages section in one call (ops.perf_slow_pages, platform admins only). */
+  loadSlowPages: (days: number) => Promise<SlowPages>;
   /** Edit one watch through ops.perf_watch_update (platform admins only). */
   updateWatch: (edit: PerfWatchEdit) => Promise<void>;
 }
@@ -54,9 +56,21 @@ async function loadHistory(watchId: string): Promise<PerfSample[]> {
   return (data ?? []) as PerfSample[];
 }
 
+async function loadSlowPages(days: number): Promise<SlowPages> {
+  // One call: per route real-user p75 + n, the page probe's numbers, trend and flags (ops.perf_slow_pages).
+  // Typed locally until `pnpm db-types` regenerates; the function is declared in perf_watch2_ui_b_slow_pages.sql.
+  const client = ops() as unknown as {
+    rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+  };
+  const { data, error } = await client.rpc("perf_slow_pages", { p_days: days });
+  if (error) throw new Error(error.message);
+  const out = (data ?? {}) as Partial<SlowPages>;
+  return { days: out.days ?? days, min_n: out.min_n ?? 30, probes_present: out.probes_present ?? false, rows: out.rows ?? [] };
+}
+
 async function updateWatch(edit: PerfWatchEdit): Promise<void> {
   const { error } = await ops().rpc("perf_watch_update", edit);
   if (error) throw new Error(error.message);
 }
 
-export const livePerfSource: PerfSource = { loadSnapshot, loadHistory, updateWatch };
+export const livePerfSource: PerfSource = { loadSnapshot, loadHistory, loadSlowPages, updateWatch };
