@@ -196,7 +196,7 @@ function consumeNonce(presented: string, hostname: string): boolean {
  *   - Redirects to the SAME host it was called on. It must never rewrite the
  *     host to `localhost`: that would drop the caller back into the shared
  *     cookie jar the per-session hostname exists to escape.
- *   - If the AI_ADMIN_USERNAME session already exists, just 302s to `next` (no re-login).
+ *   - Replaces any existing session, including AI_ADMIN_USERNAME, before redirecting to `next`.
  *   - If SOMEBODY ELSE is signed in, signs them out and signs the admin in — see below.
  *   - Otherwise signs in with AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD and 302s to `next`.
  *   - `next` must be a relative path starting with "/". Defaults to "/dashboard".
@@ -380,12 +380,10 @@ async function signIn(request: NextRequest): Promise<NextResponse> {
   if (user) {
     const same =
       (user.email ?? "").trim().toLowerCase() === email.trim().toLowerCase();
-    if (same) return NextResponse.redirect(destination);
-    // Somebody else is holding this browser profile. Evict them — this route's
-    // whole contract is "you are now the admin", and honoring an unrelated session
-    // is how an agent walks a surface as the wrong person without noticing.
     console.warn(
-      `[dev-login] evicting a stale session for ${user.email ?? user.id} — signing in as ${email}`,
+      same
+        ? `[dev-login] renewing the existing session for ${email}`
+        : `[dev-login] evicting a stale session for ${user.email ?? user.id} — signing in as ${email}`,
     );
     await supabase.auth.signOut({ scope: "local" });
   }

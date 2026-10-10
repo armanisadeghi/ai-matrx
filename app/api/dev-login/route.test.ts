@@ -45,15 +45,20 @@ const NONCE_FILE = nonceFile("localhost", A_NONCE);
 const signInWithPassword = jest.fn(
   async (): Promise<{ error: unknown }> => ({ error: null }),
 );
+const signOut = jest.fn(async () => ({}));
+let existingUser: { id: string; email: string } | null = null;
+const handOverSession = jest.fn(
+  (_via: string, replace: () => Promise<unknown>) => replace(),
+);
 // The guest handover reads cookies and the admin client; here it only passes the sign-in through.
 jest.mock("@/lib/guest/session-handover", () => ({
-  handOverSession: (_via: string, replace: () => Promise<unknown>) => replace(),
+  handOverSession,
 }));
 jest.mock("@/utils/supabase/server", () => ({
   createClient: jest.fn(async () => ({
     auth: mockWithClaims({
-      getUser: async () => ({ data: { user: null } }),
-      signOut: async () => ({}),
+      getUser: async () => ({ data: { user: existingUser } }),
+      signOut,
       signInWithPassword,
     }),
   })),
@@ -86,6 +91,14 @@ afterAll(() => {
   rmSync(FAKE_CWD, { recursive: true, force: true });
 });
 
+beforeEach(() => {
+  existingUser = null;
+  signOut.mockClear();
+  signInWithPassword.mockClear();
+  handOverSession.mockClear();
+  signInWithPassword.mockImplementation(async () => ({ error: null }));
+});
+
 describe("dev-login accepts ONLY the nonce handshake", () => {
   it("refuses ?token= even when it matches DEV_LOGIN_TOKEN", async () => {
     const response = await GET(
@@ -115,6 +128,21 @@ describe("dev-login accepts ONLY the nonce handshake", () => {
     expect(response.headers.get("location")).toBe("http://localhost:3000/tasks");
     expect(signInWithPassword).toHaveBeenCalled();
     expect(existsSync(NONCE_FILE)).toBe(false);
+  });
+
+  it("replaces a same-account session so a revoked server session cannot survive the dev-login shortcut", async () => {
+    existingUser = { id: "admin-session-refresh", email: "guard@example.invalid" };
+    writeFileSync(NONCE_FILE, A_NONCE + "\n");
+
+    const response = await GET(get(`?nonce=${A_NONCE}&next=/tasks`));
+
+    expect(response.status).toBeGreaterThanOrEqual(300);
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(handOverSession).toHaveBeenCalledWith(
+      "dev_login",
+      expect.any(Function),
+    );
+    expect(signInWithPassword).toHaveBeenCalledTimes(1);
   });
 
   it("refuses a wrong ?nonce=, and does NOT burn a different pending mint", async () => {
