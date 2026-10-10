@@ -48,6 +48,7 @@ import {
 } from "@/features/entitlements/state/entitlementsSlice";
 import { UrlPanelManager } from "@/features/window-panels/url-sync/UrlPanelManager";
 import { KindLeakSentinel } from "@/features/content-ir/surfaces/KindLeakSentinel";
+import { SurfaceRowGuard } from "@/features/surfaces/dev/SurfaceRowGuard";
 
 
 export default function DeferredSingletonCore() {
@@ -155,6 +156,8 @@ export default function DeferredSingletonCore() {
       <OverlayController />
       {/* G1: files any `__kind` drawn as raw text (never-raw law). */}
       <KindLeakSentinel />
+      {/* Dev only: a mounted surface with no ui.ui_surface row screams in the console. */}
+      <SurfaceRowGuard />
       {/* Render-free until a usage limit is hit: the usage gate's boot read,
           server notifications, near/over notice and limit dialog. */}
       <UsageGateBridge />

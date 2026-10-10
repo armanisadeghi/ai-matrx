@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { PageSurfaceMenu } from "@/features/context-menu-v3/PageSurfaceMenu";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -86,9 +87,11 @@ export function SocialsShell({ children }: { children: ReactNode }) {
         // The Studio is the Board, exactly as /board/<id>: its workspace header is the page top, full-bleed.
         <div className="h-full min-h-0">{children}</div>
       ) : (
-        <div className="h-full overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)]">
-          <div className="mx-auto w-full max-w-[1600px] px-3 pb-6 pt-3 sm:px-4">{children}</div>
-        </div>
+        <PageSurfaceMenu sourceFeature="marketing">
+          <div className="h-full overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)]">
+            <div className="mx-auto w-full max-w-[1600px] px-3 pb-6 pt-3 sm:px-4">{children}</div>
+          </div>
+        </PageSurfaceMenu>
       )}
       <TrackAccountDialog
         open={trackOpen}

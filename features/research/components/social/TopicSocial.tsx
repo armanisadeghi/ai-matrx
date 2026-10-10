@@ -21,6 +21,7 @@ import { GUIDED_CAPTURE_PLATFORMS } from "@/features/marketing/social/gated/guid
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { isJsonObject } from "@/types/json";
 import { useTopicContext } from "../../context/ResearchContext";
+import { PageSurfaceMenu } from "@/features/context-menu-v3/PageSurfaceMenu";
 import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createResearchScope } from "@/features/surfaces/manifests/research.manifest";
 import { getSources } from "../../service";
@@ -203,6 +204,7 @@ export default function TopicSocial() {
   );
 
   return (
+    <PageSurfaceMenu sourceFeature="research">
     <div className="matrx-touch-targets h-full overflow-y-auto px-3 pb-8 pt-3">
       <div className="mx-auto max-w-5xl space-y-4">
         <Section icon={UserRound} title="Profiles" count={handles.length}>
@@ -328,5 +330,6 @@ export default function TopicSocial() {
       </div>
       {captureNode}
     </div>
+    </PageSurfaceMenu>
   );
 }
