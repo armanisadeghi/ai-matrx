@@ -10,7 +10,10 @@
 // imports it for the server layer and mounts `ChatSurfaceRegistrations` for
 // the browser, so server components (surface labels) and client code read the
 // same manifests. Jest registers the same registry lazily in `jest.setup.ts`.
-import { registerSurfaceManifests } from "@ai-matrx/chat/surfaces/runtime/registry";
+import {
+  createSurfaceSourceFromRegistry,
+  registerSurfaceManifests,
+} from "@ai-matrx/chat/surfaces/runtime/registry";
 import {
   getAllManifests,
   getManifest,
@@ -20,11 +23,16 @@ import {
 } from "@/features/surfaces/manifests/registry";
 import { getSurfaceSection } from "@/features/surfaces/manifests/surface-section";
 
-registerSurfaceManifests({
-  getManifest,
-  getAllManifests,
-  getRawManifest,
-  getSurfaceAncestry,
-  getSurfaceChildren,
-  getSurfaceSection,
-});
+// INTERIM (BUNDLE-3): the package's index + body seam over the FULL registry
+// (every body answers synchronously). The generated-index source that keeps
+// manifest bodies out of the first load replaces this once its encoding ships.
+registerSurfaceManifests(
+  createSurfaceSourceFromRegistry({
+    getManifest,
+    getAllManifests,
+    getRawManifest,
+    getSurfaceAncestry,
+    getSurfaceChildren,
+    getSurfaceSection,
+  }),
+);

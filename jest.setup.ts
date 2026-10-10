@@ -303,12 +303,22 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
   const app = () =>
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("@/features/surfaces/manifests/registry") as typeof import("@/features/surfaces/manifests/registry");
+  // The full registry behind the SAME index + body seam the app uses (every
+  // body answers synchronously), resolved lazily through the test's registry.
+  const full = () =>
+    seam.createSurfaceSourceFromRegistry({
+      getManifest: (surfaceName) => app().getManifest(surfaceName),
+      getAllManifests: () => app().getAllManifests(),
+      getRawManifest: (surfaceName) => app().getRawManifest(surfaceName),
+      getSurfaceAncestry: (surfaceName) => app().getSurfaceAncestry(surfaceName),
+      getSurfaceChildren: (surfaceName) => app().getSurfaceChildren(surfaceName),
+    });
   seam.registerSurfaceManifests({
-    getManifest: (surfaceName) => app().getManifest(surfaceName),
-    getAllManifests: () => app().getAllManifests(),
-    getRawManifest: (surfaceName) => app().getRawManifest(surfaceName),
+    getIndexEntry: (surfaceName) => full().getIndexEntry(surfaceName),
+    getAllIndexEntries: () => full().getAllIndexEntries(),
     getSurfaceAncestry: (surfaceName) => app().getSurfaceAncestry(surfaceName),
     getSurfaceChildren: (surfaceName) => app().getSurfaceChildren(surfaceName),
+    loadBody: (surfaceName) => full().loadBody(surfaceName),
     getSurfaceSection: (surfaceName) =>
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       (require("@/features/surfaces/manifests/surface-section") as typeof import("@/features/surfaces/manifests/surface-section")).getSurfaceSection(surfaceName),
