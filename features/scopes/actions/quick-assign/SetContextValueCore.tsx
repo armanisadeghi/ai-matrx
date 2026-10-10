@@ -128,9 +128,9 @@ export function SetContextValueCore({
   const handlePreviewOverwrite = useCallback(() => {
     setShowOverwriteWarning(false);
     openDiff({
-      original: currentRow?.value_text ?? "",
+      original: typeof currentRow?.value === "string" ? currentRow.value : "",
       modified: workingContent,
-      originalLabel: pickedItem?.display_name ?? "Current value",
+      originalLabel: pickedItem?.label ?? "Current value",
       modifiedLabel: "Incoming",
       title: "Preview overwrite",
       engine: "light",
@@ -206,7 +206,7 @@ export function SetContextValueCore({
             <span className="font-medium">
               Saved to{" "}
               <span className="font-semibold">
-                {pickedItem?.display_name ?? "context item"}
+                {pickedItem?.label ?? "context item"}
               </span>
             </span>
             <span className="text-muted-foreground">
@@ -375,7 +375,7 @@ export function SetContextValueCore({
                   </RadioGroup>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    {pickedItem?.display_name ?? "This item"} is currently empty
+                    {pickedItem?.label ?? "This item"} is currently empty
                     — this will set its initial value.
                   </p>
                 )}
@@ -465,7 +465,7 @@ export function SetContextValueCore({
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   You are about to replace the current value of{" "}
-                  <strong>{pickedItem?.display_name}</strong>. This action
+                  <strong>{pickedItem?.label}</strong>. This action
                   cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>

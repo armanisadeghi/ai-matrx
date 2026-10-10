@@ -25,7 +25,6 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   ContextAssignmentField,
   type ContextSelection,
@@ -96,7 +95,7 @@ export function UploadContextPrompt({
           targetIds: realProjectIds,
           orgId: sel.organizationId ?? undefined,
         });
-        if (isScopesRpcErr(r)) return { ok: false, error: r.error.message };
+        if (!r.ok) return { ok: false, error: r.error.message };
       }
       if (realTaskIds.length > 0) {
         const r = await associationsService.setTargets({
@@ -106,7 +105,7 @@ export function UploadContextPrompt({
           targetIds: realTaskIds,
           orgId: sel.organizationId ?? undefined,
         });
-        if (isScopesRpcErr(r)) return { ok: false, error: r.error.message };
+        if (!r.ok) return { ok: false, error: r.error.message };
       }
     }
     invalidateAssignableData("bulk");

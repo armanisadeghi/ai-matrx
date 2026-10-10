@@ -18,6 +18,7 @@
  * render (so the user isn't confused about where they went) but disabled.
  */
 
+import type { ContextField } from "@ai-matrx/records/scopes";
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -47,10 +48,7 @@ import {
   makeSelectItemsForType,
   makeSelectItemsStatusForType,
 } from "@/features/scopes/redux/selectors/context-items";
-import type {
-  ContextItemRow,
-  ContextItemValueType,
-} from "@/features/scopes/types";
+import type { ContextFieldKind } from "@ai-matrx/records/scopes";
 import {
   contextItemHref,
   contextItemsHref,
@@ -62,15 +60,10 @@ import {
 } from "@/features/scopes/lib/scopeRoutes";
 
 /** Append/overwrite only makes sense for a cell that IS text. */
-const TEXT_COMPATIBLE_VALUE_TYPES: ReadonlySet<ContextItemValueType> = new Set([
-  "string",
-  "object",
-  "array",
-  "document",
-]);
+const TEXT_COMPATIBLE_VALUE_TYPES: ReadonlySet<ContextFieldKind> = new Set(["string", "markdown"]);
 
-export function isTextCompatibleContextItem(item: ContextItemRow): boolean {
-  return TEXT_COMPATIBLE_VALUE_TYPES.has(item.value_type);
+export function isTextCompatibleContextItem(item: ContextField): boolean {
+  return TEXT_COMPATIBLE_VALUE_TYPES.has(item.kind);
 }
 
 export interface ScopeContextTarget {
@@ -79,7 +72,7 @@ export interface ScopeContextTarget {
   scopeId: string;
   contextItemId: string;
   /** The full picked item — present only when `contextItemId` changed in this emit. */
-  item?: ContextItemRow;
+  item?: ContextField;
 }
 
 interface ScopeContextTargetPickerProps {
@@ -348,10 +341,10 @@ export function ScopeContextTargetPicker({
                 const compatible = isTextCompatibleContextItem(i);
                 return (
                   <SelectItem key={i.id} value={i.id} disabled={!compatible}>
-                    <span>{i.display_name}</span>
+                    <span>{i.label}</span>
                     {!compatible && (
                       <span className="ml-2 text-[10px] text-muted-foreground">
-                        ({i.value_type} — text only, for now)
+                        ({i.kind} — text only, for now)
                       </span>
                     )}
                   </SelectItem>
@@ -363,7 +356,7 @@ export function ScopeContextTargetPicker({
             <EntityDoorControls
               token="context_item"
               id={item.id}
-              name={item.display_name}
+              name={item.label}
               href={contextItemHref(orgSegment, scopeType, item)}
               alwaysShowActions
             />

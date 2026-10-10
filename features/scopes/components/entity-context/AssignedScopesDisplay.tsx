@@ -26,8 +26,9 @@ import { Building2, Loader2, Tag } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { scopeShortHref } from "@/features/scopes/lib/scopeRoutes";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type { EntityType } from "@/features/scopes/types";
+import type {
+  EntityType,
+} from "@/features/scopes/types";
 import { useOrganizationLabel } from "@/features/organizations/hooks/useOrganizationLabel";
 import { dispatchThunk, useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
@@ -56,7 +57,7 @@ const NO_GROUPS: Group[] = [];
 /** The entity's assigned scopes, grouped by type (empty when the read fails). */
 async function readAssignedGroups(entityType: string, entityId: string): Promise<Group[]> {
   const res = await scopesService.getEntityScopeDetails(entityType as EntityType, entityId);
-  if (isScopesRpcErr(res) || res.data.scopes.length === 0) return [];
+  if (!res.ok || res.data.scopes.length === 0) return [];
   const byType = new Map<string, Group>();
   for (const row of res.data.scopes) {
     const t = row.scope_type;

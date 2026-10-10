@@ -19,13 +19,13 @@
 // If you are adding a read to any ContextAssignment component, add it here —
 // never fetch directly from the component.
 
+import type { ContextField } from "@ai-matrx/records/scopes";
 import { getUserProjects } from "@/features/projects/service";
 import {
   getProjectTasks,
   getUserTasks,
 } from "@/features/tasks/services/taskService";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import type { ContextItemRow } from "@/features/scopes/types";
 
 const TTL_MS = 60_000;
 
@@ -101,7 +101,7 @@ export async function fetchAssignableTasks(): Promise<AssignableTask[]> {
 /** Context items defined on a scope type — used by slot pickers. */
 export async function fetchTypeItems(
   scopeTypeId: string,
-): Promise<ContextItemRow[]> {
+): Promise<ContextField[]> {
   return cached(`items:${scopeTypeId}`, async () => {
     const r = await scopesService.listContextItems(scopeTypeId);
     return r.ok ? r.data.items : [];

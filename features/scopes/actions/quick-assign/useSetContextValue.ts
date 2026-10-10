@@ -6,6 +6,7 @@
 // Content transforms (strip-thinking, trim, edit override) live in the
 // shared `useRefinableContent` primitive, same as notes.
 
+import type { ContextField, ContextValue } from "@ai-matrx/records/scopes";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -16,11 +17,6 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
 import { setContextValue } from "@/features/scopes/redux/thunks/setContextValue";
 import { makeSelectScopeValues } from "@/features/scopes/redux/selectors/context-values";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type {
-  ContextItemRow,
-  ContextItemValue,
-} from "@/features/scopes/types";
 import type { ScopeContextTarget } from "@/features/scopes/components/quick-assign/ScopeContextTargetPicker";
 import { isTextCompatibleContextItem } from "@/features/scopes/components/quick-assign/ScopeContextTargetPicker";
 
@@ -42,7 +38,7 @@ export function useSetContextValue({
   const { workingContent } = refine;
 
   const [target, setTarget] = useState<Partial<ScopeContextTarget>>({});
-  const [pickedItem, setPickedItem] = useState<ContextItemRow | null>(null);
+  const [pickedItem, setPickedItem] = useState<ContextField | null>(null);
   const [updateMethod, setUpdateMethod] = useState<UpdateMethod>("append");
   const [isSaving, setIsSaving] = useState(false);
   const [savedScopeId, setSavedScopeId] = useState<string | null>(null);
@@ -65,11 +61,12 @@ export function useSetContextValue({
 
   // Keyed by context_item_id; a row exists only when the cell has a current
   // persisted value.
-  const currentRow: ContextItemValue | undefined = contextItemId
+  const currentRow: ContextValue | undefined = contextItemId
     ? valuesForScope[contextItemId]
     : undefined;
 
-  const hasExistingValue = Boolean(currentRow?.value_text);
+  const currentText = typeof currentRow?.value === "string" ? currentRow.value : "";
+  const hasExistingValue = currentText.length > 0;
 
   // Default to append whenever a value already exists; reset to append
   // (the non-destructive default) whenever the target changes.
@@ -102,18 +99,19 @@ export function useSetContextValue({
     const trimmedContent = workingContent.trim();
     const finalValue =
       hasExistingValue && updateMethod === "append"
-        ? `${currentRow?.value_text ?? ""}\n\n${trimmedContent}`.trim()
+        ? `${currentText}\n\n${trimmedContent}`.trim()
         : trimmedContent;
 
     setIsSaving(true);
     try {
       // The thunk wraps the sanctioned `set_context_value` RPC and never
-      // throws — errors come back in the ScopesRpcResult envelope.
+      // throws — errors come back as a RecordsResult.
       const res = await dispatch(
         setContextValue({
           scope_id: scopeId,
-          context_item_id: contextItemId,
-          value_text: finalValue,
+          field_id: contextItemId,
+          kind: pickedItem?.kind ?? "string",
+          value: finalValue,
           source_type: "manual",
           change_summary: hasExistingValue
             ? updateMethod === "append"
@@ -122,7 +120,7 @@ export function useSetContextValue({
             : "Set from a chat message",
         }),
       );
-      if (isScopesRpcErr(res)) {
+      if (!res.ok) {
         console.error("useSetContextValue: save failed", res.error);
         toast.error("Failed to save context value");
         return false;
@@ -130,8 +128,8 @@ export function useSetContextValue({
 
       toast.success(
         hasExistingValue
-          ? `Content ${updateMethod === "append" ? "appended to" : "overwrote"} ${pickedItem?.display_name ?? "the item"}!`
-          : `Saved to ${pickedItem?.display_name ?? "the item"}!`,
+          ? `Content ${updateMethod === "append" ? "appended to" : "overwrote"} ${pickedItem?.label ?? "the item"}!`
+          : `Saved to ${pickedItem?.label ?? "the item"}!`,
       );
       setSavedScopeId(scopeId);
       return true;

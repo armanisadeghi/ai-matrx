@@ -36,6 +36,7 @@
 //   LAYOUT — fixed section height; selection never resizes anything. Width is
 //   the parent's job (wrappers pass a fixed width).
 
+import type { ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Building2,
@@ -89,8 +90,9 @@ import { ClearContextButton } from "@/features/scopes/components/active-context/
 import { ContextSelectionSummary } from "./ContextSelectionSummary";
 import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
 import { useOpenScopeEditWindow } from "@/features/overlays/openers/scopeEditWindow";
-import { isScopesRpcErr } from "@/features/scopes/types";
-import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import type {
+  OrgNode,
+} from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 
 /** Sentinel org value: no org filter — show / span every organization.
@@ -1037,13 +1039,13 @@ export function ContextAssignmentField({
     [allTasks, allProjects, addedProjects, org?.id],
   );
 
-  const typeById = (id: string): ScopeTypeNode | undefined =>
+  const typeById = (id: string): ScopeTypeWithScopes | undefined =>
     (org?.scope_types ?? organizations.flatMap((o) => o.scope_types)).find(
       (t) => t.id === id,
     );
   // Non-assignment modes browse ALL orgs (hierarchy tree), so type resolution
   // must search every org — not just the browse org.
-  const typeOfScope = (id: string): ScopeTypeNode | undefined =>
+  const typeOfScope = (id: string): ScopeTypeWithScopes | undefined =>
     (mode === "assignment" && !isAllOrgs
       ? org?.scope_types.find((t) => t.scopes.some((s) => s.id === id))
       : organizations
@@ -1196,9 +1198,9 @@ export function ContextAssignmentField({
           "@/features/scopes/redux/thunks/scopeTreeMutations"
         );
         const created = await dispatch(
-          createScope({ org_id: targetOrgId, type_id: typeId, name: v }),
+          createScope({ organization_id: targetOrgId, scope_type_id: typeId, name: v }),
         );
-        if (isScopesRpcErr(created)) throw new Error(created.error.message);
+        if (!created.ok) throw new Error(created.error.message);
         setSelScopes((p) => new Set(p).add(created.data.id));
         setAdding(null);
         toast.success(`Created "${v}"`);

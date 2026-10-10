@@ -19,6 +19,7 @@
 
 "use client";
 
+import type { ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
@@ -39,7 +40,6 @@ import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import type {
   EntityType,
-  ScopeTypeNode,
 } from "@/features/scopes/types";
 import { DynamicIcon } from "@ai-matrx/icons";
 import { Badge } from "@/components/ui/badge";
@@ -137,7 +137,7 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
   // With several orgs' types on screen the org is a label, never a heading.
   const showOrgLabel =
     allOrgs && new Set(scopeTypesEveryOrg.map((t) => t.organization_id)).size > 1;
-  const orgLabelOf = (type: ScopeTypeNode): string | null =>
+  const orgLabelOf = (type: ScopeTypeWithScopes): string | null =>
     showOrgLabel ? (orgsById[type.organization_id]?.name ?? null) : null;
 
   const scopeTypes = useMemo(() => {
@@ -504,8 +504,8 @@ function ScopeChip({
   isSelected,
   onClick,
 }: {
-  type: ScopeTypeNode;
-  scope: ScopeTypeNode["scopes"][number];
+  type: ScopeTypeWithScopes;
+  scope: ScopeTypeWithScopes["scopes"][number];
   orgLabel?: string | null;
   isSelected: boolean;
   onClick: () => void;

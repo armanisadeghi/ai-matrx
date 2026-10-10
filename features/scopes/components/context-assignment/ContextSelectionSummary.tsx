@@ -13,11 +13,14 @@
 //
 // Pure display + remove handlers — no Redux writes.
 
+import type { ScopeTypeWithScopes } from "@ai-matrx/records/scopes";
 import React, { useMemo } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resolveColor } from "@/features/scopes/constants/scope-colors";
-import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import type {
+  OrgNode,
+} from "@/features/scopes/types";
 import type { AssignableProject, AssignableTask } from "./data";
 import type { ContextAssignmentDimension } from "./ContextAssignmentField";
 import { orgDisplayNameById } from "@/features/scopes/utils/formatOrgDisplayName";
@@ -100,7 +103,7 @@ function RemovableChip({
   );
 }
 
-function typeRowLabel(type: ScopeTypeNode, organizations: OrgNode[]): string {
+function typeRowLabel(type: ScopeTypeWithScopes, organizations: OrgNode[]): string {
   if (organizations.length <= 1) return type.label_plural;
   const org = organizations.find((o) => o.id === type.organization_id);
   return org ? `${type.label_plural} · ${org.name}` : type.label_plural;
@@ -110,7 +113,7 @@ function resolveScopeType(
   scopeId: string,
   organizations: OrgNode[],
   addedScopes: { id: string; name: string; typeId: string }[],
-): ScopeTypeNode | undefined {
+): ScopeTypeWithScopes | undefined {
   const fromTree = organizations
     .flatMap((o) => o.scope_types)
     .find((t) => t.scopes.some((s) => s.id === scopeId));
@@ -174,12 +177,12 @@ export function ContextSelectionSummary({
   const scopeTypeGroupChips = useMemo(() => {
     return [...selScopeTypeIds]
       .map((id) => allTypes.find((t) => t.id === id))
-      .filter((t): t is ScopeTypeNode => !!t)
+      .filter((t): t is ScopeTypeWithScopes => !!t)
       .sort((a, b) => a.sort_order - b.sort_order);
   }, [selScopeTypeIds, allTypes]);
 
   const scopesByType = useMemo(() => {
-    const map = new Map<string, { type: ScopeTypeNode; scopeIds: string[] }>();
+    const map = new Map<string, { type: ScopeTypeWithScopes; scopeIds: string[] }>();
     for (const scopeId of selScopes) {
       const type = resolveScopeType(scopeId, organizations, addedScopes);
       if (!type) continue;

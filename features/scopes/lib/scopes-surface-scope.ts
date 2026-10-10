@@ -57,7 +57,7 @@ export function buildScopesDirectoryValues(
         icon: type.icon,
         color: type.color,
         sort_order: type.sort_order,
-        parent_type_id: type.parent_type_id,
+        parent_type_id: null,
         scope_count: type.scopes.length,
       });
       for (const scope of type.scopes) {
