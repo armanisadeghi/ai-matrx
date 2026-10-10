@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T04:13:14.857Z",
+  "generated_at": "2026-10-10T04:29:05.401Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4064,6 +4064,12 @@
       "checksum": "e67f487c550f97cc1b827c6cd473a9f8af05c9ab7077e6079c5b19d15f1f881a",
       "applied_at": "2026-10-10 04:13:07.529494+00"
     },
+    "migrations/campaign/hr_rev_02_standard_review_doors.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr_rev_02_standard_review_doors.sql",
+      "checksum": "61d9a2cf6ef167d89b3d593afd46de023ab9a91ecb88f72059cad5e528e8f662",
+      "applied_at": "2026-10-10 04:19:15.16707+00"
+    },
     "migrations/campaign/hrloopcleanup_a_the_loops_duplicate_failures_are_resolved.sql": {
       "source": "matrx-frontend",
       "filename": "hrloopcleanup_a_the_loops_duplicate_failures_are_resolved.sql",
@@ -5450,6 +5456,12 @@
       "checksum": "92f747e46289dff1b185e53a2c1133d0598b6c766007d671e9571d24a2542ca8",
       "applied_at": "2026-10-10 04:09:41.027989+00"
     },
+    "migrations/campaign/pagespeed2_get_org_file_list_skips_what_it_would_refuse.sql": {
+      "source": "matrx-frontend",
+      "filename": "pagespeed2_get_org_file_list_skips_what_it_would_refuse.sql",
+      "checksum": "ba1d0b7a04b26828f18bcf63c14e901660c9ccb45fded8eb84567b0c4ced4419",
+      "applied_at": "2026-10-10 04:27:36.713811+00"
+    },
     "migrations/campaign/paritynightly_the_context_parity_guard_is_a_scheduled_system_job_switched_off.sql": {
       "source": "campaign",
       "filename": "paritynightly_the_context_parity_guard_is_a_scheduled_system_job_switched_off.sql",
@@ -5467,6 +5479,12 @@
       "filename": "perf_watch2_doors_b_heavy_groups.sql",
       "checksum": "c5c9acebea89b0828bfb043c12e05190330e650a145ecc11750dd9dc0c4a3f3f",
       "applied_at": "2026-10-10 04:11:30.014086+00"
+    },
+    "migrations/campaign/perf_watch2_doors_b_heavy_groups_always_measure.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch2_doors_b_heavy_groups_always_measure.sql",
+      "checksum": "fc87d41ba4a9cc40972669b22bcda8e3f3400337a5e8926c0d9020ab5ccf9166",
+      "applied_at": "2026-10-10 04:29:04.189474+00"
     },
     "migrations/campaign/perf_watch2_doors_b_member_heavy_group.sql": {
       "source": "matrx-frontend",
