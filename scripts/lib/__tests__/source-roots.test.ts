@@ -42,12 +42,17 @@ describe("aliasTarget", () => {
 });
 
 describe("feature roots", () => {
+  // The package src is a SIBLING of the repo (`../aidream/...`), so the fake repo lives one level
+  // inside the scratch dir: the sibling it creates stays inside the scratch dir too and is removed
+  // with it. A repo directly in tmpdir() leaked `$TMPDIR/aidream` and failed the next run.
+  let scratch: string;
   let dir: string;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "source-roots-"));
-    mkdirSync(join(dir, "features"));
+    scratch = mkdtempSync(join(tmpdir(), "source-roots-"));
+    dir = join(scratch, "repo");
+    mkdirSync(join(dir, "features"), { recursive: true });
   });
-  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+  afterEach(() => rmSync(scratch, { recursive: true, force: true }));
 
   it("is features/ alone until the package exists, then both", () => {
     expect(featureRoots(dir)).toEqual(["features"]);

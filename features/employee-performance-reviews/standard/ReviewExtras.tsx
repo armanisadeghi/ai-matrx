@@ -6,8 +6,7 @@
 import { CalendarPlus, Printer } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
 
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { textExportItem } from "@/components/agent-copy/export";
+import { ContentActions } from "@ai-matrx/rich-content/copy/ContentActions";
 import { downloadIcs, googleCalendarUrl, outlookCalendarUrl } from "@/lib/calendar/eventLinks";
 
 import { reviewDueEvents } from "./calendarEvents";
@@ -48,13 +47,12 @@ export function ReviewExtras({ detail }: { detail: ReviewDetail }) {
       ))}
       {printable ? (
         <div className="ml-auto flex items-center gap-2">
-          <CopyButtons
+          <ContentActions
             size="sm"
             label="Performance review"
-            contentFlavor="markdown"
-            human={() => markdown}
-            agent={() => markdown}
-            export={{ items: [textExportItem(() => markdown, "Markdown (this review)", "md")] }}
+            title="Performance review"
+            content={() => markdown}
+            onPrint={() => openStandardReportPrint(model)}
           />
           <Button icon={<Printer />} variant="outline" onClick={() => openStandardReportPrint(model)}>
             Print or save PDF
