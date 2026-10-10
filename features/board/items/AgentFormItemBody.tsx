@@ -65,6 +65,7 @@ import {
 } from "./work-sources";
 import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
+import { ErrorNotice } from "@ai-matrx/design-system";
 /** The inputs layout a new tile starts with (see OPEN QUESTION above). */
 export const AGENT_FORM_DEFAULT_INPUT_STYLE: VariablesPanelStyle = "form";
 /** A new tile's title until the agent's name is known. */
@@ -176,11 +177,11 @@ export function AgentFormItemBody({ tileId, source, title, onSource }: ItemBodyP
   if (state.state === "failed") {
     return (
       <div className="flex h-full items-center justify-center bg-card p-4">
-        <EmptyState
-          icon={<AlertTriangle />}
+        <ErrorNotice
+         
           title={state.purpose === "open" ? "Couldn't open this run" : "Couldn't start the agent"}
-          line={state.reason}
-          action={<Button onClick={state.retry}>Try again</Button>}
+           message={state.reason}
+          actions={<Button onClick={state.retry}>Try again</Button>}
         />
       </div>
     );

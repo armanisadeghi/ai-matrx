@@ -131,6 +131,7 @@ import {
 } from "./social-tile-views";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export const SOCIAL_POST_KEY = "social-post";
 export const SOCIAL_PROFILE_KEY = "social-profile";
 export const SOCIAL_OUTLIER_FEED_KEY = "social-outlier-feed";
@@ -148,8 +149,8 @@ const idOf = (source: NodeSource, key: string): string | null =>
 
 const FRAME = "h-full min-h-0 overflow-y-auto bg-textured p-3";
 
-function Centered({ children }: { children: ReactNode }) {
-  return <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">{children}</div>;
+function Centered({ children, ...rest }: { children: ReactNode } & React.HTMLAttributes<HTMLDivElement>) {
+  return <div {...rest} className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">{children}</div>;
 }
 
 function Busy({ label }: { label: string }) {
@@ -209,8 +210,8 @@ function IngestState({
           <Icon className="h-5 w-5" aria-hidden />
         </span>
         <div className="flex max-w-xs flex-col gap-1">
-          <p className="text-sm font-medium text-foreground">{error.title}</p>
-          <p className="text-xs leading-snug text-muted-foreground">{error.reason}</p>
+          <p className="text-sm font-medium text-foreground">{error.title}<ErrorAlchemyMenu error={error.title} /></p>
+          <p className="text-xs leading-snug text-muted-foreground">{error.reason}<ErrorAlchemyMenu error={error.reason} /></p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
           {error.canRetry ? (
@@ -422,7 +423,7 @@ function PostRecordBody({ id, source, title, onSource, organizationId }: ItemBod
   if (!kind || !post) {
     return (
       <Centered>
-        <p className="text-foreground">{detail.isError ? "Could not read this post." : "This post is not stored yet."}</p>
+        <p data-error-box className="text-foreground">{detail.isError ? "Could not read this post." : "This post is not stored yet."}<ErrorAlchemyMenu /></p>
         <Button variant="outline" onClick={() => void detail.refetch()}>
           Try again
         </Button>
@@ -724,7 +725,7 @@ function ProfileRecordBody({
   if (!row) {
     return (
       <Centered>
-        <p className="text-foreground">Could not read this account.</p>
+        <p data-error-box className="text-foreground">Could not read this account.<ErrorAlchemyMenu /></p>
         <Button variant="outline" onClick={() => void profile.refetch()}>
           Try again
         </Button>
@@ -815,7 +816,7 @@ function OutlierFeedBody({ source }: ItemBodyProps) {
   if (feed.isError) {
     return (
       <Centered>
-        <p className="text-foreground">Could not read the feed.</p>
+        <p data-error-box className="text-foreground">Could not read the feed.<ErrorAlchemyMenu /></p>
         <Button variant="outline" onClick={() => void feed.refetch()}>
           Try again
         </Button>
@@ -860,7 +861,7 @@ function AdRecordBody({ id }: ItemBodyProps & { id: string }) {
         : ({ ad_loaded: false, not_loaded_yet: true } as never),
   );
   if (ad.isLoading) return <Busy label="Opening the ad" />;
-  if (!kind) return <Centered>{ad.isError ? "Could not read this ad." : "This ad is no longer stored."}</Centered>;
+  if (!kind) return <Centered data-error-box>{ad.isError ? "Could not read this ad." : "This ad is no longer stored."}<ErrorAlchemyMenu /></Centered>;
   return (
     <>
       <AdSurface values={values} />
@@ -951,7 +952,7 @@ function SwipeRecordBody({ id }: ItemBodyProps & { id: string }) {
         : ({ collection_loaded: false, not_loaded_yet: true } as never),
   );
   if (collection.isLoading) return <Busy label="Opening the collection" />;
-  if (!kind) return <Centered>{collection.isError ? "Could not read this collection." : "This collection no longer exists."}</Centered>;
+  if (!kind) return <Centered data-error-box>{collection.isError ? "Could not read this collection." : "This collection no longer exists."}<ErrorAlchemyMenu /></Centered>;
   return (
     <>
       <SwipeSurface values={values} />
