@@ -2,6 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 import { judgeConnection, loadConnectionSnapshot, type PlatformConnection } from "./connection-state";
@@ -14,6 +16,8 @@ import { judgeConnection, loadConnectionSnapshot, type PlatformConnection } from
  * `recordOrganizationId` only gates the query to a loaded brand.
  */
 export function useConnectionStates(recordOrganizationId: string) {
+  // Our own team are the provider-side testers while an app is in test mode (see judgeConnection).
+  const viewerIsInternal = useAppSelector(selectIsAdminPerson);
   const query = useQuery({
     queryKey: ["marketing", "social", "connection-states"],
     queryFn: async () => loadConnectionSnapshot(await ensureOrgId(null)),
@@ -21,6 +25,6 @@ export function useConnectionStates(recordOrganizationId: string) {
     staleTime: 60_000,
   });
   const of = (platform: string): PlatformConnection | null =>
-    query.data ? judgeConnection(platform, query.data.connections, query.data.configs, query.data.xAvailable) : null;
+    query.data ? judgeConnection(platform, query.data.connections, query.data.configs, query.data.xAvailable, viewerIsInternal) : null;
   return { ...query, of };
 }
