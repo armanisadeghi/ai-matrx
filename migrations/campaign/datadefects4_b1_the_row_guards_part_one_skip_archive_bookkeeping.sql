@@ -1,5 +1,6 @@
 -- chair-step: splits each listed per-row guard trigger of custom.record into a BEFORE INSERT trigger (unchanged, named "<name>!i" so it fires in the same place in the order) and a BEFORE UPDATE trigger that keeps its original name and gains a WHEN clause; CREATE TRIGGER + CREATE OR REPLACE TRIGGER on custom.record (no DROP TRIGGER: a DROP freezes the auth/storage/realtime set until commit) (briefly ShareRowExclusive on it and its partitions, the whole file is 7 triggers). A trigger on INSERT OR UPDATE cannot reference OLD in WHEN, hence the split.
 -- window-class: CREATE/CREATE OR REPLACE TRIGGER on the partitioned custom.record (SHARE ROW EXCLUSIVE on it and its 16 partitions until COMMIT, writers wait ~1 s, readers and sign-in untouched); 7 triggers per file, no DROP TRIGGER
+-- brief-lock: seven guard triggers split into insert + update; writers wait about 2 s (SHARE ROW EXCLUSIVE), readers and sign-in untouched; rehearsed on the clone
 -- lane: DATA-DEFECTS-4
 -- lock: custom,platform
 --

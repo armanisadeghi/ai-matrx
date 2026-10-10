@@ -1,5 +1,6 @@
 -- chair-step: puts the 7 guard triggers back as the single BEFORE INSERT OR UPDATE triggers they were before datadefects4_b2_the_row_guards_part_two_skip_archive_bookkeeping.sql.
 -- lane: DATA-DEFECTS-4
+-- window-class: CREATE OR REPLACE TRIGGER / DROP TRIGGER on the partitioned custom.record (writers wait until COMMIT); the inverse of a brief-lock file, run by the owning session only
 -- lock: custom,platform
 
 DROP TRIGGER IF EXISTS "custom_record_merge_field_shape_guard!i" ON custom.record;

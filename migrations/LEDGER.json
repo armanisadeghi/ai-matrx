@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T15:50:43.245Z",
+  "generated_at": "2026-10-10T16:01:26.880Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1513,6 +1513,24 @@
       "filename": "datadefects4_a_a_table_comes_back_in_set_based_steps_and_says_how_much_is_left.sql",
       "checksum": "6c6e04abedd8bc379cacf2526191d2b99715e986e166cd8e9dbbf1c05fc027fb",
       "applied_at": "2026-10-10 11:14:36.429379+00"
+    },
+    "migrations/campaign/datadefects4_b1_the_row_guards_part_one_skip_archive_bookkeeping.sql": {
+      "source": "matrx-frontend",
+      "filename": "datadefects4_b1_the_row_guards_part_one_skip_archive_bookkeeping.sql",
+      "checksum": "d1fc7fb63738dae9114e272fb2d61a8b65040b5d3b9ad70b658e603c990ceb6d",
+      "applied_at": "2026-10-10 16:01:05.133807+00"
+    },
+    "migrations/campaign/datadefects4_b2_the_row_guards_part_two_skip_archive_bookkeeping.sql": {
+      "source": "matrx-frontend",
+      "filename": "datadefects4_b2_the_row_guards_part_two_skip_archive_bookkeeping.sql",
+      "checksum": "2599b11da632be579ecfd1080b1f7eda40202fc1646f85380c832ce2f6ec0a7e",
+      "applied_at": "2026-10-10 16:01:15.211101+00"
+    },
+    "migrations/campaign/datadefects4_b3_the_row_guards_part_three_skip_archive_bookkeeping.sql": {
+      "source": "matrx-frontend",
+      "filename": "datadefects4_b3_the_row_guards_part_three_skip_archive_bookkeeping.sql",
+      "checksum": "14bc0eaa690bda1d05b1d91e85934fbb76c4e16e2b77def6c83f2072734b7b2c",
+      "applied_at": "2026-10-10 16:01:24.820367+00"
     },
     "migrations/campaign/datahome1_b_the_data_home_hides_nothing.sql": {
       "source": "matrx-frontend",
