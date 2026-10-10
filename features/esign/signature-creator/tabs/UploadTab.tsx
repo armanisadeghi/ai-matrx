@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ImageUp } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function UploadTab({ onFile, busy, error }: { onFile: (file: File) => void; busy: boolean; error: string | null }) {
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
@@ -40,7 +41,7 @@ export function UploadTab({ onFile, busy, error }: { onFile: (file: File) => voi
         {busy ? "Cleaning up" : "Choose image"}
       </Button>
       <span className="text-xs text-muted-foreground">PNG or JPEG, or drop it here</span>
-      {error && <span role="alert" className="px-3 text-center text-xs text-destructive">{error}</span>}
+      {error && <span role="alert" className="px-3 text-center text-xs text-destructive">{error}<ErrorAlchemyMenu error={error} /></span>}
     </div>
   );
 }

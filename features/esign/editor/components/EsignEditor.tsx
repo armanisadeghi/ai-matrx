@@ -34,6 +34,7 @@ import { DocumentsPanel, UploadButton } from "./DocumentsPanel";
 import { MessagePanel } from "./MessagePanel";
 import { PreviewDialog, SendDialog, TemplateDialog } from "./Dialogs";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface UploadedDoc {
   file_id: string;
   name: string;
@@ -594,7 +595,7 @@ export function EsignEditor(props: EsignEditorProps) {
             <span className="min-w-0 flex-1 truncate">Changed in another window: {sync.conflicts.map((c) => c.label).join(", ")}</span>
             <Button onClick={() => sync.resolveConflicts("mine")}>Keep mine</Button>
             <Button variant="outline" onClick={() => sync.resolveConflicts("theirs")}>Take theirs</Button>
-          </div>
+          <ErrorAlchemyMenu /></div>
         )}
         <div className="flex h-full min-h-0">
           {!isMobile && <aside className="flex w-80 shrink-0 flex-col border-r border-border">{leftPanel}</aside>}

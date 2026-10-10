@@ -12,6 +12,7 @@ import type { SignerDoorApi } from "../../contract/signerDoor";
 import { pngBase64ToDataUrl } from "../render";
 import type { Candidate } from "../types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface StoredHandoff {
   handoff_id: string;
   secret: string;
@@ -219,7 +220,7 @@ export function PhoneTab({
         {problem && (
           <p role="alert" className="text-xs text-destructive">
             {problem}
-          </p>
+          <ErrorAlchemyMenu error={problem} /></p>
         )}
         {(phase === "ended" || phase === "failed" || phase === "got") && (
           <div>

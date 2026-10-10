@@ -42,6 +42,7 @@ import {
 } from "./service";
 import { SIGNER_STATUS_LABEL, signHref, statusLabel } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const PdfPreview = dynamic(() => import("@/features/pdf/components/viewer/PdfPreview"), {
   ssr: false,
   loading: () => <Spinner size="sm" className="m-auto text-muted-foreground" />,
@@ -315,14 +316,14 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
               <Section title="Signed copy and certificate">
                 <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 type-body">
                   <ShieldCheck className={verified ? "h-4 w-4 text-primary" : "h-4 w-4 text-muted-foreground"} />
-                  <span>{verdict === null ? "Checking…" : verified ? "Documents and signatures verified" : verdict.reason === "unavailable" ? "Could not check right now" : "Does not verify"}</span>
+                  <span data-error-box>{verdict === null ? "Checking…" : verified ? "Documents and signatures verified" : verdict.reason === "unavailable" ? "Could not check right now" : "Does not verify"}<ErrorAlchemyMenu /></span>
                   <span className="ml-auto truncate type-secondary text-muted-foreground">{text(e, "certificate_id")}</span>
                 </div>
                 {finalizeError ? (
                   <div className="flex items-center gap-2 rounded-md border border-border p-3 type-body text-destructive">
                     <span className="min-w-0 flex-1">{finalizeError}</span>
                     <Button onClick={() => setReload((n) => n + 1)}>Try again</Button>
-                  </div>
+                  <ErrorAlchemyMenu error={finalizeError} /></div>
                 ) : copyFiles.length === 0 ? (
                   <p className="flex items-center gap-2 type-secondary text-muted-foreground" role="status">
                     <Spinner size="xs" className="text-current" />
@@ -511,7 +512,7 @@ function DownloadDialog(p: {
           <span className="type-body">One combined file</span>
           <Switch aria-label="One combined file" checked={combine} onCheckedChange={setCombine} />
         </div>
-        {error && <p className="type-body text-destructive">{error}</p>}
+        {error && <p className="type-body text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>}
         <DialogFooter>
           <Button variant="quiet" disabled={working} onClick={p.onClose}>Cancel</Button>
           <Button

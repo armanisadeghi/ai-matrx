@@ -12,6 +12,7 @@ import { savedSignaturesApi, type SavedSignature } from "../services";
 import { styleByKey } from "../styles";
 import type { Candidate } from "../types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function Thumb({ item }: { item: SavedSignature }) {
   if (item.preview_url) {
     // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL of the stored mark; next/image would need a remote pattern for it
@@ -51,7 +52,7 @@ export function SavedTab({
     };
   }, [target]);
 
-  if (problem) return <p role="alert" className="text-sm text-destructive">{problem}</p>;
+  if (problem) return <p role="alert" className="text-sm text-destructive">{problem}<ErrorAlchemyMenu error={problem} /></p>;
   if (!items) return <RegionSkeleton shape="rows" count={2} aria-label="Loading saved signatures" />;
   if (items.length === 0) {
     return <EmptyState icon={<PenLine />} title="Nothing saved yet" line="Adopt one and keep it for next time." />;

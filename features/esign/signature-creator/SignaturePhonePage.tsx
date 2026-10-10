@@ -12,6 +12,7 @@ import { PAPER } from "../contract/paper";
 import { fileToDataUrl, imageToInkPng } from "./render";
 import { openHandoff, submitHandoff, type HandoffOpenAnswer } from "./services";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type Stage = "opening" | "ready" | "sending" | "done" | "dead";
 const DEAD = "This link has expired. Start again on your computer.";
 
@@ -95,7 +96,7 @@ export function SignaturePhonePage() {
       {stage === "opening" && <p role="status" className="text-sm text-muted-foreground">Opening</p>}
 
       {stage === "dead" && (
-        <p role="alert" className="rounded-md border border-border bg-card p-4 text-sm text-foreground">{message}</p>
+        <p role="alert" className="rounded-md border border-border bg-card p-4 text-sm text-foreground">{message}<ErrorAlchemyMenu error={message} /></p>
       )}
 
       {stage === "done" && (
@@ -148,7 +149,7 @@ export function SignaturePhonePage() {
               </span>
             )}
           </div>
-          {problem && <p role="alert" className="text-xs text-destructive">{problem}</p>}
+          {problem && <p role="alert" className="text-xs text-destructive">{problem}<ErrorAlchemyMenu error={problem} /></p>}
           <Button variant="primary" disabled={!image || stage === "sending"} onClick={() => void done()}>
             {stage === "sending" ? "Sending" : "Done"}
           </Button>

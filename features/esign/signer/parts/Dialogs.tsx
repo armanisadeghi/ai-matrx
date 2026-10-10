@@ -20,6 +20,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Spinner } from "@/components/ui/loaders/Spinner";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export interface RecordedRow {
   id: string;
   label: string;
@@ -85,7 +86,7 @@ export function FinishDialog({
             />
           </div>
         ) : null}
-        {error ? <p className="type-body text-destructive">{error}</p> : null}
+        {error ? <p className="type-body text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
         <DialogFooter>
           <Button variant="quiet" disabled={busy} onClick={onEdit}>
             Edit
@@ -136,7 +137,7 @@ export function DeclineDialog({
           placeholder="Why are you declining?"
           onChange={(e) => setReason(e.target.value)}
         />
-        {error ? <p className="type-body text-destructive">{error}</p> : null}
+        {error ? <p className="type-body text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
         <DialogFooter>
           <Button variant="quiet" disabled={busy} onClick={onClose}>
             Cancel
@@ -195,7 +196,7 @@ export function AssignDialog({
             onChange={(e) => setMessage(e.target.value)}
           />
         </div>
-        {error ? <p className="type-body text-destructive">{error}</p> : null}
+        {error ? <p className="type-body text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
         <DialogFooter>
           <Button variant="quiet" disabled={busy} onClick={onClose}>
             Cancel
@@ -233,7 +234,7 @@ export function HistoryDialog({
           <DialogDescription>What has happened to this document so far.</DialogDescription>
         </DialogHeader>
         {error ? (
-          <p className="type-body text-destructive">{error}</p>
+          <p className="type-body text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>
         ) : events === null ? (
           <div className="flex justify-center py-4">
             <Spinner size="sm" className="text-muted-foreground" />

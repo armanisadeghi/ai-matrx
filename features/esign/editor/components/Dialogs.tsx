@@ -20,6 +20,7 @@ import type { SendResult } from "../api/types";
 import { DocumentStage, type StageHandlers } from "./DocumentStage";
 import { ProInput } from "@/components/official/ProInput";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const VERIFY_LABEL = { none: "Email link", email_code: "Email code", access_code: "Access code" } as const;
 
 export function SendDialog(p: {
@@ -93,7 +94,7 @@ export function SendDialog(p: {
             {blockers.map((b) => (
               <p key={b} className="type-secondary text-destructive">{b}</p>
             ))}
-            {p.error && <p className="type-body text-destructive">{p.error}</p>}
+            {p.error && <p className="type-body text-destructive">{p.error}<ErrorAlchemyMenu error={p.error} /></p>}
             <DialogFooter>
               <Button variant="quiet" disabled={p.sending} onClick={p.onClose}>
                 Keep editing
@@ -128,7 +129,7 @@ export function TemplateDialog(p: {
         </DialogHeader>
         <ProInput aria-label="Template name" placeholder="Template name" value={name} onChange={(e) => setName(e.target.value)} />
         <ProTextarea aria-label="Description" placeholder="Description (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
-        {p.error && <p className="type-body text-destructive">{p.error}</p>}
+        {p.error && <p className="type-body text-destructive">{p.error}<ErrorAlchemyMenu error={p.error} /></p>}
         <DialogFooter>
           <Button variant="quiet" disabled={p.saving} onClick={p.onClose}>Cancel</Button>
           <Button variant="primary" disabled={!name.trim() || p.saving} icon={p.saving ? <Spinner size="xs" className="text-current" /> : undefined} onClick={() => p.onSave(name.trim(), description.trim())}>
