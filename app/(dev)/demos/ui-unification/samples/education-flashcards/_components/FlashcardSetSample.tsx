@@ -102,7 +102,7 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import { getCardImages } from "@/features/flashcards/components/study/cardImages";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { buildDeckPrintData } from "@/features/flashcards/utils/deckPrintData";
-import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
+import { flashcardsPrinterLazy as flashcardsPrinter } from "@ai-matrx/print/flashcards-lazy";
 import { notifyPrintOutcome } from "@/lib/print/print-outcome-toast";
 import { PrintOptionsDialog, usePrintOptions } from "@ai-matrx/print/react";
 import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
