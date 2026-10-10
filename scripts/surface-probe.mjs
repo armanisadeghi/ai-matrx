@@ -262,7 +262,11 @@ async function readProbe(page) {
     // not. (The key <code> trail is admin-only, so it cannot mark a value row
     // on a member's seat.)
     const STATES = /^(Supplied|Supplied, empty|Required, not supplied|Not supplied)$/;
-    const rows = Array.from(document.querySelectorAll("button[data-row-id]")).filter((r) =>
+    // Value rows are `[role=row][data-key]` (the value tree since 2026-10);
+    // `button[data-row-id]` was the older list and read nothing after it.
+    const rows = Array.from(
+      document.querySelectorAll('[role="row"][data-key], button[data-row-id]'),
+    ).filter((r) =>
       Array.from(r.querySelectorAll("[title]")).some((d) => STATES.test(d.getAttribute("title") || "")),
     );
     const supplied = [];
@@ -273,7 +277,7 @@ async function readProbe(page) {
       (d) => (d.textContent || "").trim() === "Undeclared (runtime only)",
     );
     for (const row of rows) {
-      const name = row.dataset.rowId;
+      const name = row.dataset.key ?? row.dataset.rowId;
       const dot = Array.from(row.querySelectorAll("[title]")).find((d) => STATES.test(d.getAttribute("title") || ""));
       const state = dot ? dot.getAttribute("title") : null;
       if (state === "Supplied") supplied.push(name);
