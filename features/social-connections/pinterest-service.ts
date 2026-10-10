@@ -25,7 +25,7 @@ export async function pinterestRequest(operation: "attach" | "data" | "sync", or
     body: JSON.stringify(body), signal: AbortSignal.timeout(120_000),
   });
   const value = await response.json();
-  if (!response.ok) throw new Error(typeof value?.detail === "string" ? value.detail : value?.detail?.message || "Pinterest data could not be loaded.");
+  if (!response.ok) throw new Error(typeof value?.detail === "string" ? value.detail : value?.detail?.message || value?.user_message || value?.message || "Pinterest data could not be loaded.");
   if (!value || typeof value.resource_id !== "string" || !Array.isArray(value.analytics)) throw new Error("Pinterest returned invalid saved data.");
   return value;
 }

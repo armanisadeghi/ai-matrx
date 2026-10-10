@@ -75,6 +75,10 @@ function issuerFromMetadata(value: unknown): string | null {
 }
 
 function errorMessage(value: unknown): string {
+  if (value && typeof value === "object") {
+    if ("user_message" in value && typeof value.user_message === "string") return value.user_message;
+    if ("message" in value && typeof value.message === "string") return value.message;
+  }
   if (
     value &&
     typeof value === "object" &&

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1394,
+  "routeCount": 1395,
   "routes": [
     {
       "pattern": "/",
@@ -2532,6 +2532,16 @@
       "pattern": "/education/classes/[classId]",
       "status": "live",
       "source": "app/(core)/education/classes/[classId]/page.tsx"
+    },
+    {
+      "pattern": "/education/classes/[classId]/tests/[testId]",
+      "status": "live",
+      "source": "app/(core)/education/classes/[classId]/tests/[testId]/page.tsx"
+    },
+    {
+      "pattern": "/education/classes/[classId]/tests/[testId]/study",
+      "status": "live",
+      "source": "app/(core)/education/classes/[classId]/tests/[testId]/study/page.tsx"
     },
     {
       "pattern": "/education/classes/join",

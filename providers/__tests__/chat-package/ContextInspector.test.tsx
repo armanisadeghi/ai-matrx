@@ -100,21 +100,17 @@ jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   fetchTypeItems: jest.fn(async (typeId: string) =>
     typeId === "0b6f1c1e-6a1f-4c55-9d7e-1f2a3b4c5d6e"
       ? [
-          { id: "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d", key: "contact_phone", display_name: "Contact Phone" },
-          { id: "8b7c6d5e-4f3a-4b2c-9d1e-0f9a8b7c6d5e", key: "industry", display_name: "Industry" },
+          { id: "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d", key: "contact_phone", label: "Contact Phone" },
+          { id: "8b7c6d5e-4f3a-4b2c-9d1e-0f9a8b7c6d5e", key: "industry", label: "Industry" },
         ]
       : [],
   ),
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
 }));
-jest.mock("@/features/scopes/service/scopesService", () => ({
-  scopesService: {
-    getScopeHome: jest.fn(),
-    listContextItems: jest.fn(),
-    listContextValues: jest.fn(),
-  },
-}));
+// The package reads fields, values and a scope's home through its own scope doors (`client.scopes`).
+const mockDoors = { fields: jest.fn(), values: jest.fn(), scopes: jest.fn() };
+jest.mock("@ai-matrx/chat/context/sources/scope-doors", () => ({ scopeDoors: () => mockDoors }));
 const compareProps: Array<Record<string, unknown>> = [];
 jest.mock("@ai-matrx/chat/agents/components/context-preview/ContextCompareView", () => ({
   ContextCompareView: (props: Record<string, unknown>) => {
@@ -123,7 +119,6 @@ jest.mock("@ai-matrx/chat/agents/components/context-preview/ContextCompareView",
   },
 }));
 
-import { scopesService } from "@/features/scopes/service/scopesService";
 import { ContextInspector } from "@ai-matrx/chat/agents/components/context-preview/inspector/ContextInspector";
 import { getActivePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
 import { pageCaptureMarkdown, pageCapturePayload } from "@/components/agent-copy/page-capture/pageCapture";
@@ -131,7 +126,7 @@ import { EMPTY_SELECTION, type InspectorSelection } from "@ai-matrx/chat/agents/
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const svc = scopesService as unknown as Record<string, jest.Mock>;
+const doors = mockDoors;
 const writes: Array<{ next: InspectorSelection; replace: boolean }> = [];
 
 function Harness({ initial }: { initial: InspectorSelection }) {
@@ -170,32 +165,18 @@ beforeEach(() => {
   compareProps.length = 0;
   writes.length = 0;
   jest.clearAllMocks();
-  svc.listContextItems.mockResolvedValue({
+  doors.fields.mockResolvedValue({
     ok: true,
-    data: {
-      items: [
-        { id: PHONE, key: "contact_phone", display_name: "Contact Phone", sort_order: 1 },
-        { id: INDUSTRY, key: "industry", display_name: "Industry", sort_order: 2 },
-      ],
-    },
+    data: [
+      { id: PHONE, key: "contact_phone", label: "Contact Phone", sort: 1 },
+      { id: INDUSTRY, key: "industry", label: "Industry", sort: 2 },
+    ],
   });
-  svc.listContextValues.mockResolvedValue({
+  doors.values.mockResolvedValue({
     ok: true,
-    data: {
-      values: [
-        {
-          context_item_id: PHONE,
-          value_text: "(619) 555-0177",
-          value_number: null,
-          value_boolean: null,
-          value_date: null,
-          value_json: null,
-          value_document_url: null,
-          value_reference_id: null,
-        },
-      ],
-    },
+    data: [{ scope_id: MERIDIAN, field_id: PHONE, key: "contact_phone", kind: "phone", value: "(619) 555-0177", references: [] }],
   });
+  doors.scopes.mockResolvedValue({ ok: true, data: [] });
 });
 
 afterEach(async () => {
@@ -236,7 +217,7 @@ it("a pick in each column drives the compare, narrowing at every step", async ()
   );
 
   await pick("Meridian Risk Services");
-  expect(svc.listContextValues).toHaveBeenCalledWith(MERIDIAN);
+  expect(doors.values).toHaveBeenCalledWith([MERIDIAN]);
   expect(lastCompare()).toMatchObject({
     selection: { organization_id: CASTELLANO, scope_type_id: CLIENTS, scope_id: MERIDIAN, context_item_id: null },
     focus: undefined,
@@ -297,7 +278,7 @@ it("a scope type with no scopes says so and previews nothing past it", async () 
 
 it("?scope= alone back-fills the organization, type and scope columns from the tree", async () => {
   await mount({ ...EMPTY_SELECTION, scope: MERIDIAN });
-  expect(svc.getScopeHome).not.toHaveBeenCalled();
+  expect(doors.scopes).not.toHaveBeenCalled();
   expect(writes[0]).toEqual({
     next: { org: CASTELLANO, scopeType: CLIENTS, scope: MERIDIAN, item: null },
     replace: true,
@@ -317,9 +298,9 @@ it("?scope= alone back-fills the organization, type and scope columns from the t
 
 it("a scope outside the tree back-fills from the scope row; one not shared says so", async () => {
   const OUTSIDE = "5e4d3c2b-1a09-4f8e-9d7c-6b5a4f3e2d1c";
-  svc.getScopeHome.mockResolvedValueOnce({ ok: true, data: { scope: null } });
+  doors.scopes.mockResolvedValueOnce({ ok: true, data: [] });
   await mount({ ...EMPTY_SELECTION, scope: OUTSIDE });
-  expect(svc.getScopeHome).toHaveBeenCalledWith(OUTSIDE);
+  expect(doors.scopes).toHaveBeenCalledWith([OUTSIDE]);
   expect(host.textContent).toContain("This scope was not found, or it has not been shared with you");
   expect(compareProps).toHaveLength(0);
 });

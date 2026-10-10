@@ -82,6 +82,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         "code" in detail &&
         typeof detail.code === "string"
       ) {
+        if (detail.code === "authorization_denied") return finish("cancelled");
         if (
           ["quota_exhausted", "rate_limited", "needs_attention"].includes(
             detail.code,
