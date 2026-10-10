@@ -1,6 +1,74 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      migrations/LEDGER.json
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at migrations/LEDGER.json
+  Both grew from the same COMMON version: commit 0c31cd9003, 2026-10-10 00:55.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-10 00:53  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-10 00:56  20857f4c8b  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-10 00:20  deec1fd3c9  "fix(lists): restore the one-call reader (PAGE-SPEED-3) that b8e1cd21aa9 reverted by mistake; array args use it"
+    2026-10-09 23:25  0085253659  "Merge origin/main (HR-REVIEWS); LEDGER.json keeps both runner entries"
+    2026-10-09 23:15  4de6962f74  "PAGE-SPEED-3: file listings read each row once; a count or facet call runs once"
+  LOCAL's latest change is 32m AFTER GITHUB's latest change.
+
+SIZE: common version 10542 lines, LOCAL 10548 lines, GITHUB 10584 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 6 lines and removed 1 lines.
+  GITHUB added 36 lines and removed 1 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 7 of the 36 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | "generated_at": "2026-10-10T06:12:08.871Z",
+      | "migrations/campaign/hr_rev_04_standard_review_knobs.sql": {
+      | "filename": "hr_rev_04_standard_review_knobs.sql",
+      | "checksum": "ae7cd7e798335a7e0d1bee77d0b0d2935fa1fb158837db709f6b2b6d7f3a18b7",
+      | "applied_at": "2026-10-10 06:12:07.080956+00"
+      | "migrations/campaign/pagespeed3_b_get_org_file_list_folders_walked_once.sql": {
+      | "filename": "pagespeed3_b_get_org_file_list_folders_walked_once.sql",
+      | "checksum": "d4c211d0c5f6001629cc5d1e0bd734a161f28f64db1b6c6a0cd3d74380bceb0f",
+      | "applied_at": "2026-10-10 05:32:18.703107+00"
+      | "migrations/campaign/pagespeed3_c_search_files_reads_the_shared_set_once.sql": {
+      | "filename": "pagespeed3_c_search_files_reads_the_shared_set_once.sql",
+      | "checksum": "83bb13d235508945ce5c82597256139efce44ee358ed3361272257343085e0da",
+      | "applied_at": "2026-10-10 05:33:06.509136+00"
+      | "migrations/campaign/pagespeed3_d_count_user_files_reads_the_shared_set_once.sql": {
+      | "filename": "pagespeed3_d_count_user_files_reads_the_shared_set_once.sql",
+      | ... and 14 more
+  GITHUB has 1 of the 6 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | "generated_at": "2026-10-10T07:27:13.045Z",
+      | "migrations/campaign/hr_rev_08_template_get_and_peer_link.sql": {
+      | "filename": "hr_rev_08_template_get_and_peer_link.sql",
+      | "checksum": "5d9ab09def9c3f74bdb3bdc1ef8247b30be7403cb36452b7cd744559530c7625",
+      | "applied_at": "2026-10-10 07:27:10.871962+00"
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 9819045e1988:'migrations/LEDGER.json') <(git show 20857f4c8b8e:'migrations/LEDGER.json')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 20857f4c8b8e:'migrations/LEDGER.json'
+  GITHUB: git show 9819045e1988:'migrations/LEDGER.json'
+
+---------------- LOCAL VERSION BELOW ----------------
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T06:12:08.871Z",
+  "generated_at": "2026-10-10T07:27:13.045Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4088,11 +4156,17 @@
       "checksum": "23835347c38be848a8ca3668fef60460b612e4373b4b5111e516612a52c470db",
       "applied_at": "2026-10-10 04:39:29.151175+00"
     },
-    "migrations/campaign/hr_rev_04_standard_review_knobs.sql": {
+    "migrations/campaign/hr_rev_05_standard_review_wave2.sql": {
       "source": "matrx-frontend",
-      "filename": "hr_rev_04_standard_review_knobs.sql",
-      "checksum": "ae7cd7e798335a7e0d1bee77d0b0d2935fa1fb158837db709f6b2b6d7f3a18b7",
-      "applied_at": "2026-10-10 06:12:07.080956+00"
+      "filename": "hr_rev_05_standard_review_wave2.sql",
+      "checksum": "1711e9e6daa4a1f78857bfbf248217529b43d99222033777766bd41635593c8a",
+      "applied_at": "2026-10-10 06:18:44.291274+00"
+    },
+    "migrations/campaign/hr_rev_08_template_get_and_peer_link.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr_rev_08_template_get_and_peer_link.sql",
+      "checksum": "5d9ab09def9c3f74bdb3bdc1ef8247b30be7403cb36452b7cd744559530c7625",
+      "applied_at": "2026-10-10 07:27:10.871962+00"
     },
     "migrations/campaign/hrloopcleanup_a_the_loops_duplicate_failures_are_resolved.sql": {
       "source": "matrx-frontend",
@@ -5503,36 +5577,6 @@
       "filename": "pagespeed3_a_files_row_is_probed_by_a_cached_plan.sql",
       "checksum": "63a39cc8fde81cb70daf98732d9ec35e9eeba8d29e177a2e1b4b106313539d3c",
       "applied_at": "2026-10-10 05:06:50.196418+00"
-    },
-    "migrations/campaign/pagespeed3_b_get_org_file_list_folders_walked_once.sql": {
-      "source": "matrx-frontend",
-      "filename": "pagespeed3_b_get_org_file_list_folders_walked_once.sql",
-      "checksum": "d4c211d0c5f6001629cc5d1e0bd734a161f28f64db1b6c6a0cd3d74380bceb0f",
-      "applied_at": "2026-10-10 05:32:18.703107+00"
-    },
-    "migrations/campaign/pagespeed3_c_search_files_reads_the_shared_set_once.sql": {
-      "source": "matrx-frontend",
-      "filename": "pagespeed3_c_search_files_reads_the_shared_set_once.sql",
-      "checksum": "83bb13d235508945ce5c82597256139efce44ee358ed3361272257343085e0da",
-      "applied_at": "2026-10-10 05:33:06.509136+00"
-    },
-    "migrations/campaign/pagespeed3_d_count_user_files_reads_the_shared_set_once.sql": {
-      "source": "matrx-frontend",
-      "filename": "pagespeed3_d_count_user_files_reads_the_shared_set_once.sql",
-      "checksum": "67e5dba97ce30377c196acbed8932c2da8476acfb0c5eee6f1347358392fc149",
-      "applied_at": "2026-10-10 05:37:21.225081+00"
-    },
-    "migrations/campaign/pagespeed3_e2_list_rpc_once_reads_argument_types_in_order.sql": {
-      "source": "matrx-frontend",
-      "filename": "pagespeed3_e2_list_rpc_once_reads_argument_types_in_order.sql",
-      "checksum": "86b8865e6f625599d96b3b6fd6ceb60b6567b91c95a3e275f82e66c3c8b1fc19",
-      "applied_at": "2026-10-10 05:46:46.523114+00"
-    },
-    "migrations/campaign/pagespeed3_e_a_count_or_facet_call_runs_once.sql": {
-      "source": "matrx-frontend",
-      "filename": "pagespeed3_e_a_count_or_facet_call_runs_once.sql",
-      "checksum": "952c07d4cb59bdfe7c76404b0466c1cd8cef4b1c1a93d4a09063b96a3d4489d1",
-      "applied_at": "2026-10-10 05:44:41.860215+00"
     },
     "migrations/campaign/paritynightly_the_context_parity_guard_is_a_scheduled_system_job_switched_off.sql": {
       "source": "campaign",
@@ -10567,18 +10611,6 @@
       "filename": "writeperf4_the_field_set_is_read_once_per_row_down.sql",
       "checksum": "faa8f0c7ba79f6453a6127a85cdf4549ca35ceb45a87cf6e5bee8ce5368ff7c6",
       "applied_at": "2026-09-22 09:33:14.786775+00"
-    },
-    "migrations/campaign/listrpc_arrays_list_rpc_once.sql": {
-      "source": "matrx-frontend",
-      "filename": "listrpc_arrays_list_rpc_once.sql",
-      "checksum": "4844c39ab4e09f0b2e219c7b84328f058d1f72cc524ea075b191e5d036b0ca20",
-      "applied_at": "2026-10-10 07:14:45.744611+00"
-    },
-    "migrations/campaign/hr_rev_05_standard_review_wave2.sql": {
-      "source": "matrx-frontend",
-      "filename": "hr_rev_05_standard_review_wave2.sql",
-      "checksum": "1711e9e6daa4a1f78857bfbf248217529b43d99222033777766bd41635593c8a",
-      "applied_at": "2026-10-10 06:18:44.291274+00"
     }
   }
 }
