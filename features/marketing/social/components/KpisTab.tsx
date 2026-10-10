@@ -557,7 +557,7 @@ function GoalTile({
 function AccountNameLink({ href, children }: { href: string | null; children: ReactNode }) {
   const className = "flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground";
   return href ? (
-    <Link href={href} className={cn(className, "hover:underline")} data-clickable="">
+    <Link href={href} className={cn(className, "matrx-tap-area hover:underline")} data-clickable="">
       {children}
     </Link>
   ) : (
