@@ -8,7 +8,7 @@ import { accountHref } from "./account-href";
  */
 export function brandAccountHref(
   brandSeg: string,
-  row: { platform: string; profileId: string | null | undefined; propertyId: string | null | undefined },
+  row: { platform: string; profileId: string | null | undefined; propertyId?: string | null | undefined },
 ): string | null {
   const tracked = accountHref(brandSeg, row);
   if (tracked) return tracked;
