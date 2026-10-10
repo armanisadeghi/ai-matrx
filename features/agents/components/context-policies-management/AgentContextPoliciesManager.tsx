@@ -346,14 +346,14 @@ function PolicyEditorFields({
                   // locked once a policy exists (its key can't be renamed).
                   if (!isEdit) {
                     const suggestedKey = sanitizeVariableName(
-                      sel.item.key || sel.item.display_name,
+                      sel.item.key || sel.item.label,
                     );
                     if (suggestedKey) patch.key = suggestedKey;
                   }
-                  patch.label = sel.item.display_name;
+                  patch.label = sel.item.label;
                   patch.description = sel.item.description ?? "";
                   const nextType = contextItemValueTypeToPolicyType(
-                    sel.item.value_type,
+                    sel.item.kind,
                   );
                   patch.type = nextType;
                   patch.inlineMode = SUGGESTED_INLINE_MODE_BY_TYPE[nextType];
