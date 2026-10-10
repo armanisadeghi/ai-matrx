@@ -21,6 +21,7 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
 }));
 
 jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input {...props} />
   ),

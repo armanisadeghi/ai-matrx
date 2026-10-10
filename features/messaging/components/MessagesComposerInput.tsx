@@ -81,7 +81,7 @@ export function MessagesComposerInput({
       <PopoverContent
         side="top"
         align={kind === "attach" ? "start" : "end"}
-        className="w-[min(380px,calc(100vw-24px))] max-h-[min(600px,80dvh)] overflow-auto p-0"
+        className="w-[min(380px,calc(100vw-24px))] max-h-[min(600px,var(--radix-popover-content-available-height))] overflow-auto p-0"
       >
         {menu === kind && (
           <MarkdownErrorBoundary

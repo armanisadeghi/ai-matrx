@@ -32,6 +32,7 @@ jest.mock("@ai-matrx/design-system/item", () => ({
   ItemMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   ArchivedDisclosure: () => null,
 }));
 jest.mock("@/components/ui/badge", () => ({

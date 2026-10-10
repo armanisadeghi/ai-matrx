@@ -11,7 +11,7 @@
  * Scope: every file that renders a known fixed bar (imports MobileActionBar / UnifiedActionBar) and
  * every file that imports one of those files, one level up (where slide-over panels wrap them).
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const ROOT = resolve(__dirname, "../..");
@@ -48,7 +48,10 @@ describe("a fixed bar never renders under a transformed ancestor", () => {
 
   it("no file that renders a fixed bar, or wraps one, carries a resting transform class", () => {
     const files: string[] = [];
-    for (const d of ["features", "components", "app", "packages"]) walk(join(ROOT, d), files);
+    for (const d of ["features", "components", "app", "packages"]) {
+      // `packages` existed when the shared code lived in this repo; it is published now.
+      if (existsSync(join(ROOT, d))) walk(join(ROOT, d), files);
+    }
     const text = new Map(files.map((f) => [f, readFileSync(f, "utf8")]));
     const renderers = files.filter(
       (f) => !FIXED_BARS.some((b) => f.endsWith(`/${b}.tsx`)) && FIXED_BARS.some((b) => new RegExp(`import[^;]*\\b${b}\\b`).test(text.get(f)!)),

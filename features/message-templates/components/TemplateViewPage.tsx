@@ -278,7 +278,7 @@ function InsertFieldMenu({
           <DropdownMenuSeparator />
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>Insert as example (not filled)</DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="max-h-[60dvh] w-64 overflow-y-auto">
+            <DropdownMenuSubContent className="max-h-[var(--radix-dropdown-menu-content-available-height)] w-64 overflow-y-auto">
               {[...used, ...COMMON_MERGE_FIELDS.filter((f) => !used.some((u) => u.path === f.path))].map(
                 (f) => (
                   <DropdownMenuItem key={`ex-${f.path}`} onSelect={() => onInsert(f.path, true)}>

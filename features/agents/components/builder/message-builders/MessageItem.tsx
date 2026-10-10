@@ -61,6 +61,15 @@ import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBui
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
+import { PromptInsertMenu } from "@ai-matrx/rich-editor/format/PromptInsertMenu";
+import { PromptFixReview } from "@ai-matrx/rich-editor/format/PromptFixReview";
+import type { PromptInsert } from "@ai-matrx/rich-editor/core/prompt-inserts";
+import type { RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
+import {
+  PromptWriteBox,
+  insertPromptText,
+  usePromptInsertSources,
+} from "@/features/agents/components/builder/message-builders/PromptAssist";
 import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageFlagToggles";
 import { useMessageFlags } from "@/features/agents/message-flags/useMessageFlags";
 
@@ -144,6 +153,10 @@ export function MessageItem({
   const [formatElement, setFormatElement] =
     useState<HTMLTextAreaElement | null>(null);
   useTextareaFormatting(formatElement);
+  // Write view's editor, and the caret the Insert menu saw when it opened.
+  const writeRef = useRef<RichEditorController | null>(null);
+  const insertCaretRef = useRef<{ start: number; end: number } | null>(null);
+  const insertSources = usePromptInsertSources(agentId);
   const contextMenuOpenRef = useRef(false);
   const textareaInitializedRef = useRef(false);
   const scrollLockRef = useRef<{ scrollTop: number; overflow: string } | null>(
@@ -759,6 +772,33 @@ export function MessageItem({
             onToggle={messageFlags.onToggle}
           />
         </div>
+        <div className="flex items-center gap-1">
+        <PromptInsertMenu
+          variables={insertSources.variables}
+          kinds={insertSources.kinds}
+          kindSchema={insertSources.kindSchema}
+          contextItems={insertSources.contextItems}
+          onInsert={(insert: PromptInsert) => {
+            const textarea = textareaRef.current;
+            insertPromptText({
+              insert,
+              text: currentText,
+              onChange: handleTextChange,
+              writeController: viewMode === "write" ? writeRef.current : null,
+              textarea: textarea && textarea.isConnected ? textarea : null,
+              fallbackCaret: insertCaretRef.current,
+            });
+          }}
+          onOpenChange={(open) => {
+            if (!open) return;
+            insertSources.loadKinds();
+            const textarea = textareaRef.current;
+            insertCaretRef.current =
+              textarea && textarea.isConnected
+                ? { start: textarea.selectionStart, end: textarea.selectionEnd }
+                : null;
+          }}
+        />
         <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <MessageItemButtons
             hasVariableSupport={hasVariableSupport}
@@ -788,11 +828,26 @@ export function MessageItem({
             sheetTitle={`${message.role} Message Actions`}
           />
         </div>
+        </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
-        {viewMode === "split" ? (
+        <PromptFixReview text={currentText} onApply={handleTextChange} className="mb-2" />
+        {viewMode === "write" ? (
+          <PromptWriteBox
+            value={currentText}
+            onChange={handleTextChange}
+            controllerRef={writeRef}
+            surfaceName="matrx-user/agent-builder"
+            minHeight={80}
+            placeholder={
+              message.role === "assistant"
+                ? "Assistant response / example output..."
+                : "User message / example input..."
+            }
+          />
+        ) : viewMode === "split" ? (
           <div style={{ height: "320px" }}>
             <MatrxSplit
               imagePolicy="other"

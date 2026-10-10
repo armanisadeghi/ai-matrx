@@ -15,7 +15,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const REPO_ROOT = join(__dirname, "..", "..", "..", "..", "..", "..", "..");
+const REPO_ROOT = join(__dirname, "..", "..", "..", "..", "..", "..");
 
 const PERMANENCE_PATTERNS: RegExp[] = [
   /cannot be undone/i,

@@ -11,6 +11,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+// Costs read in points at the organization's `billing.points_per_usd` knob (20,000 = $1); the knob snapshot is not loaded here.
+jest.mock("@/components/cost/pointsRate.client", () => ({ usePointsRate: () => 20_000 }));
 jest.mock("@/features/crm/pitch-advisories/MandateOffer", () => ({
   MandateOffer: ({ offer }: { offer: { label: string } }) => <button type="button">{offer.label}</button>,
 }));

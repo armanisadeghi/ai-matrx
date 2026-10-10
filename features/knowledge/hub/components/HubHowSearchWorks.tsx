@@ -107,7 +107,7 @@ export function HowSearchWorksButton() {
       <PopoverContent
         /* sizing: fixed — explanatory reading text; a steady measure keeps the lines readable */
         align="end"
-        className="max-h-[70dvh] w-[min(30rem,calc(100vw-2rem))] overflow-y-auto p-4"
+        className="max-h-[var(--radix-popover-content-available-height)] w-[min(30rem,calc(100vw-2rem))] overflow-y-auto p-4"
       >
         <p className="mb-3 text-sm font-semibold text-foreground">How search works</p>
         <HowSearchWorksContent />

@@ -17,7 +17,14 @@ export function useSignedIn(): boolean {
   const store = redux?.store;
   return useSyncExternalStore(
     (listener) => (store ? store.subscribe(listener) : () => {}),
-    () => (store ? Boolean(selectUserId(store.getState() as RootState)) : true),
+    () => {
+      if (!store) return true;
+      const state = store.getState() as RootState;
+      // A store with no identity slice at all is a bare harness (or a host that mounts a
+      // slimmer store): the same "counts as signed in" as having no store.
+      if (!state?.userAuth) return true;
+      return Boolean(selectUserId(state));
+    },
     // Server / hydration pass: NOT signed in until the client store says so,
     // or the first commit's effects would ask a door that answers 42501 to anon.
     () => !store,

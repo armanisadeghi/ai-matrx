@@ -8,7 +8,7 @@
  *
  * Arman 2026-10-10: default columns in his order; every $ to the cent; points hidden by default;
  * colours from knobs (billing.run_approval/color_*); "Temporary" approvals with an expiry; "Reset
- * tracking" restarts the "since" stats; ?id=<approval> filters to and highlights that row.
+ * tracking" restarts the "since" stats; ?id=<approval> pages to and highlights that row (the table's focusRowId; nothing is filtered).
  */
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -298,12 +298,13 @@ function DecisionDialog({
   );
 }
 
-/** A dollar column to the cent, plus its points twin hidden by default (admins can show it). */
+/** A dollar column to the cent (currency format, 2 places), plus its points twin hidden by default. */
 function usdColumns(
   id: string,
   header: string,
   value: (r: SpendApprovalRow) => number | null | undefined,
   width: number,
+  extra: Pick<MatrxColumnDef<SpendApprovalRow>, "tone" | "kpi"> = {},
 ): MatrxColumnDef<SpendApprovalRow>[] {
   const [, points] = adminCostColumns<SpendApprovalRow>({ id, label: header, value });
   return [
@@ -313,10 +314,9 @@ function usdColumns(
       accessorFn: value,
       filter: "number",
       defaultSortDirection: "desc",
-      align: "right",
       width,
-      copyValue: (r) => cents(value(r)),
-      cell: (r) => <span className="tabular-nums">{cents(value(r))}</span>,
+      format: { id: "currency", options: { precision: 2 } },
+      ...extra,
     },
     { ...points, hidden: true, width },
   ];
@@ -343,29 +343,12 @@ export function SpendApprovalsBoard({
   const [bulk, setBulk] = useState<{ decision: "approve" | "reject" | "reset"; rows: SpendApprovalRow[] } | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  const visible = rows.filter((r) => (focusId ? r.id === focusId : status === "all" || r.status === status));
+  const visible = rows.filter((r) => status === "all" || r.status === status);
 
   const perRunTone = (v: number | null | undefined): Tone => (knobs ? costTone(v, knobs.avgRedUsd, knobs.avgAmberUsd) : null);
   const monthlyTone = (v: number | null | undefined): Tone =>
     knobs ? costTone(v, knobs.monthlyRedUsd, knobs.monthlyAmberUsd) : null;
-  const toneOf = (r: SpendApprovalRow, columnId: string): Tone => {
-    switch (columnId) {
-      case "avg_cost_since":
-        return perRunTone(r.avg_cost_since);
-      case "max_cost_since":
-        return perRunTone(r.max_cost_since);
-      case "automated_cost_per_run":
-        return perRunTone(r.automated_cost_per_run);
-      case "first_run_cost":
-        return perRunTone(r.first_run_cost);
-      case "est_monthly_cost":
-        return monthlyTone(r.est_monthly_cost);
-      case "automated_cost_30d":
-        return monthlyTone(r.automated_cost_30d);
-      default:
-        return null;
-    }
-  };
+  const rowTone = (t: Tone) => t ?? undefined;
 
   const setRowStatus = (id: string, st: ApprovalStatus, expiresAt?: string | null) =>
     setRows((rs) => rs.map((x) => (x.id === id ? { ...x, status: st, expires_at: expiresAt ?? (st === "temporary" ? x.expires_at : null) } : x)));
@@ -479,6 +462,10 @@ export function SpendApprovalsBoard({
         { value: "temporary", label: "Temporary" },
         { value: "rejected", label: "Rejected" },
       ],
+      kpi: [
+        { id: "waiting", op: "count", label: "Waiting", countWhere: (r) => r.status === "waiting", tone: (n) => (n > 0 ? "warning" : undefined) },
+        { id: "rejected", op: "count", label: "Rejected", countWhere: (r) => r.status === "rejected" },
+      ],
       width: 250,
       cell: (r) => {
         const tone = r.status === "temporary" && knobs ? expiryTone(r.expires_at, knobs.expiryWarnDays) : null;
@@ -511,11 +498,11 @@ export function SpendApprovalsBoard({
       header: "Automated runs (30d)",
       filter: "number",
       align: "right",
-      width: 190,
+      width: 130,
       cell: (r) => <span className="tabular-nums">{r.automated_runs_30d}</span>,
     },
-    ...usdColumns("automated_cost_per_run", "Cost per automated run", (r) => r.automated_cost_per_run, 200),
-    ...usdColumns("automated_cost_30d", "Automated cost (30d)", (r) => r.automated_cost_30d, 190),
+    ...usdColumns("automated_cost_per_run", "Cost per automated run", (r) => r.automated_cost_per_run, 140, { tone: (r) => rowTone(perRunTone(r.automated_cost_per_run)) }),
+    ...usdColumns("automated_cost_30d", "Automated cost (30d)", (r) => r.automated_cost_30d, 130, { tone: (r) => rowTone(monthlyTone(r.automated_cost_30d)) }),
     {
       id: "first_run_at",
       header: "First run at",
@@ -531,20 +518,29 @@ export function SpendApprovalsBoard({
         );
       },
     },
-    ...usdColumns("est_monthly_cost", "Est./month", (r) => r.est_monthly_cost, 130),
-    ...usdColumns("max_cost_since", "Max cost since", (r) => r.max_cost_since, 150),
+    ...usdColumns("est_monthly_cost", "Est./month", (r) => r.est_monthly_cost, 110, {
+      tone: (r) => rowTone(monthlyTone(r.est_monthly_cost)),
+      kpi: [
+        { id: "waiting_monthly", op: "sum", label: "Waiting est./month", where: (r) => r.status === "waiting", tone: (v) => rowTone(monthlyTone(v)) },
+        { id: "approved_monthly", op: "sum", label: "Approved est./month", where: (r) => r.status === "approved" || r.status === "temporary" },
+      ],
+    }),
+    ...usdColumns("max_cost_since", "Max cost since", (r) => r.max_cost_since, 120, { tone: (r) => rowTone(perRunTone(r.max_cost_since)) }),
     {
       id: "runs_since",
       accessorKey: "runs_since",
       header: "Runs since",
       filter: "number",
       align: "right",
-      width: 120,
+      width: 100,
       cell: (r) => <span className="tabular-nums">{r.runs_since}</span>,
     },
-    ...usdColumns("avg_cost_since", "Avg cost since", (r) => r.avg_cost_since, 150),
+    ...usdColumns("avg_cost_since", "Avg cost since", (r) => r.avg_cost_since, 120, {
+      tone: (r) => rowTone(perRunTone(r.avg_cost_since)),
+      kpi: { id: "over_red", op: "count", label: "Avg over red line", countWhere: (r) => perRunTone(r.avg_cost_since) === "danger", tone: (n) => (n > 0 ? "danger" : undefined) },
+    }),
     // ── available in Columns, hidden by default ──
-    ...usdColumns("first_run_cost", "First run cost", (r) => r.first_run_cost, 150).map((c) => ({ ...c, hidden: true })),
+    ...usdColumns("first_run_cost", "First run cost", (r) => r.first_run_cost, 120, { tone: (r) => rowTone(perRunTone(r.first_run_cost)) }).map((c) => ({ ...c, hidden: true })),
     {
       id: "expires_at",
       header: "Expires at",
@@ -552,6 +548,13 @@ export function SpendApprovalsBoard({
       filter: "date",
       width: 170,
       hidden: true,
+      kpi: {
+        id: "expiring",
+        op: "count",
+        label: "Temporary expiring",
+        countWhere: (r) => Boolean(knobs) && r.status === "temporary" && expiryTone(r.expires_at, knobs!.expiryWarnDays) != null,
+        tone: (n) => (n > 0 ? "danger" : undefined),
+      },
       cell: (r) => <span className="block truncate text-xs">{r.status === "temporary" ? when(r.expires_at) : "—"}</span>,
     },
     {
@@ -591,7 +594,7 @@ export function SpendApprovalsBoard({
       accessorFn: (r) => r.first_run_turns,
       filter: "number",
       align: "right",
-      width: 150,
+      width: 110,
       hidden: true,
       cell: (r) => <span className="tabular-nums">{r.first_run_turns}</span>,
     },
@@ -612,7 +615,7 @@ export function SpendApprovalsBoard({
       header: "Held runs",
       filter: "number",
       align: "right",
-      width: 120,
+      width: 100,
       hidden: true,
       cell: (r) => (
         <span className={`tabular-nums ${r.blocked_runs > 0 ? "font-semibold text-warning" : "text-muted-foreground"}`} title={r.last_blocked_at ? `Last held ${when(r.last_blocked_at)}` : undefined}>
@@ -683,11 +686,9 @@ export function SpendApprovalsBoard({
     },
     {
       id: "actions",
-      header: "",
-      accessorFn: () => "",
-      filter: false,
-      width: 230,
-      cell: (r) => (
+      header: "Actions",
+      sortable: false,
+      customActions: (r) => (
         <div className="flex items-center gap-1">
           {r.can_decide && r.status !== "approved" && (
             <Button variant="outline" onClick={() => setPending({ row: r, decision: "approve" })} aria-label="Approve">
@@ -723,9 +724,6 @@ export function SpendApprovalsBoard({
     },
   ];
 
-  const sumMonthly = (rs: readonly SpendApprovalRow[]) => rs.reduce((s, r) => s + (r.est_monthly_cost ?? 0), 0);
-  const tonedValue = (text: string, tone: Tone) => <span className={tone ? TONE_CLASS[tone] : undefined}>{text}</span>;
-
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
       {error && (
@@ -745,61 +743,9 @@ export function SpendApprovalsBoard({
             views: viewPrefs.savedViews ?? [],
             onChange: (savedViews) => setViewPrefs({ savedViews }),
           }}
-          selectedId={focusId}
-          cellClassName={(r, columnId) => {
-            const tone = toneOf(r, columnId);
-            return tone ? TONE_CLASS[tone] : undefined;
-          }}
-          summary={{
-            metrics: [
-              {
-                id: "waiting",
-                label: "Waiting",
-                value: ({ rows: shown }) => {
-                  const n = shown.filter((r) => r.status === "waiting").length;
-                  return tonedValue(String(n), n > 0 ? "warning" : null);
-                },
-              },
-              {
-                id: "waiting_monthly",
-                label: "Waiting est./month",
-                value: ({ rows: shown }) => {
-                  const v = sumMonthly(shown.filter((r) => r.status === "waiting"));
-                  return tonedValue(cents(v), monthlyTone(v));
-                },
-              },
-              {
-                id: "expiring",
-                label: "Temporary expiring",
-                value: ({ rows: shown }) => {
-                  const n = knobs
-                    ? shown.filter((r) => r.status === "temporary" && expiryTone(r.expires_at, knobs.expiryWarnDays) != null).length
-                    : 0;
-                  return tonedValue(String(n), n > 0 ? "danger" : null);
-                },
-              },
-              {
-                id: "approved_monthly",
-                label: "Approved est./month",
-                value: ({ rows: shown }) =>
-                  cents(sumMonthly(shown.filter((r) => r.status === "approved" || r.status === "temporary"))),
-              },
-              {
-                id: "over_red",
-                label: "Avg over red line",
-                value: ({ rows: shown }) => {
-                  const n = shown.filter((r) => perRunTone(r.avg_cost_since) === "danger").length;
-                  return tonedValue(String(n), n > 0 ? "danger" : null);
-                },
-              },
-              {
-                id: "rejected",
-                label: "Rejected",
-                value: ({ rows: shown }) => String(shown.filter((r) => r.status === "rejected").length),
-              },
-            ],
-          }}
-          emptyState={{ title: focusId ? "That approval is not in this view" : "No spend approvals" }}
+          focusRowId={focusId}
+          headerWrap="two-lines"
+          emptyState={{ title: "No spend approvals" }}
           selection={{
             selectedIds,
             onSelectedIdsChange: setSelectedIds,
@@ -826,24 +772,18 @@ export function SpendApprovalsBoard({
             searchPlaceholder: "Search agents, mandates, automations…",
             actions: (
               <div className="flex items-center gap-2">
-                {focusId ? (
-                  <Button variant="outline" asChild>
-                    <Link href="?">Show all</Link>
-                  </Button>
-                ) : (
-                  <SegmentedControl<StatusFilter>
-                    aria-label="Status"
-                    value={status}
-                    onValueChange={setStatus}
-                    data={[
-                      { value: "all", label: "All" },
-                      { value: "waiting", label: "Waiting" },
-                      { value: "approved", label: "Approved" },
-                      { value: "temporary", label: "Temporary" },
-                      { value: "rejected", label: "Rejected" },
-                    ]}
-                  />
-                )}
+                <SegmentedControl<StatusFilter>
+                  aria-label="Status"
+                  value={status}
+                  onValueChange={setStatus}
+                  data={[
+                    { value: "all", label: "All" },
+                    { value: "waiting", label: "Waiting" },
+                    { value: "approved", label: "Approved" },
+                    { value: "temporary", label: "Temporary" },
+                    { value: "rejected", label: "Rejected" },
+                  ]}
+                />
                 <Button variant="outline" onClick={reload} disabled={loading} aria-label="Refresh">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 </Button>

@@ -46,6 +46,7 @@ jest.mock("@/features/organizations/hooks", () => ({
 }));
 jest.mock("../../OrgResourceLayout", () => ({ OrgResourceLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 jest.mock("@ai-matrx/records-ui", () => ({
+  ...jest.requireActual("@ai-matrx/records-ui"),
   RecordsMount: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   WhereItLives: () => null,
   personActor: () => ({}),

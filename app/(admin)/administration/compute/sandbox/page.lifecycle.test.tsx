@@ -20,7 +20,8 @@ jest.mock("@/features/admin/users/components/AdminUserRef", () => ({ AdminUserRe
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 jest.mock("@/components/navigation/AppLink", () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 jest.mock("@/components/ui/tooltip", () => ({ Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>, TooltipContent: ({ children }: { children: React.ReactNode }) => <>{children}</>, TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
-jest.mock("@ai-matrx/kit/format", () => ({ formatDurationSeconds: () => "1 hour" }));
+jest.mock("@ai-matrx/kit/format", () => ({
+  ...jest.requireActual("@ai-matrx/kit/format"), formatDurationSeconds: () => "1 hour" }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), warning: jest.fn(), error: jest.fn() } }));
 
 // Required, not imported: a top-level value import is hoisted above

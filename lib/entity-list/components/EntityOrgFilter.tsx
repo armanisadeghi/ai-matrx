@@ -126,7 +126,7 @@ export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, onOpen
           <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 @max-3xl/list:hidden", !orgId && "max-sm:hidden")} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-[60dvh] min-w-56 overflow-y-auto">
+      <DropdownMenuContent align="end" className="max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-56 overflow-y-auto">
         <DropdownMenuLabel className="text-xs">Show records in</DropdownMenuLabel>
         {choices.length > SEARCH_AT && (
           <div className="px-1 pb-1">

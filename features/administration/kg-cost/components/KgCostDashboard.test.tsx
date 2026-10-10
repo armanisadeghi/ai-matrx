@@ -14,6 +14,7 @@ import { KgCostDashboard } from "./KgCostDashboard";
 const tables = new Map<string, MatrxDataTableProps<unknown>>();
 
 jest.mock("@ai-matrx/design-system/data-table", () => ({
+  ...jest.requireActual("@ai-matrx/design-system/data-table"),
   MatrxDataTable: (props: MatrxDataTableProps<unknown>) => {
     if (props.tableId) tables.set(props.tableId, props);
     return null;

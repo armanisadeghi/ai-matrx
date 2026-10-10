@@ -31,6 +31,15 @@ import {
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
+import { PromptInsertMenu } from "@ai-matrx/rich-editor/format/PromptInsertMenu";
+import { PromptFixReview } from "@ai-matrx/rich-editor/format/PromptFixReview";
+import type { PromptInsert } from "@ai-matrx/rich-editor/core/prompt-inserts";
+import type { RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
+import {
+  PromptWriteBox,
+  insertPromptText,
+  usePromptInsertSources,
+} from "@/features/agents/components/builder/message-builders/PromptAssist";
 import {
   BlockList,
   BlockType,
@@ -100,6 +109,10 @@ export function SystemMessage({
     useState<HTMLTextAreaElement | null>(null);
   useTextareaFormatting(formatElement);
   const dispatch = useAppDispatch();
+  // Write view's editor, and the caret the Insert menu saw when it opened.
+  const writeRef = useRef<RichEditorController | null>(null);
+  const insertCaretRef = useRef<{ start: number; end: number } | null>(null);
+  const insertSources = usePromptInsertSources(agentId);
 
   // Full messages array — needed for write-back
   const messages = useAppSelector((state) =>
@@ -241,6 +254,32 @@ export function SystemMessage({
 
   // System message uses index -1 in textareaRefs
   const systemMessageIndex = -1;
+
+  // Insert menu: exact text at the caret (textarea in Plain/Split, the editor in Write).
+  const handleInsertMenuOpen = (open: boolean) => {
+    if (open) {
+      insertSources.loadKinds();
+      const textarea = textareaRefs.current[systemMessageIndex];
+      const saved = cursorPositions[systemMessageIndex];
+      insertCaretRef.current =
+        textarea && textarea.isConnected
+          ? { start: textarea.selectionStart, end: textarea.selectionEnd }
+          : saved !== undefined
+            ? { start: saved, end: saved }
+            : null;
+    }
+  };
+  const handlePromptInsert = (insert: PromptInsert) => {
+    const textarea = textareaRefs.current[systemMessageIndex];
+    insertPromptText({
+      insert,
+      text: developerMessage,
+      onChange: handleTextChange,
+      writeController: viewMode === "write" ? writeRef.current : null,
+      textarea: textarea && textarea.isConnected ? textarea : null,
+      fallbackCaret: insertCaretRef.current,
+    });
+  };
 
   // Track if context menu is open to prevent blur from closing edit mode
   const contextMenuOpenRef = useRef(false);
@@ -690,6 +729,15 @@ export function SystemMessage({
               />
             )}
           </div>
+          <div className="flex items-center gap-1">
+          <PromptInsertMenu
+            variables={insertSources.variables}
+            kinds={insertSources.kinds}
+            kindSchema={insertSources.kindSchema}
+            contextItems={insertSources.contextItems}
+            onInsert={handlePromptInsert}
+            onOpenChange={handleInsertMenuOpen}
+          />
           <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             <SystemMessageButtons
               hasVariableSupport={hasVariableSupport}
@@ -707,11 +755,25 @@ export function SystemMessage({
               onVoiceTranscription={handleVoiceTranscription}
             />
           </div>
+          </div>
         </div>
 
         {/* Content */}
         <div className="p-4">
-          {viewMode === "split" ? (
+          <PromptFixReview
+            text={developerMessage}
+            onApply={handleTextChange}
+            className="mb-2"
+          />
+          {viewMode === "write" ? (
+            <PromptWriteBox
+              value={developerMessage}
+              onChange={handleTextChange}
+              controllerRef={writeRef}
+              surfaceName="matrx-user/agent-builder"
+              placeholder="You're a very helpful assistant"
+            />
+          ) : viewMode === "split" ? (
             <div style={{ height: "360px" }}>
               <MatrxSplit
                 imagePolicy="other"

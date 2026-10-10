@@ -84,6 +84,8 @@ class FakeMediaApiError extends Error {
     }
 }
 
+// Costs read in points at the organization's `billing.points_per_usd` knob (20,000 = $1); the knob snapshot is not loaded here.
+jest.mock("@/components/cost/pointsRate.client", () => ({ usePointsRate: () => 20_000 }));
 jest.mock("../api", () => ({
     __esModule: true,
     MediaApiError: class extends Error {

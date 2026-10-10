@@ -96,7 +96,7 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
           <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 @max-3xl/list:hidden", !valueId && "max-sm:hidden")} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-[60dvh] min-w-64 overflow-y-auto">
+      <DropdownMenuContent align="end" className="max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-64 overflow-y-auto">
         <div className="px-1 pb-1">
           <input
             ref={searchRef}

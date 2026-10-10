@@ -390,6 +390,9 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
   // ids and the 240-char preview match locally; the BODY is matched by the
   // database (`useNoteContentSearch`) because list rows no longer carry it.
   const bodySearch = useNoteContentSearch(searchQuery);
+  // TMPDBG-START
+  if (typeof window !== "undefined") { const w = window as unknown as Record<string, any>; const cur: Record<string, unknown> = { allNotes, activeTabId, openTabIds, listStatus, listError, allFolders, folderReferences, scopeGrouped, scopesLoaded, activeOrgId, projName, taskName, memberOrgs, deletedNotes, trashStatus, trashError, sharedNotes, sharedError, sharedStatus, userId, openKnowledge, resolveOrganization, draftControl, bodySearch, bodyIds: bodySearch.ids, dcPending: draftControl.pending, dcErr: draftControl.error }; const prev = w.__sbPrev; const ch: string[] = []; if (prev) for (const k in cur) if (prev[k] !== cur[k]) ch.push(k); if (w.__sbChg) { for (const k of ch) w.__sbChg[k] = (w.__sbChg[k] || 0) + 1; w.__sbLog?.push(ch.join("|") || "none"); } w.__sbPrev = cur; }
+  // TMPDBG-END
   const filteredNotes = useMemo(() => {
     if (!searchQuery) return contextFiltered;
     const q = searchQuery.toLowerCase();
