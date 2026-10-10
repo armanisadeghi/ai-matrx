@@ -849,7 +849,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   rel="noreferrer"
                   className="truncate font-medium text-foreground hover:underline"
                 >
-                  {linkLabelOf(publicWebsiteUrl)}
+                  {linkLabelOf(publicWebsiteUrl).replace(/\/+$/, "")}
                 </a>
               </div>
             ) : websiteSites.length === 0 ? (
