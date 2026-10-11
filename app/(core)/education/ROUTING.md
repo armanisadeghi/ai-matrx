@@ -23,7 +23,7 @@ A tool is reached from many marketing angles, and all of them link into the one 
 Never nest a tool under an axis (`study-aids/flashcards/all` is wrong). Marketing slug and tool
 slug differ (FastFire: marketing `features/fastfire`, tool `fastfire`). A tool graduates from its
 `EduToolComingSoon` placeholder at the **same slug**, never into `(transitional)`, `(legacy)` or a
-sibling feature. No route renders a placeholder today; the mechanism stays for the next tool.
+sibling feature.
 
 ## Canonical tool flow
 
@@ -44,7 +44,7 @@ on the server (a view-only sharee on `/edit` is redirected to `[id]`, never 404)
 ## Route to feature map
 
 All routes are real surfaces unless marked (redirect). Tool entries are in
-`features/education/data/tools.ts` (19).
+`features/education/data/tools.ts`.
 
 | Route | Feature module | Sub-routes |
 |---|---|---|
@@ -83,8 +83,7 @@ Every route has at least one inbound link a user can click; fix a gap on sight.
   queue-depth chip from `OfflineStudySyncMount` (renders nothing at zero).
 - `media/[id]` is the canonical route for the `study_media` entity token
   (`data/entityRoutes.ts`), used when a caller holds an id and not the kind. The typed routes
-  stay beside it. **`MediaRouter` must handle every `EduMediaKind`** (a summary once fell
-  through to the audio player); add a branch whenever a kind is added.
+  stay beside it. **`MediaRouter` must handle every `EduMediaKind`**; add a branch whenever a kind is added.
 - `library/suggestions` is linked from the Community Library header.
 
 ## Conventions
