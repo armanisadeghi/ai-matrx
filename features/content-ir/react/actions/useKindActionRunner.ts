@@ -35,6 +35,8 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { useFloatingRunWindow } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { triggerShortcut } from "@ai-matrx/chat/agents/utils/trigger-shortcut";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
 import {
   livePosture,
   runHeadlessAgentJson,
@@ -230,6 +232,14 @@ export function useKindActionRunner(
           openShortcut,
           runShortcut,
           itemState: itemStateRef.current,
+          openFile: (fileId) => openFilePreview(fileId),
+          shareFile: (fileId, name) =>
+            dispatch(
+              openOverlay({
+                overlayId: "shareModalWindow",
+                data: { resourceType: "file", resourceId: fileId, resourceName: name },
+              }),
+            ),
         };
         const outcome = await invokeAction<KindActionResult>(
           registry,

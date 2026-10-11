@@ -43,6 +43,8 @@ function ctx(over: Partial<KindActionContext> = {}): KindActionContext & { saved
       read: () => saved,
       patch: (p) => Object.assign(saved, p),
     },
+    openFile: (fileId) => Object.assign(saved, { opened: fileId }),
+    shareFile: (fileId, name) => Object.assign(saved, { shared: `${fileId}:${name}` }),
     ...over,
   };
 }
@@ -180,5 +182,19 @@ describe("the image and identity seams", () => {
     expect(out.list[0].src).toBe("blob:frame/1");
     expect(out.note).toBe("keep");
     expect((map(state) as any).idea_3_image.src).toBe("blob:frame/1");
+  });
+});
+
+describe("open_file / share_file", () => {
+  it("hand a saved file to the canonical preview and share windows", async () => {
+    const c = ctx();
+    expect(await handler("open_file")({ file_id: "f9", name: "Two envelopes" }, c)).toEqual({ ok: true, result: { opened: true } });
+    expect(await handler("share_file")({ file_id: "f9", name: "Two envelopes" }, c)).toEqual({ ok: true, result: { opened: true } });
+    expect(c.saved).toMatchObject({ opened: "f9", shared: "f9:Two envelopes" });
+  });
+
+  it("refuse without a file id, with a sentence", async () => {
+    const out = await handler("open_file")({ name: "x" }, ctx());
+    expect(out).toEqual({ ok: false, error: "This needs a saved file." });
   });
 });

@@ -22,6 +22,7 @@ import { applySurfaceWriteAction } from "./handlers/apply-surface-write";
 import { listSurfaceWriteTargetsAction } from "./handlers/list-surface-write-targets";
 import { runShortcutAction } from "./handlers/run-shortcut";
 import { saveItemStateAction } from "./handlers/save-item-state";
+import { openFileAction, shareFileAction } from "./handlers/open-file";
 
 export const KIND_ACTIONS_PROVIDER_ID = "content-ir.kind-actions";
 
@@ -32,6 +33,8 @@ export const KIND_ACTIONS: readonly KindActionDefinition[] = [
   listSurfaceWriteTargetsAction,
   runShortcutAction,
   saveItemStateAction,
+  openFileAction,
+  shareFileAction,
 ];
 
 /** The registry id of the action a component names by `key`. */

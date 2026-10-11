@@ -102,6 +102,10 @@ export interface KindActionContext {
   ) => Promise<KindShortcutRunResult>;
   /** This item's durable state, or null when the runner was bound without one. */
   itemState: KindItemStateHandle | null;
+  /** Open a saved file in the canonical file preview window. */
+  openFile: (fileId: string) => void;
+  /** Open the canonical share window for a saved file. */
+  shareFile: (fileId: string, name: string) => void;
 }
 
 /** A kind capability. Pure w.r.t. globals — all deps arrive via ctx. */

@@ -45,6 +45,8 @@ const ctx: KindActionContext = {
   openShortcut: async () => ({ conversationId: "c2" }),
   runShortcut: async () => ({ ok: true, data: null }),
   itemState: null,
+  openFile: () => undefined,
+  shareFile: () => undefined,
 };
 
 describe("kind actions on the one action registry", () => {
@@ -55,6 +57,8 @@ describe("kind actions on the one action registry", () => {
       "list_surface_write_targets",
       "run_shortcut",
       "save_item_state",
+      "open_file",
+      "share_file",
     ]);
     expect(kindActionProvider.id).toBe(KIND_ACTIONS_PROVIDER_ID);
     expect(kindActionProvider.declaredIds?.()).toEqual([
@@ -63,6 +67,8 @@ describe("kind actions on the one action registry", () => {
       "kind.list_surface_write_targets",
       "kind.run_shortcut",
       "kind.save_item_state",
+      "kind.open_file",
+      "kind.share_file",
     ]);
     for (const def of KIND_ACTIONS) {
       expect(def.label.trim()).not.toBe("");
@@ -94,7 +100,7 @@ describe("kind actions on the one action registry", () => {
       registry,
       kindActionId("trigger_agent"),
       { agentId: "agent-1", variables: { prompt: "hi" } },
-      { ports, context: { launchAgent, userId: "u1", openShortcut: async () => ({ conversationId: "c2" }), runShortcut: async () => ({ ok: true, data: null }), itemState: null } satisfies KindActionContext },
+      { ports, context: { launchAgent, userId: "u1", openShortcut: async () => ({ conversationId: "c2" }), runShortcut: async () => ({ ok: true, data: null }), itemState: null, openFile: () => undefined, shareFile: () => undefined } satisfies KindActionContext },
     );
     expect(ran).toEqual({ ok: true, data: expect.objectContaining({ ok: true }) });
     expect(launchAgent).toHaveBeenCalledWith(
