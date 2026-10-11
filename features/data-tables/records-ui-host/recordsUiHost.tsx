@@ -18,6 +18,8 @@
  */
 
 import { askTableByMandate } from "@/features/data-tables/records-ui-host/askTable";
+import { enrichByRunner } from "@/features/data-tables/records-ui-host/enrichPort";
+import { useBackendApi } from "@/hooks/useBackendApi";
 import { RecordBodyEditor } from "@/features/data-tables/records-ui-host/RecordBodyEditor";
 import { RecordBodySpace } from "@/features/spaces/embed/RecordBodySpace";
 import { DynamicIcon } from "@ai-matrx/icons";
@@ -78,6 +80,8 @@ export interface RecordsUiPorts {
   runAgentAction: (target: RowAgentActionTarget) => void;
   /** The table's Ask box, answered by the `table.ask` mandate (`askTable.ts`). */
   askTable?: RecordsUiHost["askTable"];
+  /** An AI column's Preview and Fill: the server's one enrichment runner (`enrichPort.ts`). */
+  enrich?: RecordsUiHost["enrich"];
   /** The table's organization — the record chat files its conversation there. */
   organizationId: string | null;
   /** "Link a record…" on a store record: the one record picker, pointed at that record. */
@@ -162,6 +166,10 @@ export function recordsUiHostFor({ ports, merged, gridContext, rights }: Records
     openRecords: ports.openRecords,
     runAgentAction: ports.runAgentAction,
     ...(ports.askTable ? { askTable: ports.askTable } : {}),
+    ...(ports.enrich ? { enrich: ports.enrich } : {}),
+    // Every cost the package shows is points at the platform's rate (records-ui `pointsRate`).
+    // Spread as its own object: a records-ui build before the port ignores the key.
+    ...{ pointsRate: currentPointsRate() },
     share: recordStoreShare,
     // "This organization is archived" on every refusal that names one: an owner (or super admin) gets
     // "Restore organization" (the one iam.organization_restore door), everyone else is told who can.
@@ -266,6 +274,13 @@ export function useRecordsUiPorts({
   const store = useAppStore();
   const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
   const { launchMandate } = useAgentLauncher();
+  const backend = useBackendApi();
+  /** AN AI COLUMN'S PREVIEW AND FILL: the server's one runner, model `table.column_fill` (`enrichPort.ts`). */
+  const enrich = useCallback(
+    (ask: Parameters<NonNullable<RecordsUiHost["enrich"]>>[0]) =>
+      enrichByRunner((endpoint, body) => backend.post(endpoint, body), ask),
+    [backend],
+  );
   const openLinkRecordSheet = useOpenLinkRecordSheet();
   const linkRecord = useCallback(
     (target: { tableId: string; recordId: string; name: string }) => {
@@ -378,7 +393,7 @@ export function useRecordsUiPorts({
     [launchMandate, organizationId, store],
   );
 
-  return { members, onAskForOne, openRecords, runAgentAction, askTable, organizationId, linkRecord };
+  return { members, onAskForOne, openRecords, runAgentAction, askTable, enrich, organizationId, linkRecord };
 }
 
 /**
