@@ -118,7 +118,7 @@ export const SANDBOX_AUTHORING_RULES: readonly SandboxAuthoringRule[] = [
         topic: "actions",
         title: "Actions are how you ask the platform to do something",
         allowed:
-            "runAction(key, input) for everything that leaves your component — run_shortcut runs AI on an item (in its own window, or in the background with saveAs so the result lands on the item), save_item_state keeps a person's pick, and the copy bar's Groom with an agent and Send to Google ride the same pipe. What was saved comes back as the itemState prop; the KindActionButton kit component wires a button to any of them.",
+            "runAction(key, input) for everything that leaves your component — run_shortcut runs AI on an item (in its own window, or in the background with saveAs so the result lands on the item), save_item_state keeps a person's pick, and the copy bar's Groom with an agent and Send to Google ride the same pipe. What was saved comes back as the itemState prop; the KindActionButton kit component wires a button to any of them, and a saved image renders with the KindImage kit component (whole image, expand and share), never a bare img.",
         forbidden:
             "Reaching for the platform's data layer, the signed-in session, or any client library directly.",
         consequence:
