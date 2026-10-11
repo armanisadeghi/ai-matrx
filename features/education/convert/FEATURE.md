@@ -1,291 +1,34 @@
 # Content Converter — the cross-tool conversion contract
 
-> **Status:** Contract published 2026-07-07 (P9 Universal Ingest, co-owned with P4 Smart Notes).
-> **All seven generators are LIVE** (deck · summary · mind_map · notes · quiz · practice_test ·
-> audio) — no placeholders remain.
-> **This is the ONE dispatch layer for turning content into study artifacts.** Do not build a
-> second one — register a generator here (or from your feature) instead.
+**Status:** live. The registry is `generators/index.ts`; all eight `TargetKind`s (`ALL_TARGET_KINDS` in `types.ts`: deck, summary, mind_map, memory_aid, notes, quiz, practice_test, audio) have live generators.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/education/STATE.md — read it before touching this feature in ANY repo (kit/ingest flow, the two study-pack producers).
+
+**This is the ONE dispatch layer for turning content into study artifacts.** Do not build a second one — register a generator.
 
 ## What it is
 
-`convertContent({ source, targetKind })` — a single dispatch that turns a **normalized text
-source** into a **study artifact** of a requested kind, persists it, links a `source` lineage
-edge to the origin, and returns enough to open it. It is the spine of two flows:
+`convertContent({ source, targetKind, options })` turns a normalized text source into a persisted study artifact, links a `source` lineage edge to the origin, and returns enough to open it. React entry: `useContentConverter()` (`convert`, `convertMany` — parallel, never throws, each target succeeds/fails alone); outside React: `runConvert` from `registry.ts`. Consumers: the upload kit fan-out (`onboard`), one-click note/deck/quiz conversion, flashcards, assessment, media.
 
-- **P9 kit fan-out** — one upload → deck + summary + mind map (+ quiz/audio/notes as they land),
-  all in parallel, all lineage-linked to the same source (`convertMany`).
-- **P4 one-click** — "turn this note / passage into a deck / quiz / map / summary" (`convert`).
+`ConvertSource` is `{ text, title?, ref? }`: `text` is already extracted (ingest owns raw input to text; generators own text to artifact; never mix). `ref: SourceRef` is the lineage anchor, canonically a `cld_files` id (`ref.fileId`) or an origin entity (`ref.entityType`/`entityId`). `ConvertResult` is `{ targetKind, artifactId, resourceType, href, title, trust?, detail? }`; keep `href` + `resourceType` exact so lineage and navigation work. `isTargetAvailable` / `listGenerators` drive the kit picker.
 
-Consumers: P9, P4, flashcards, P1, P3.
+## Registering a generator
 
-## The contract (import this)
+Add the `TargetKind`, then `registerGenerator({ targetKind, label, available, capability, run })` in `generators/index.ts` (or self-register from the owning feature, as notes, quiz/practice_test and audio do). A generator is a plain async function (not a hook): run the agent (`runAgentExtraction`, which takes a `mandateKey`, never an agent id), coerce, persist, call `recordSourceLineage`, return. The kit picker lights it up automatically.
 
-```ts
-import { useContentConverter } from "@/features/education/convert/useContentConverter";
-// or, outside React:
-import { runConvert } from "@/features/education/convert/registry";
+## Rules
 
-const { convert, convertMany } = useContentConverter();
+- **THE COVERAGE LAW: an artifact is sized by the MATERIAL, never a constant.** `coverage.ts#planCoverage` splits at the source's own boundaries and scales the count (bounded by knobs, times `depth` quick/standard/thorough); every list-shaped generator (deck, quiz, practice_test, memory_aid, summary key points, notes key terms) goes through `segmentedGenerate` (plan, per-section run, merge, de-duplicate, report gaps). Never hand-roll a second fan-out. Prose targets write one section per coverage section and stitch in order; `mind_map` namespaces node AND edge ids per sub-map before grafting under one root. Every ceiling is a knob (`platform.feature_knob`, feature `education.study_kit`, via `lib/knobs/featureKnobs.ts`) — never a constant.
+- **THE COUNT LAW:** an explicit `options.count` is delivered exactly (balanced passes, spares merged and trimmed, near-duplicates dropped), and `onProgress` never reports more than the request. Guard: `__tests__/count-law.test.ts`.
+- **A multi-section run is BACKGROUND** (`runAgentExtraction` `live: false`): N sections are N conversations, and a kept instance would materialize as its own artifact. Progress goes through `ctx.onProgress`. A single-pass run keeps the live stream.
+- **THE NO-FREEZE RULE:** every section attempt has an end-to-end deadline (`SECTION_ATTEMPT_DEADLINE_MS`, cancelled via `signal`) and gets one retry (`SECTION_MAX_ATTEMPTS`); a failed section drops to `null`, is reported when it fails, and `describeGaps` puts the honest line in `ConvertResult.detail`. `sectionJournal.ts` lets a retry over the same plan (`sectionPlanKey`) resume only unanswered sections.
+- **Lineage is mandatory, one writer, visible both ways.** `recordSourceLineage` is the ONE writer (it RETURNS a `LineageOutcome`; callers surface failed edges with Retry via `announceLineage`, never console-only); `lineage.ts` + `GeneratedFromChips` read forward, `MadeFromSource` reads backward (and shows kit siblings). Do not grow a third renderer. Quiz/practice_test also keep the flat `assessment.source_kind`/`source_id` columns.
+- **Trust flows through unchanged** (`trustMerge.ts` rolls up per-item envelopes). `mind_map`/`audio` agents emit no citations, so `sourceTrust.ts#buildSourceTrust` derives a grounded envelope from the known source; no generator persists `trust: null`. When `ConvertSource.text` carries IC-3 `GROUNDING_PASSAGE` markers the deck generator keeps them verbatim — never replace durable RAG chunk ids with local markers.
+- **Steering and kit runs:** `ConvertOptions.steer` (instruction, card/question types, sections) is honoured by deck and quiz/practice_test. A kit run (`ref.kitId`) drops items the kit's decks/quizzes already hold (`existingItems.ts`) and, when the kit has an outline, runs per outline section stamping `metadata.outline_section_id`.
+- **Making more:** `reopenSource(fileId)` recovers a file anchor's text (docproc, stored bytes, PDF re-extract); `reopenAnchor(sourceType, sourceId)` is the ONE anchor-to-text read (file via `reopenSource`; `note` / `fc_set` / `assessment` via the SAME serializer their own convert surface uses; it throws an actionable line, never returns empty). Worked examples: flashcards `AddMoreCardsButton`, `kits/MakeMoreFromKit`.
+- **ONE convert-source dialog** (`ConvertContentDialog`): metered via the canonical entitlement guard and gated by `useAiComplianceGate`; opens the floating `LiveRunWindow` per target; optional `sourceRef` (pass a richer ref when you hold one) and `focusKind` (lead with and highlight one format; neither auto-runs a conversion).
+- Capability per target comes from the generator's `capability` (e.g. `education.generate_cards`, `education.mindmap_generate`, `education.notes_generate`, `education.quiz_generate`, `education.practice_test_generate`, `education.audio_generate`). Mandate keys: `mandates.ts` (`CONVERT_MANDATES`; the deck target rides `flashcards.generate_from_source`).
+- Presentation (icons, colours, names, units, verbs per format) lives once in `targetPresentation.ts`.
 
-// one target
-const deck = await convert({
-  source,
-  targetKind: "deck",
-  options: { depth: "thorough" }, // count optional — omit and it sizes to the source
-});
+## Where it lives
 
-// the kit fan-out — parallel, never throws; each target succeeds/fails on its own
-const outcomes = await convertMany(source, ["deck", "summary", "mind_map"], {
-  focus,
-});
-```
-
-**`ConvertSource`** — `{ text, title?, ref? }`. `text` is already-extracted content (ingest owns
-PDF-extraction / scrape / transcription / paste → text; generators never touch raw files).
-`ref: SourceRef` is the lineage anchor — canonically a `cld_files` id (`ref.fileId`), since the
-ingest pipeline normalizes EVERY input to a durable file.
-
-**`ConvertResult`** — `{ targetKind, artifactId, resourceType, href, title, trust?, detail? }`.
-`href` opens the artifact; `resourceType` is the access/association token (`fc_set`,
-`study_media`); `trust` is the TrustEnvelope (P0) the generator emitted.
-
-**`TargetKind`** — `deck | summary | mind_map | audio | quiz | practice_test | notes`.
-`isTargetAvailable(kind)` / `listGenerators()` drive the kit picker (available vs coming-soon).
-
-## THE COVERAGE LAW
-
-**An artifact is sized by the MATERIAL, never by a constant.** Every generator used to send the
-whole source in one agent call with a hardcoded count; a 77-slide PDF came back as 10 flashcards,
-5 key points, 16 mind-map nodes and 10 quiz questions, all drawn from the front of the document
-(2026-08-21).
-
-Two rules, both load-bearing:
-
-1. **Generate PER SECTION.** `coverage.ts#planCoverage` splits the source at its own boundaries
-   (slides, headings, pages) and gives each section its own share of the total. This is what buys
-   coverage — section 7 gets its own call, so slide 62 cannot be skipped because the model already
-   had enough by slide 12.
-2. **Scale the count to the source**, bounded by knobs, multiplied by the student's `depth`
-   (`quick | standard | thorough`). An explicit `options.count` wins but is still spread across the
-   WHOLE document.
-
-**Every list-shaped generator goes through `segmentedGenerate`** (deck · quiz · practice_test ·
-memory_aid · summary key points · notes key terms). Never hand-roll a second fan-out: the dedupe
-rule, the gap reporting, the single-pass fast path and the background rule below have to stay
-identical across targets. Prose targets (`notes`, `summary`) write one section per coverage section
-and stitch them in document order; `mind_map` namespaces each sub-map's node ids before grafting it
-under one root (two sub-maps both call a node `n1`).
-
-🚨 **A multi-section run is BACKGROUND** (`runAgentExtraction`'s `live: false`). N sections mean N
-conversations, and a kept instance is a render block the canvas materializer turns into its OWN
-artifact — one deck would land as eight. It reports through `ctx.onProgress` instead, which is what
-lets the kit board say "section 3 of 8 · Measurements · 24 so far". A single-pass run keeps the old
-live-stream behaviour and its `conversationId` for the single-writer dedupe path.
-
-**A missed section is never swallowed.** A failed section drops to `null` rather than sinking the
-artifact; `describeGaps` puts the honest line in `ConvertResult.detail`.
-
-**Every ceiling is a knob** (`platform.feature_knob`, feature `education.study_kit`, read via
-`lib/knobs/featureKnobs.ts`) — segment size, max segments, concurrency, min/max items, and
-items-per-section per kind. Never a constant:
-`common-docs/policies/limits-are-knobs-agents-set-them.md`.
-
-## Making MORE from the same material
-
-A generated artifact is not a dead end at whatever size the generator chose.
-**`reopenSource(fileId)`** recovers a kit's original text from nothing but its lineage anchor —
-`docproc.processed_documents` first, then the stored bytes, then a PDF re-extract by file id — with
-no re-upload and no new anchor, so the whole kit stays one family. `AddMoreCardsButton`
-(flashcards set detail) is the worked example: reopen → `segmentedGenerate` at thorough depth →
-drop what the deck already has → `fcService.addCards` onto the SAME set.
-
-**`reopenAnchor(sourceType, sourceId)` is the ONE anchor→text read** — use it, not `reopenSource`,
-whenever the anchor is a kit's (it may be an ENTITY, not a file). It dispatches `file` to
-`reopenSource` and serializes `note` / `fc_set` / `assessment` with the SAME function each entity's
-own convert surface uses (`serializeDeck` / `serializeAssessment` / the note's content), so a
-top-up grounds on byte-identical material. It never returns empty text: an anchor it cannot read
-throws a line the learner can act on. `kits/MakeMoreFromKit` is the worked example — reopen the
-kit's anchor → `ConvertContentDialog` → the generator's `source` edge lands the new artifact in
-that same kit.
-
-## Live generators
-
-| Kind            | Agent / service                                                                             | Persists to                                                | Capability (P8)                    |
-| --------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------- |
-| `deck`          | `flashcards.generate_from_source` mandate (`CONVERT_MANDATES.deckFromSource`) → `fcService` | `fc_set` + `fc_card`                                       | `education.generate_cards`         |
-| `summary`       | Study Summary agent (`92b607a4…`) → `studyMediaService`                                     | `study_media` (`media_kind='summary'`)                     | `education.ingest_document`        |
-| `mind_map`      | Study Mind Map agent → `studyMediaService`                                                  | `study_media` (`media_kind='mind_map'`)                    | `education.mindmap_generate`       |
-| `notes`         | Study Notes agent (`f23562ce…`) → `NotesAPI.create`                                         | `workbench.notes` (a real platform note)                   | `education.notes_generate`         |
-| `quiz`          | Assessment from-source agent → `assessmentService.createWithItems`                          | `education.assessment` (`assessment_kind='quiz'`)          | `education.quiz_generate`          |
-| `practice_test` | same from-source agent (longer/timed defaults) → `assessmentService.createWithItems`        | `education.assessment` (`assessment_kind='practice_test'`) | `education.practice_test_generate` |
-| `audio`         | `buildAudioRequest` → `studioRunsService` + `studyMediaService` (streamed podcast pipeline) | `study_media` (`media_kind='audio'`) + `pc_studio_runs`    | `education.audio_generate`         |
-
-Each generator: run the agent (`runAgentExtraction` — the shared launch+extract primitive),
-coerce, persist, then call `recordSourceLineage(result, source, orgId)` — the ONE canonical writer
-of the artifact→origin `source` edge (no generator hand-rolls it) — and return the result. Per-card
-TrustEnvelopes roll up via `mergeTrustEnvelopes`. The `quiz`/`practice_test` generators ALSO keep
-the flat `assessment.source_kind`/`source_id` columns (fast filter + learning-gain matching); the
-association edge is the polymorphic lineage every kit/convert surface reads.
-
-When `ConvertSource.text` contains IC-3 `GROUNDING_PASSAGE` markers, the deck generator preserves
-that serialization verbatim. It must never replace durable RAG chunk ids with local `c1` markers;
-otherwise a generated citation cannot open the retrieved passage.
-
-**Envelopes without agent citations (`mind_map` / `audio`):** these agents return structure
-(`diagram_spec { nodes, edges }`) or audio, not a `trust`/citations field — so the generator
-derives a **grounded TrustEnvelope from the KNOWN source** via `sourceTrust.ts#buildSourceTrust`
-(cites the ingest anchor). `MindMapDetail` / `AudioStudyDetail` render `<SourceCitations/>` from
-it. (Previously `mindMap.ts` hardcoded `trust: null` — fixed 2026-07-10.)
-
-## Registering a new generator
-
-All seven current targets are live. To add a NEW `TargetKind`, register it in
-`generators/index.ts` (or self-register from your feature):
-
-```ts
-import { registerGenerator } from "@/features/education/convert/registry";
-registerGenerator({
-  targetKind: "quiz",
-  label: "Quiz",
-  available: true,
-  capability: "education.quiz_generate",
-  run: async (request, ctx) => {
-    /* agent → persist → source edge → ConvertResult */
-  },
-});
-```
-
-The kit picker lights the target up automatically — no P9 change needed. Keep the
-`ConvertResult` contract exact (esp. `href` + `resourceType`) so lineage + navigation work.
-
-## Files
-
-- `types.ts` — the contract types (`ConvertSource`, `ConvertResult`, `ConvertGenerator`, …)
-- `registry.ts` — `registerGenerator` / `runConvert` (aka `convertContent`) / `isTargetAvailable`
-- `useContentConverter.ts` — the React entry (`convert` + `convertMany`)
-- `coverage.ts` — **THE coverage engine**: `planCoverage` (segment + scale), `runOverSegments`
-  (bounded fan-out), `markForGrounding` (the ONE chunk-marker writer), `describeGaps`
-- `segmentedGenerate.ts` — **the ONE fan-out** every list-shaped generator uses (plan → per-section
-  run → merge → de-duplicate → report gaps)
-- `reopenSource.ts` — recover a FILE anchor's original text (powers "add more cards")
-- `reopenAnchor.ts` — the ONE anchor→text read: `reopenSource` for a file, the entity's own
-  serializer for `note` / `fc_set` / `assessment` (powers a kit's "make more from it")
-- `MadeFromSource.tsx` — the BACKWARD lineage strip: the material an artifact was made from, plus
-  its kit siblings. Twin of `GeneratedFromChips`; do not grow a third lineage renderer
-- `runAgentExtraction.ts` — shared "launch JSON-extraction agent → get object" primitive
-  (`live: false` runs a segment in the background — see THE COVERAGE LAW)
-- `recordSourceLineage.ts` — **the ONE canonical writer** of the artifact→origin `source` edge
-  (resolves the anchor: the durable ingest `file` OR the origin entity via `ref.entityType`/
-  `entityId`). Every generator calls it; none hand-rolls the edge.
-- `lineage.ts` — the reverse read: `listGeneratedFrom(entityType, entityId)` (incoming `source`
-  edges → the "generated from this" rows)
-- `GeneratedFromChips.tsx` — the reverse-lineage chip strip, reused on every convert-source surface
-- `ConvertContentDialog.tsx` — **the ONE convert-source dialog** (note / deck / assessment / passage
-  / a kit's own anchor → any target); metered via the canonical entitlement guard. Sources hand it
-  serialized text + an origin token. Two optional props: **`sourceRef`** overrides the ref derived
-  from `origin` — pass it whenever you hold a richer one (the durable `fileId` /
-  `processedDocumentId` a citation needs to open its passage); **`focusKind`** leads with and
-  highlights one target, for a caller that was asked for exactly that format. Neither auto-runs a
-  conversion: generation spends the learner's quota, so the last tap stays theirs.
-- `trustMerge.ts` — roll per-item envelopes up to one artifact envelope
-- `sourceTrust.ts` — `buildSourceTrust`: a grounded envelope from the source for agents that
-  emit no citations (`mind_map`, `audio`)
-- `mandates.ts` — converter-owned mandate keys (`CONVERT_MANDATES`: `education.summarize`; the
-  deck target rides the canonical `flashcards.generate_from_source` mandate — the former duplicate
-  deck agent collapsed into it, program decision D-WP2-3)
-- `generators/` — `deck.ts`, `summary.ts`, `mindMap.ts`, `index.ts` (registration). `notes`,
-  `quiz`/`practice_test`, and `audio` self-register from their owning features
-  (`education/notes`, `education/assessment`, `education/media/audio`).
-
-## Invariants
-
-- ONE dispatch. No second converter, no per-feature parallel path.
-- ONE convert-source dialog (`ConvertContentDialog`) and ONE lineage writer
-  (`recordSourceLineage`) / reverse reader (`lineage.ts` + `GeneratedFromChips`). Do not fork
-  a per-feature dialog or edge-writer — a source hands the dialog its serialized text + origin token.
-- Generators are plain async functions (not hooks) so the dispatch runs from anywhere.
-- Every generated artifact links a `source` edge to its origin — the durable `ref.fileId`, or the
-  origin entity (`ref.entityType`/`entityId`) for an entity-sourced convert (note→deck, deck→quiz,
-  assessment→deck). Lineage is never optional and is written in ONE place (`recordSourceLineage`);
-  all seven generators route through it.
-- Everything the agents emit carries the P0 TrustEnvelope; `trust` flows through unchanged —
-  except `mind_map`/`audio`, whose agents emit no citations, so the generator derives a grounded
-  envelope from the source (`sourceTrust.ts`). No generator persists `trust: null`.
-- Ingest owns raw-input → text; generators own text → artifact. Never mix the two.
-- **No generator sends the whole source in one call with a fixed count.** See THE COVERAGE LAW.
-- Lineage is visible BOTH ways: `MadeFromSource` (what this came from + its kit siblings) and
-  `GeneratedFromChips` (what was made from this). An artifact that cannot name its source reads as
-  something the system invented.
-
-## Change log
-
-- **2026-10-09 — generate into the kit.** `ConvertOptions.steer` (instruction, card / question
-  types, sections); deck and quiz / practice test honour it. A kit run (`ref.kitId`) drops any item
-  a deck / quiz of the kit already holds (`existingItems.ts`, kit-wide) and, when the kit has an
-  outline, runs per outline section (`readOutlineGroups`: cited chunks as `### Chunk <id>` + key
-  facts), stamping `topic` + `metadata.outline_section_id` from `groupOf`. `ConvertContentDialog`:
-  card-type / question-type chips, `ProTextarea` instruction, "Focus on gaps" (outline only, default
-  on → `gapSections`); a pre-aimed section turns gaps off. `recordSourceLineage` now RETURNS a
-  `LineageOutcome` naming failed edges (stamped on `ConvertResult.lineage`); every caller surfaces
-  "Saved, but not linked to the kit/its source" with Retry (`announceLineage`) — never console-only.
-
-- **2026-10-03** — `sectionJournal.ts` + `ConvertContext.sections`: a segmented generation records
-  each section's conversation id; a retry over the same plan (`sectionPlanKey`: target, text
-  fingerprint, segment count, total) reads finished sections back from `chat.user_request` /
-  `chat.message` and runs only what never answered. `runAgentExtraction` launches with
-  `surfaceName: null` (engineered inputs only — no adopted page surface). `titleWithoutInternalIds`
-  strips resolver chunk ids from stored titles (the Education Library read applies it).
-
-- **2026-09-30 (no-freeze)** — THE NO-FREEZE RULE: every section attempt in `segmentedGenerate` has an end-to-end deadline (`timeoutMs`, default `SECTION_ATTEMPT_DEADLINE_MS` 120s) and is cancelled when it passes (`runAgentExtraction` `signal` → `cancelExecution`); a stalled or failed section is tried once more (`SECTION_MAX_ATTEMPTS` 2); a section that still fails is reported the moment it fails; `onProgress` ticks from the start and carries `retrying` / `failed`. Cause: a 4-card deck from an 87k-character transcript sat on "Making 4 cards" 20+ min — the launch awaits the whole stream, so the old 120s ceiling only covered extraction after it, and a section the server never answered held the run forever. Guard: `__tests__/stalled-section.test.ts` (5/5 red on the old code).
-- **2026-09-30 (V4-F)** — THE COUNT LAW reaches `onProgress`: with an explicit count a settled section adds at most its own share (`progressItemCount`) and the running `items` never passes the request (a 5-card run said "8 cards so far" — each section's spare was counted). Guard: `__tests__/count-law.test.ts` "the count law on the progress line" (red on the old code: 6 > 5).
-- **2026-09-28 (V1-B)** — THE COUNT LAW: an explicit `options.count` is delivered exactly. `planCoverage` folds sections into at most that many balanced passes (`foldPacked`/`apportionItems`, shares sum exactly); `segmentedGenerate` asks each pass for one spare, `mergeSectionItems` keeps shares first, fills from spares, trims to the total, and drops near-duplicates via the optional `sameAs` (`isNearDuplicateQA`). Background section runs are `initiation: "auto"` (`runAgentExtraction`) so they land in the Auto conversation lane, never the chat sidebar. Guards: `__tests__/count-law.test.ts` (red on the old files: 5 asked → 10 planned), `segment-runs-never-materialize.test.ts`.
-- **2026-09-28** — `generators/mindMap.ts` namespaces EDGE ids per section (it did only nodes, so every section's `e1..eN` collided), ids the synthesized root edges, and stores the spec through `withUniqueEdgeIds`. See `../media/FEATURE.md` change log.
-- **page-pass 2026-09-28 (wave 4c)** — `MadeFromSource` ("Open the kit"/"Open the source"/sibling pill links) and `GeneratedFromChips` ("Generated from this:" chips) rendered their labels at 11px and their link/chip controls under the 44px touch floor on phone — found via `/education/audio-study/[id]`, which mounts `MadeFromSource`, but these are shared components consumed across every education artifact detail page. Bumped `text-[11px]` → `text-xs`, added `matrx-touch-targets` to each component's own root (so every consumer gets the floor without opting in), and marked the Link elements `data-tap-target`. Commit `a4155f6755`.
-- **2026-08-25** — `reopenAnchor.ts` added (any lineage anchor → text, entity kinds included), and
-  `ConvertContentDialog` gained `sourceRef` + `focusKind`. Both exist so a kit can generate a
-  missing format from its OWN material instead of the generic ingest — see
-  `../kits/FEATURE.md` § MAKING MORE STAYS IN THE KIT.
-
-- **2026-08-22** — `deck.ts` coerces cards through the shared `features/flashcards/data/coerce-card.ts`
-  reader (no local copy) and sends the full `generate_from_source` offer (`document_id` + `title` +
-  `focus`); the "Kit Flashcard agent" id prose is gone — the mandate is the contract.
-
-- **2026-08-21** — **THE COVERAGE LAW.** Artifacts are sized by the material, not by a constant:
-  new `coverage.ts` + `segmentedGenerate.ts`, and every generator rewired onto them (deck, summary,
-  mind_map, memory_aid, notes, quiz, practice_test). Verified live on the reported 77-slide source:
-  10 → 58 cards, 5 → 44 key points, 16 → 99 nodes, and notes that cover the whole deck. Ceilings
-  moved to `platform.feature_knob` (`education.study_kit`) behind the repo's first runtime knob
-  reader, `lib/knobs/featureKnobs.ts`. Added `MadeFromSource` (backward lineage, mounted on every
-  artifact surface) and `reopenSource` + "Add more cards" (58 → 118 verified live).
-- **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted
-  (`agents.ts` → `mandates.ts`; `runAgentExtraction` takes `mandateKey`, never an agent id;
-  the duplicate deck agent collapsed into `flashcards.generate_from_source`).
-- **2026-08-11** — **Every conversion streams (THE FLOATING LAW).** `ConvertContentDialog` opens the floating `LiveRunWindow` before each target's launch and binds it with the `onRequestId` the converter contract already carried, so the generator's output is written in front of the user instead of behind the row's "Working" spinner. No generator changed.
-- **2026-07-10** — **Lineage + source-affordance convergence (Convergence-B certification).** Closed
-  four gaps: (1) extracted `recordSourceLineage.ts` — the ONE writer of the artifact→origin `source`
-  edge — and migrated all five inline call sites (deck/summary/mind_map/notes/audio) onto it, THEN
-  added it to `quiz`/`practice_test` (which previously only set the flat `source_kind`/`source_id`
-  columns — so a converted quiz/test now lands a real association edge; `assessment` added to
-  `ASSOCIATION_TARGET_TYPES`). (2) Generalized the note-only `ConvertNoteDialog` into the shared
-  `ConvertContentDialog` + `lineage.ts` + `GeneratedFromChips` (deleting `notes/ConvertNoteDialog`,
-  `notes/GeneratedArtifactsChips`, `notes/service`) and put a Convert affordance on the flashcard-set
-  detail (`SetDetailView`, `serializeDeck`) and the assessment detail (`AssessmentDetail`,
-  `serializeAssessment`) — decks and quizzes are now convert SOURCES, not just targets. Entity-sourced
-  conversions link back via `recordSourceLineage` reading `ref.entityType`/`entityId`. (3) This doc
-  rewritten to current truth. Entitlement guarding unchanged (`useEntitlementGuard` per target row).
-- **2026-07-10** — `audio` target went LIVE (P3 Audio Study). `audioStudyGenerator`
-  (`features/education/media/audio/audioGenerator.ts`) drives the canonical audio-create path
-  (`buildAudioRequest` → `studioRunsService` + `studyMediaService`, streamed) and self-registers.
-  Fixed `mindMap.ts` `trust: null` → grounded envelope; extracted the shared `sourceTrust.ts`
-  (`buildSourceTrust`) used by both `mind_map` and `audio`. All seven targets now have a live
-  generator. NOTE: live audio + mind-map GENERATION is currently blocked by an aidream backend
-  outage (podcast script agent + platform-wide agent-run `resolve_call_profile`); the FE path is
-  complete and filed.
-- **2026-07-10** — `notes` target went LIVE (P4 Smart Notes). `notesGenerator`
-  (`features/education/notes/notesGenerator.ts`, Study Notes agent `f23562ce…`) turns source
-  text into a real platform note (grounded, TrustEnvelope) and self-registers here.
-  Remaining placeholders: audio (P3), quiz/practice_test (P1).
-- **2026-07-07** — Contract published (P9). Live: deck, summary (new Study Summary agent +
-  `study_media` `summary` kind), mind_map. Placeholders: audio (P3), quiz/practice_test (P1),
-  notes (P4). Shared `runAgentExtraction` extracted from the flashcards/mindmap hooks' duplicated
-  launch+poll logic.
+`registry.ts`, `types.ts`, `useContentConverter.ts`, `coverage.ts`, `segmentedGenerate.ts`, `runAgentExtraction.ts`, `recordSourceLineage.ts`, `lineage.ts`, `generators/` (`deck`, `summary`, `mindMap`, `memoryAid`; notes, quiz/practice_test and audio self-register from `education/notes`, `education/assessment`, `education/media/audio`), `__tests__/`.

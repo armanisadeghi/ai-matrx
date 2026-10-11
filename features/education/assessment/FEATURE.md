@@ -1,293 +1,35 @@
-# FEATURE.md — Assessment Engine (P1)
+# FEATURE.md — Assessment Engine (Quizzes + Practice Tests)
 
-> **Status:** Live (2026-07-07). Quizzes + Practice Tests. One engine, two tools.
-> Owner project: `common-docs/systems/education/STATE.md`.
+**Status:** live · **Tier:** 2
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/education/STATE.md — read it before touching this feature in ANY repo (entitlement status, trust rules, open items). Agent-facing contracts for the surfaces: `features/surfaces/guides/` and the `education-*` manifests — not restated here.
 
-## Purpose
+## What it is
 
-Turn any topic, flashcard deck, or uploaded document into a **graded assessment** —
-5 question types, depth-on-demand, grade-on-meaning free-response, grounded/cited
-questions — and **measure learning gain** (pre/post delta). Replaces the two
-`EduToolComingSoon` placeholders (`quizzes`, `practice-tests`) with real product.
-Quizzes and practice tests are ONE content model (`assessment_kind`) and ONE
-component set (`kindConfig` parameterizes labels/routes/timer/capability).
+One engine, two tools: a topic, a deck or a document becomes a graded assessment (5 question types, depth on demand, grade-on-meaning free response, grounded/cited questions) with learning-gain (baseline/post) measurement. Quizzes and practice tests are ONE content model (`assessment_kind`) and ONE component set; `components/kindConfig.ts` parameterizes labels, routes, timer, capability.
 
-## Entry points
+## Where it lives
 
-- Routes (thin server shells → client islands):
-  - `/education/quizzes` + `/education/practice-tests` — list (`AssessmentHome`, `kind` prop) on `EntityListPage` over `education.assessment_list_scoped` / `_counts` / `_facets` (`data/assessmentListService.ts`, config + row menu + agent surface in `components/home/`). Each list is its own surface: `matrx-user/education-quizzes` / `matrx-user/education-practice-tests` (`_assessment-list.manifest.ts`); the record views keep `matrx-user/education-assessment`.
-  - `…/new` — generate (`AssessmentCreate`): topic / deck / document, depth, type mix, exam-type, (tests) time limit
-  - `…/[id]` — detail + shareable take URL (`AssessmentDetail`). `?start=1` renders the taker; `?phase=baseline|post`+`?gain=<uuid>` drive learning-gain takings
-  - `…/[id]/results?r=<resultId>` — scored report (`AssessmentResults`)
-  - `…/[id]/edit` — inline edit + "make deeper" (`AssessmentEdit`, EDIT-gated)
-  - **`/education/grade-work`** — standalone "Grade my handwritten work" (`grade-work/GradeWorkClient`
-    → `GradeWorkSurface` + `useGradeWork`): snap a photo of a worked problem → step-level grade.
-- Feature code: `features/education/assessment/` (`data/`, `components/`, `grade-work/`).
-- Mandates (keys in `data/mandates.ts`; the DB decides which agent fulfils each — swap at
-  `/mandates`): `ASSESSMENT_MANDATES` — `education.quiz_generate`,
-  `education.quiz_generate_from_source`, `education.quiz_deepen_item`; grading REUSES the
-  flashcards mandates `flashcards.grade_typed_answer` (grade-on-meaning), `flashcards.grade_spoken`,
-  `flashcards.verify_against_source`. **Vision/handwritten:** `education.grade_handwritten` —
-  reads a photo, grades on meaning, emits the `GradeVerdict` core + `steps[]` + `transcription`
-  (the ONE image-answer grading lane).
+`features/education/assessment/` (`data/`, `components/`, `grade-work/`). Routes (thin server shells, client islands): `/education/quizzes` and `/education/practice-tests` (list on `EntityListPage` over `education.assessment_list_scoped` / `_counts` / `_facets`; each list is its own surface), `…/new`, `…/[id]` (detail; `?start=1` renders the taker, `?phase=baseline|post&gain=<uuid>` drive learning-gain takings), `…/[id]/results?r=<resultId>`, `…/[id]/edit`, and `/education/grade-work` (photo of worked problem to step-level grade). Register new routes in the education admin map (`app/(core)/education/admin/page.tsx`).
 
-## Admin map
+Data (`migrations/edu_assessment_tables.sql`, RLS via `iam.apply_rls`): `education.assessment` (root, shareable; `source_kind`/`source_id` provenance, `trust`), `assessment_item` (component, org inherited), `assessment_result` (root, owned by the TAKER; `phase` standalone|baseline|post + `gain_group_id`). Types from the generated `education` schema.
 
-Enumerated in the Education Hub map — `app/(core)/education/admin/page.tsx` (quizzes +
-practice-tests entries, `status: Live`, per-route `notes`). Update it when adding a route.
+## Rules and invariants
 
-## Data model
+- **AI steps are mandates, never agent ids.** Keys are in `data/mandates.ts` (`ASSESSMENT_MANDATES`); the DB decides which agent fulfils each. Grading reuses the flashcards mandates (grade-on-meaning, spoken, verify-against-source); handwritten grading has its own. No agent UUID in code.
+- **Route pages are Server Components** — pass the `kind` STRING to client components, never the `KindConfig` object (its Lucide `icon` is a function and breaks RSC serialization).
+- **One grading path.** Free response grades on MEANING (`gradeTypedAnswer`); never exact-string grading. MC/TF/fill grade locally; `written_response` against its `rubric`. A photographed answer routes to the vision grader (`gradeAnswerImage` in `data/imageGrading.ts`, the image twin of the spoken `grading-core.ts`) — an added branch of the same contract, never a fork. Its result is `StepGradeVerdict` (the canonical `GradeVerdict` core + `steps[]` + `transcription`, coerced by the tolerant `coerceStepGradeVerdict`); never a parallel verdict shape. `GradedAnswerBlock` is THE verdict render.
+- **A paid grade persists its reasoning, not just its score.** Every graded-attempt write carries `explanation` and `misconception`; `study_attempt` has no column for them, so they ride the row's `score` jsonb under the keys built by `study/utils/gradeScore.ts#buildGradeScore` and read by `readGradeScore`. Never hand-write those keys or leave a grade's reasoning in component state.
+- **Study spine is reused, no attempts/mastery table.** Every answer goes through `studyService.recordAttempt({ itemType: 'assessment_item', method: 'quiz'|'practice_test', … })`; it computes FSRS state in `lib/srs/fsrs.ts` before the RPC, so a raw RPC call errors by design. Handwritten answers record `response_kind:'handwritten'` with `response_image_file_id`. `education.quiz_sessions` is the canvas artifact store and NOT this engine.
+- **TrustEnvelope passthrough.** Agents emit `trust` per item; consumers `coerceTrustEnvelope` and render `<SourceCitations>` / `<ConfidenceBadge>`. Topic generation is `inferred` (no citations); deck/document generation is `grounded` with real `sourceId`/`excerpt`. Deck mode feeds `### Card <id>` markers, document mode `### Chunk <id>` markers.
+- **ONE question generator:** `data/generateQuestionsFromSources.ts`, shared by `quizGenerator.ts` (new assessment and the converter targets), "Add questions" (`AddMoreQuestionsButton`, editors only; tab-bound run via `useTabBoundRun`, request shape `data/questionRunRequest.ts`) and the class-test practice test (`classes/components/MakePracticeTestButton.tsx`, metadata `class_id`/`test_id`/`unit_ids`). It segments over the Sources, drops duplicates and non-requested types (`data/newQuestions.ts`), stamps `metadata.batch_id`, and saves through `assessmentService.addItems(id, items, {startPosition})`; Undo soft-deletes exactly the ids that save returned. All three run the COPPA gate then the entitlement guard (`education.quiz_generate`, `education.practice_test_generate`; enforcement lives in `billing.capability`, see `features/entitlements/FEATURE.md` and the education STATE). The one generation hook is `data/useAssessmentGeneration.tsx`.
+- **Items carry the parent assessment's `organization_id` explicitly** (`addItems` reads the parent): an omitted key is indistinguishable from NULL and a default stamp files questions in the writer's personal workspace.
+- **A taking is persisted:** the countdown derives from wall-clock `startedAt` and `AssessmentTaker` restores a per-assessment `sessionStorage` snapshot, so a reload neither resets the clock nor drops graded answers. "Attempts" means COMPLETED everywhere; `listResults` is mine-scoped.
+- **Failures route to the access gate:** detail, edit and results render `<AccessGate>` for whichever row is missing (assessment or result), never "Not found"; doors come from `assessmentListDoor()` in `kindConfig.ts`.
+- **Every agent run streams** into the floating `LiveRunWindow` ("make this deeper", handwritten grading, generation); `useEntitlement` shows the remaining count BEFORE the action.
+- **Agent write targets are inputs only:** the generator form (`education-assessment` manifest, `applyPolicy: "ask"`, handlers validate and THROW — bounds from `kindConfig`) and the Grade Work composer stage form fields; running the generation or grading (spending a minor's quota) and writing a grade are never agent targets. `AssessmentDetail` registers no handlers, and mid-attempt `items` are bindable-only so answer keys never reach an agent. The vocabularies `DEPTHS` / `QUESTION_TYPES` / `DIFFICULTIES` live once in `data/types.ts`.
+- Access: `useAccess("assessment", id)` gates edit vs view; view-sharees get duplicate-to-edit (`assessmentService.duplicate`); the owner also has Duplicate. RLS is the real boundary.
+- Quiz and practice test are convert SOURCES and TARGETS: `quizGenerator` goes through `recordSourceLineage` (`../convert/FEATURE.md`); the exam hub prefills `AssessmentCreate` via `?examType=&topic=&depth=`.
 
-`education` schema (base-entity pattern; migration `migrations/edu_assessment_tables.sql`,
-canonical-OK verified live):
+## Open
 
-- **`assessment`** (root entity, shareable) — `assessment_kind` (quiz|practice_test),
-  `title`/`description`/`status`, provenance `source_kind`(deck|note|topic|source)+`source_id`+`source_title`,
-  `topic`, `exam_type`, `depth`, `time_limit_seconds`, `config` jsonb, `trust` jsonb.
-- **`assessment_item`** (component of assessment; org inherited) — `question_type` (multiple_choice
-  |true_false|fill_blank|short_answer|written_response), `prompt`, `options`, `correct_answer`,
-  `acceptable_answers`, `explanation`, `rubric`, `depth`, `points`, `topic`, per-item `trust`.
-- **`assessment_result`** (root entity, owned by the TAKER) — one scored taking. `assessment_id`,
-  `session_id` (→ study spine), **`phase`** (standalone|baseline|post) + **`gain_group_id`** (the
-  learning-gain pair), denormalized `topic`/`source_*`, `score_value`, counts, `points_*`,
-  `duration_seconds`, `detail` jsonb (per-item breakdown snapshot).
-
-RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
-`entity_relationships` (assessment_item→assessment composition), `shareable_resource_registry`
-(`assessment` → `/education/quizzes/{id}`). Types: `data/types.ts` (rows from generated `education` schema).
-
-**Study spine is REUSED — no new attempts/mastery table.** Every answered question records via
-`studyService.recordAttempt({ itemType: 'assessment_item', method: 'quiz'|'practice_test', … })`
-→ `study_attempt` ledger + `item_mastery` (FSRS). Quiz misses feed weak-area review + the planner.
-
-## Key flows
-
-- **Generate** (`useGenerateQuiz`, mirrors flashcards `useGenerateCards`): `launchAgentExecution`
-  (autoRun/direct, jsonExtraction) → poll `selectFirstExtractedObject` → drift-tolerant coercion
-  (MC `correct_answer` repaired to match an option) → `assessmentService.createWithItems`. Deck mode
-  feeds `### Card <id>` markers; document mode feeds `### Chunk <id>` markers (grounded → cited).
-- **Take** (`useTakeAssessment` + `AssessmentTaker` + `QuestionView`): open session + result → per
-  question grade (`gradeAnswerLocal` for MC/TF/fill; `gradeAnswerAI` grade-on-meaning for
-  short/written) → record to spine → feedback (correct answer, explanation, citations, misconception,
-  grade-override) → finalize result + close session → results page. Practice tests add a countdown
-  that auto-submits at zero.
-- **Learning gain** (`data/learningGain.ts`): "Measure my learning gain" starts a `baseline` taking
-  with a fresh `gain_group_id`; the baseline results page CTAs into the `post` taking; the post
-  results page shows the persisted **delta**. `pairLearningGain` is the read P5 consumes.
-- **Depth-on-demand**: depth is first-class config on every generation path; per-item "make deeper"
-  (`deepenItem` agent) appends an applied/exam-grade version in the editor.
-- **Image / handwritten grading** (the vision differentiator — VISION §6 + §17 STEM). Two front
-  doors to ONE path (`data/imageGrading.ts` = the image twin of the spoken crown-jewel
-  `grading-core.ts`): (a) inside the take flow a `written_response`/`short_answer` item can be
-  answered by PHOTO (`HandwrittenWorkInput` → `gradeAnswerImage` — the image BRANCH of the
-  grade-on-meaning path, NOT a forked grader), (b) the standalone `/education/grade-work` surface.
-  Flow: `fileHandler.upload` (photo → durable `file_id`, hidden `system-files/image-grade`) →
-  `runVisionGrader` (launch autoRun:false → `fileHandler.toContentPart({kind:'file_id'})` as an image
-  message part → `executeInstance` → poll extraction → `coerceStepGradeVerdict`) → a `StepGradeVerdict`
-  (verdict core + `steps[]` pinpointing where the reasoning broke + `transcription`). Records to the
-  spine as `response_kind:'handwritten'` with `response_image_file_id` + the steps in `score`
-  (assessment item, or standalone `item_type:'handwritten_work'`). `StepBreakdown` renders the steps.
-
-- **Practice test for a class test (living-kit W5).** `classes/components/MakePracticeTestButton.tsx` on a class test's page: the sources are the files, source documents and notes filed in the units the test covers (deduped), run through the same `generateQuestionsFromSources` as every quiz, saved with `createWithItems` as a `practice_test` (metadata `class_id`, `test_id`, `unit_ids`), then filed (plain edges) under the test scope and the class. Run key `class-test:practice-test:<testId>` (`useTabBoundRun`); entitlement `education.practice_test_generate` + COPPA gate.
-- **Add more questions (living-kit W2).** `components/AddMoreQuestionsButton.tsx` (detail page, beside
-  Duplicate; editors only): the Source input seeded from the assessment's `source` lineage, a count
-  (`kindConfig.defaultCount`/`countMax` — no per-run knob exists for questions), question-type chips
-  (none = any), a `ProTextarea` focus, tab-bound run (`useTabBoundRun`, request shape in
-  `data/questionRunRequest.ts`), COPPA + entitlement gate. Generation is `data/generateQuestionsFromSources.ts`
-  — THE one question generator, shared with `quizGenerator.ts` (new quiz/practice test): segmented over the
-  Sources, steering folded into `user_request`/`question_types` (`convert/steering.ts`), questions already on
-  the assessment (same prompt or near-duplicate) and non-requested types dropped (`data/newQuestions.ts`), each
-  kept question stamped `metadata.batch_id` (+ `outline_section_id`/`topic` for a one-section run). Saved with
-  `assessmentService.addItems(id, items, {startPosition: itemCount})`; the success toast's **Undo**
-  soft-deletes (`deleteItem`) exactly the item ids that save returned.
-
-## Invariants & gotchas
-
-- **Route pages are Server Components** — pass the `kind` STRING to client components, never the
-  `KindConfig` object (its Lucide `icon` is a function → RSC serialization error). Client resolves
-  `KIND_CONFIG[kind]`.
-- **One grading path.** Free-response grades on MEANING via `gradeTypedAnswer` (P0 contract); never
-  add exact-string grading. MC/TF/fill grade locally (normalized). `written_response` grades against
-  its `rubric`. A PHOTOGRAPHED free-response answer routes to the vision grader (`gradeAnswerImage`)
-  — the SAME meaning-grading contract, an added branch, never a fork.
-- **Extend the verdict, don't fork it.** The image path returns `StepGradeVerdict` — the canonical
-  `GradeVerdict` core (features/education/trust) + `steps[]` + `transcription`, coerced by the
-  TOLERANT `coerceStepGradeVerdict` (education agents are tuned in-system, so it accepts key drift:
-  `verdict` token OR `correct`/`partial` booleans; `note`/`notes`; `stepLabel`/`description`). Never
-  add a parallel verdict shape.
-- **TrustEnvelope passthrough.** Agents emit `trust` per item; consumers `coerceTrustEnvelope` + render
-  `<SourceCitations>`/`<ConfidenceBadge>` — never re-derive. Topic gen = `inferred`, no citations;
-  deck/document gen = `grounded` with real `sourceId`/`excerpt`.
-- **A PAID GRADE PERSISTS ITS REASONING, NOT JUST ITS SCORE.** Every write of a graded attempt carries
-  the grader's `explanation` and `misconception` — the pedagogically valuable half (WHY the learner was
-  wrong, WHICH wrong belief they hold), and the half you cannot recover without paying for the grade
-  again. `study_attempt` has no explanation column: the reasoning rides in the row's `score` jsonb under
-  the canonical keys built by `features/education/study/utils/gradeScore.ts#buildGradeScore`
-  (`feedback` / `misconception` / `missing` / `rubric` / `steps`) and read back by `readGradeScore`.
-  NEVER hand-write those keys and never leave a grade's reasoning in component state — it dies on
-  unmount (the defect this rule replaced: the take flow and Grade Work both threw it away).
-  Read surfaces: `AssessmentResults` (per-item review) and the mode-agnostic `SessionDetailView`.
-- **Spine RPC needs FSRS state.** `studyService.recordAttempt` computes it in `lib/srs/fsrs.ts` before
-  the RPC; a raw RPC call with a graded result errors by design. Always go through the service.
-- **`education.quiz_sessions` is NOT ours** (canvas artifact store). This engine is independent.
-- Metering: generation wrapped in `useEntitlement("education.quiz_generate" | "…practice_test_generate")`
-  — permissive stub until P8 flips enforcement; remaining count shown BEFORE the action.
-- Access: `useAccess("assessment", id)` gates edit vs view; view-sharees get duplicate-to-edit
-  (`assessmentService.duplicate`). RLS is the real boundary.
-
-## Related features
-
-- Study spine + FSRS + weak-area/planner: `features/education/study/` (consumer of our attempts).
-- Trust: `features/education/trust/` (P0 — envelope, grade-on-meaning, citations UI).
-- Access gate: `utils/permissions/` (P7). Entitlements: `features/entitlements/` (P8).
-- Flashcards: `features/flashcards/` (the pattern we copied; deck source for generation).
-- **Published contracts:** learning-gain rows (→ P5); exam-type-first-class assessments +
-  mock-exam generation as a service (→ P6 exam hub).
-
-## Doctrine compliance
-
-- **Reused, didn't fork:** the study spine (new `item_type`/`method` only), the flashcards agent
-  round-trip + streaming pattern, the P0/P7/P8 contracts, the trust UI. New primitives are generic:
-  one `assessment` model serves both tools; `kindConfig` is the extension point for a third kind.
-- No parallel Redux slice (grading/deepen are thunks over the existing execution-system slice).
-- Types from the generated `education` schema; no `any`, no hand-mirrored shapes.
-
-## Current work / migration state
-
-- Shipped + live-verified (2026-07-07): DB (canonical-OK), 3 agents (real cited output via
-  `agent_run`), full write path (RLS insert → spine RPC → `item_mastery` → learning-gain delta +0.40),
-  routes render 200. Both tools flipped to `status: "live"` in `features/education/data/tools.ts`.
-- Open / fast-follow: rubric-aware written-response grading (currently rubric-as-expected-answer);
-  live streaming question preview during generation (hook exposes `activeRequestId`, UI shows a
-  spinner today); spoken-answer capture on questions (reuse `gradeSpoken`); server-side
-  search/pagination for the list at scale.
-
-## Change log
-
-- `2026-10-09` — Living-kit W2: "Add questions" top-up on the quiz/practice-test detail page and the ONE question generator (`generateQuestionsFromSources`, now behind `quizGenerator` too). `NewAssessmentItemInput` gained `metadata`. Open: `assessmentService.addItems` does not yet write item `metadata` (batch/section stamps are generated but not persisted).
-- `2026-09-28` — The assessment editor now mounts the shared assessment surface for both quiz and practice-test edit routes. Agents can propose a title update, add questions, update questions, or delete questions through the same `assessmentService` paths as the editor; every write asks the learner first. The surface emits assessment and question revisions, and agent item mutations use `guardedUpdate` compare-and-swap so stale approval cannot overwrite a newer edit.
-- `2026-09-27` — page-pass round 3: a taking is filed under the quiz's own organization when the person belongs to it (no org prompt for your own quiz); "attempts" means COMPLETED everywhere (list column, detail header, agent values) and `listResults` is mine-scoped; `assessment_list_scoped` returns `my_can_edit` (via MCP) and Edit/Archive show only with edit rights; lane-aware empty states (New only in Mine); compact phone card with one-tap Take; Title gets the width; results use the shell header.
-- `2026-09-27` — page-pass iteration: `generate_quizzes` / `generate_practice_tests` agent targets run THE one generation path (`data/useAssessmentGeneration.tsx`, now also behind the New form: COPPA gate → plan check → generator → save → usage on success), metered and stated on the approval card, streaming into the floating live-run window; list rows carry the person's attempts / best score / latest result (`assessment_list_scoped` v2, applied via MCP), so **Results** opens the latest result and is absent before a first attempt; Depth/Exam hidden by default, Topic wider, Take is a labelled one-tap button on the phone card; an empty Mine lane names and opens My Orgs; tool homes keep the Education section nav + intelligence mark (`EducationToolHeader`).
-- `2026-09-27` — page-pass 2026-09-27: type list, posture sharp after Linear, fixed: hand-built card list → `EntityListPage` over the server-side `assessment_list_scoped` RPC family (lanes by OWNERSHIP — "Mine" used to mean visibility — real counts, sort/filter every column, archive axis, paging instead of `select("*")`); per-row menu (Open, Take, Edit questions, Results, Archive/Restore); own list surfaces with the `assessment_list` XML bundle and `create_/update_/delete_<quizzes|practice_tests>`; topic shown only when it differs from the title, no CSS `capitalize`, no doubled error menu; titles/topics (and deck names in `fcService`) projected to plain text at the write boundary; tab + nav name "Quiz Builder" → "Quizzes".
-- `2026-09-17` — **Assessment items carry the parent assessment's organization explicitly.** `addItems` omitted `organization_id` and relied on the `_inherit_org` trigger; an omitted key is indistinguishable from a NULL, and `public._stamp_org_default` fires first, filing questions in the writer's personal workspace. The service now reads the parent assessment's `organization_id` and puts it on every row, and refuses in plain words when the parent cannot be read. Guard: `pnpm check:organization-context`.
-
-- **2026-09-08** — `GradedAnswerBlock` is THE verdict render (`answer_grade` kind → `answer_grade_verdict`): `take/QuestionView` `FeedbackBlock` and `grade-work/GradeWorkSurface` mount it and their two copies of the verdict pill + misconception + explanation + transcription are deleted; `StepBreakdown` stays beside it (steps are not part of the kind).
-- **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted
-  (`data/agents.ts` → `data/mandates.ts`, `ASSESSMENT_MANDATES`; item-type constants moved with it).
-- **2026-08-11** — **Every assessment agent run streams (THE FLOATING LAW).** "Make this deeper" (`AssessmentEdit`) traded its `toast.loading` for the floating `LiveRunWindow` — the harder question is written in front of the user — and "Grade my handwritten work" (`useGradeWork` → `gradeAnswerImage` → `runVisionGrader`) floats the vision grader's step-by-step read instead of spinning the button. `deepenItem` / `runVisionGrader` / `gradeAnswerImage` take an optional `onConversationCreated`; with none passed they stay headless. `AssessmentCreate` (inline, earned exception) is unchanged.
-- **2026-08-11** — **Detail / edit / results route their failures to the access gate.** All three
-  stopped asserting "Not found" over a zero-row read and now render `<AccessGate>` — detail and edit
-  on `assessment`, results on **whichever row is actually missing**: the assessment, or the
-  `assessment_result` (whose door back is the assessment itself, which the learner can usually still
-  open). The results effect records each of its two reads independently, so a readable assessment is
-  no longer discarded because its result failed. Kind-aware doors come from `assessmentListDoor()` in
-  `kindConfig.ts`, derived from the pathname because the row that knows its kind is the one that
-  didn't load. `duplicate()`'s "source not found" became `recordUnavailable().message`.
-- **2026-08-11** — **Graded attempts now persist the grader's reasoning.** `useTakeAssessment.submit`
-  and `useGradeWork.grade` were writing `result` / `scoreValue` / transcript / steps to the spine and
-  dropping `explanation` + `misconception` in `useState` — the paid half of every AI grade died on
-  unmount. Both now build the attempt's `score` jsonb through the new shared
-  `features/education/study/utils/gradeScore.ts` (`buildGradeScore` / `readGradeScore`), the ONE place
-  the key names live; `SessionDetailView` reads through it (replacing its private `readScoreExtras`)
-  and renders the misconception, `AssessmentResults` now renders the grader's per-answer "Why"
-  (already persisted in `result.detail`, previously never shown), and spoken practice — same class,
-  same loss — carries its misconception through too. No DB change: `score` is the existing
-  grade-detail jsonb `study_record_attempt` already accepts.
-
-- **2026-08-10** — **The Grade Work composer is agent-writable — inputs only.**
-  `features/surfaces/manifests/education-grade-work.manifest.ts` declares 2
-  `mode: "draft"`, `applyPolicy: "ask"` targets — `problem_text` and
-  `expected_answer` — and `GradeWorkSurface` registers the handlers on its own
-  `SurfaceRuntimeProvider`, staging through the same `setProblem` /
-  `setExpected` the textareas call. An agent can put up the problem it just
-  posed and a full-credit rubric to grade against; the learner still attaches
-  the photo and presses Grade, where the COPPA gate, the
-  `education.image_grade` meter and `useGradeWork.grade` run. The whole
-  `grading` group is grader OUTPUT and is deliberately NOT writable — an agent
-  must never be able to write the grade a student received — and starting the
-  run is not a target, because spending a minor's metered quota is a human
-  gesture. Staging is refused while a verdict is on screen or a run is in
-  flight (the composer is unmounted then). Live-verified with a real agent
-  run: per-target confirms, Apply, decline, an invalid-shape throw reaching
-  the model, and a refused attempt to write the grade.
-- **2026-08-10** — **The generator is agent-writable.**
-  `features/surfaces/manifests/education-assessment.manifest.ts` declares 8
-  `mode: "draft"`, `applyPolicy: "ask"` write targets covering the whole generation
-  config (`generation_topic` / `_difficulty` / `_depth` / `_question_types` /
-  `_question_count` / `_exam_type` / `_user_request` / `_time_limit_minutes`).
-  `AssessmentCreate` registers the handlers on its existing `SurfaceRuntimeProvider`
-  via `getWriteHandlers`; each stages through the SAME `useState` setter the user's
-  typing uses, so a staged value is just an un-generated form — no row is written and
-  no quota is spent until the USER presses Generate, where the COPPA gate, the
-  entitlement guard and `assessmentService.createWithItems` still run unchanged.
-  `generation_topic` also switches the Source selector to Topic (the field feeds only
-  topic-mode generation; a picked deck/document stays in state and returns on switch
-  back). Handlers validate and THROW: `generation_question_count` is bounded by
-  `config.countMax` per kind (30 quiz / 60 practice test) and rejected rather than
-  clamped, and `generation_time_limit_minutes` is refused outright on a quiz, which
-  has no such control. **`AssessmentDetail` deliberately registers NO handlers** —
-  it owns a loaded read snapshot, not editor state; its affordances (duplicate,
-  delete, convert) are the ownership/destructive class; saved-assessment editing has
-  its own component (`components/edit/AssessmentEdit.tsx`, which does not mount this
-  surface); and that same provider wraps the mid-attempt take flow, where `items`
-  are bindable-only precisely so answer keys never flow to an agent. Deepest-wins
-  resolution means both mounts coexist with targets offered only on create.
-  Supporting refactor: the generation vocabularies now live in `data/types.ts` as
-  exported `DEPTHS` / `QUESTION_TYPES` / `DIFFICULTIES` (+ `isDepth` /
-  `isQuestionType` / `isDifficulty`); the manifest interpolates them into the
-  model-facing descriptions, the handlers validate against them, and the create
-  form's option lists derive from them through `Record<Union, …>` copy maps — one
-  vocabulary, so adding a depth or question type cannot silently drift between the
-  form, the contract an agent reads, and the handler. Live-verified with a real
-  Badass Agent run on both `/education/quizzes/new` and
-  `/education/practice-tests/new`. Recipe + verification contract: the
-  `surface-write-targets` skill.
-- **2026-07-13** — **Handwritten / image / multi-step grading shipped** (VISION §6 AI Grading +
-  §17 STEM; "Why We Win" #4). New vision grader `gradeHandwritten` `77db0f64…` (Gemini Flash Latest)
-  authored + live-tested via `agent_run` (multi-step algebra: caught the distribution error, marked
-  it partial with follow-through). New reusable primitives: `data/imageGrading.ts` (upload→vision
-  grader→coerce, the image twin of spoken `grading-core.ts`), `gradeAnswerImage` (image branch of the
-  grade-on-meaning path — no forked grader), `HandwrittenWorkInput` + `StepBreakdown`, and the trust
-  extension `StepGradeVerdict` + tolerant `coerceStepGradeVerdict` (features/education/trust). Two
-  surfaces: (a) any `written_response`/`short_answer` item in the take flow can be answered by photo,
-  (b) standalone `/education/grade-work`. Records to the spine as `response_kind:'handwritten'` +
-  `response_image_file_id` (no spine migration — the columns/CHECK already accept it). Metered via new
-  `education.image_grade` (registry + `billing.capability_limit` 20/day + 8/1h; enforced:false).
-- **2026-07-10 (Convergence-B)** — Two lineage/loop gaps closed. (1) `quizGenerator` now calls the
-  shared `recordSourceLineage` (`features/education/convert`) — a converted quiz/practice_test lands a
-  real `assessment --source--> origin` association edge, not only the flat `source_kind`/`source_id`
-  columns (both kept). `assessment` added to `ASSOCIATION_TARGET_TYPES`. (2) `AssessmentDetail` grew a
-  **Convert** affordance (shared `ConvertContentDialog` + `data/serializeAssessment.ts`) — a quiz/test
-  is now a convert SOURCE (→ deck/notes/summary/mind_map/audio), reverse-lineage chips via
-  `GeneratedFromChips`. No forked dialog or lineage code.
-- **2026-07-07** — Initial build: `assessment`/`assessment_item`/`assessment_result` tables + RLS +
-  registration; 3 agents; service + `useGenerateQuiz` + grading + learning-gain contract; full
-  quizzes + practice-tests UI (list/create/take/results/edit); tools flipped live; verified live.
-- **2026-07-10** — Converter contract: registered real `quiz` + `practice_test` `ConvertGenerator`s
-  (`data/quizGenerator.ts`, reusing `generateQuizFromSource` + exported `coerceGeneratedQuiz` +
-  `assessmentService`) — replaces the P1 "coming soon" placeholders, lighting up P9 upload-kit
-  fan-out and P4 note→quiz. Exam-hub deep-link prefill: `AssessmentCreate` seeds topic/examType/depth
-  from `?examType=&topic=&depth=` via `useSearchParams` (route pages Suspense-wrapped).
-- **2026-07-10** — Live DB-loop re-verification (real Supabase session, real RLS/triggers/RPC, via the
-  actual `assessmentService`/`studyService` modules): quiz + practice_test assessments created →
-  taken → spine-recorded (`study_attempt` `method=quiz`/`practice_test`) → results finalized →
-  `item_mastery` advanced → learning-gain baseline 0 → post 0.6875 delta paired by `pairLearningGain`.
-- **2026-07-10 (post-outage)** — **LLM generation + AI free-response grading now VERIFIED LIVE** (the
-  D39 aidream outage recovered). Real supabase-js session driving the true client contract (`POST
-  /ai/agents/{id}` → `parseNdjsonStream` → `coerceGeneratedQuiz` → `assessmentService`): deck-grounded
-  `generateQuizFromSource` → 4 questions, **all 4 `trust.confidence='grounded'` with citations**;
-  persisted under RLS; the take path graded 2 free-response answers on MEANING via the reused
-  `gradeTypedAnswer` agent (`b39183d1…`; recorded to `study_attempt.graded_by=b39183d1…`); result
-  finalized (75%). P2 converter verified live from a paste source (registry shows `quiz` available →
-  5 grounded items → `education.assessment` `source_kind='source'`). Supersedes the outage note for P1.
-- **2026-09-27 (wave-2 adversarial retest)** — Two defects found and fixed while re-verifying a
-  practice test's countdown timer: (1) `remaining` was `useState`-decremented locally with no
-  persistence — a mid-taking page reload silently reset the clock to the full limit AND dropped every
-  already-graded answer (table-stakes violation). Fixed in `useTakeAssessment.ts` (new `restore`
-  option seeding `startedAt`/`sessionId`/`resultId`/`records`, `startedAt` now exposed) +
-  `AssessmentTaker.tsx` (a `sessionStorage` snapshot per assessment id, restored synchronously before
-  first render, cleared on finish; the countdown is now derived from the wall-clock `startedAt` each
-  tick instead of decremented, so a restored `startedAt` recomputes the true remaining time). (2)
-  `AssessmentDetail.tsx`'s owner action row had NO "Duplicate" — only a non-owner saw "Make a copy to
-  edit"; the platform's own author of a quiz/practice test had no way to duplicate it. Added a
-  "Duplicate" button beside Edit/Delete for `canEdit`.
+- Rubric-aware written-response grading (rubric is the expected answer today); live streaming question preview during generation; spoken-answer capture on questions (reuse `gradeSpoken`).
