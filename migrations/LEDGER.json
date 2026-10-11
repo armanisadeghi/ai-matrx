@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-11T00:22:00.894Z",
+  "generated_at": "2026-10-11T00:30:49.281Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -110,6 +110,24 @@
       "checksum": "bbf0a4cbcc86943997d4fd7b2b6ac9714b45570bc09415a02763e6af52c11983",
       "applied_at": "2026-10-10 22:18:45.497257+00"
     },
+    "migrations/campaign/accesssetup_k1_people_involved_shows_hr_names.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_k1_people_involved_shows_hr_names.sql",
+      "checksum": "4b13c42654a13bb450d690a6a675a84d13ff0fe6ff1536eda5a1a103a7ef6d50",
+      "applied_at": "2026-10-11 00:30:19.658218+00"
+    },
+    "migrations/campaign/accesssetup_k2_only_admin_confirms_switch_the_prompt_off.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_k2_only_admin_confirms_switch_the_prompt_off.sql",
+      "checksum": "600c224b5e1c87d7594252b3d1759480653bfb4f61b6167a9d0d15b1f0439be7",
+      "applied_at": "2026-10-11 00:29:14.005193+00"
+    },
+    "migrations/campaign/accesssetup_k3_owner_takes_hr_when_nobody_holds_hr.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_k3_owner_takes_hr_when_nobody_holds_hr.sql",
+      "checksum": "829b782b53b60f7511d1d98a586deb3fd81074cd2dc73a65a4d977930b23590b",
+      "applied_at": "2026-10-11 00:29:32.73706+00"
+    },
     "migrations/campaign/accesssetup_store_a_the_column_answers_are_frozen_as_the_oracle.sql": {
       "source": "matrx-frontend",
       "filename": "accesssetup_store_a_the_column_answers_are_frozen_as_the_oracle.sql",
@@ -133,6 +151,12 @@
       "filename": "accesssetup_store_d_parts_answer_for_columns.sql",
       "checksum": "f7e88a6c7c5072f7b4ca08d6a3b08a5ef526d11bca5e4f98f825701dbb0f7de0",
       "applied_at": "2026-10-11 00:21:51.087704+00"
+    },
+    "migrations/campaign/accesssetup_store_e_parts_visible_for_reads_its_own_columns.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_store_e_parts_visible_for_reads_its_own_columns.sql",
+      "checksum": "2df43dc8f58dcedf0427b795425cefa6ccc8aa693c08e766543f116f97c79138",
+      "applied_at": "2026-10-11 00:30:48.2697+00"
     },
     "migrations/campaign/agentsondata_a_a_person_allows_an_agent_the_rest_of_one_chat.sql": {
       "source": "matrx-frontend",
