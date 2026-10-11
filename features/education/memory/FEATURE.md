@@ -1,6 +1,6 @@
 # Education Memory Tools (FEATURE.md)
 
-**Status:** live · **Tier:** 2 · Product: [`VISION-education-hub.md` §11](../../../app/(core)/education/VISION-education-hub.md) (the vision wins on drift)
+**Status:** live · **Tier:** 2 · Product: common-docs/systems/education/VISION.md (the vision wins on drift)
 
 ## Purpose
 

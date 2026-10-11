@@ -1,7 +1,7 @@
 # Spoken Practice — FEATURE.md
 
 **Route:** `/education/practice-oral` (deep-link a mode with `?mode=oral_exam|interview_prep|debate|pronunciation`; server shell → client island, entry registered in `features/education/data/tools.ts` as `practice-oral`).
-**Status:** Live. Product: VISION-education-hub.md (oral exam, interview prep, debate, pronunciation) and §6 (spoken AI grading).
+**Status:** Live. Product: common-docs/systems/education/VISION.md (oral exam, interview prep, debate, pronunciation; spoken AI grading).
 
 Real-time spoken grading of open-ended answers in four modes. The student answers OUT LOUD; a
 mode-framed examiner / interviewer / debate opponent / language coach poses grounded prompts,

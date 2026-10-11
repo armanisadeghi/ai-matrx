@@ -396,3 +396,28 @@ export function alarmAgentData(record: SpendAlarmRecord, occurrences: SpendAlarm
     })),
   };
 }
+
+// ── Display: no raw ids in a headline ──────────────────────────────────────
+
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+export const LEVEL_LABEL: Record<AlarmLevel, string> = { critical: "Critical", warning: "Needs a decision", info: "Info" };
+
+/** The title with the subject's id swapped for its name, and any other raw id dropped. */
+export function alarmHeadline(title: string, subjectId?: string | null, subjectName?: string | null): string {
+  let out = title;
+  if (subjectId && subjectName) out = out.split(subjectId).join(subjectName);
+  out = out.replace(/\s*\(?\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b\)?/gi, "");
+  return out.replace(/[:\s]+$/, "").replace(/\s{2,}/g, " ").trim();
+}
+
+export function hasRawId(text: string): boolean {
+  return new RegExp(UUID_RE.source, "i").test(text);
+}
+
+/** What it cost, or would have cost, in one short phrase; null when nothing was measured. */
+export function alarmCostLine(cost: number | null | undefined, avoided: number | null | undefined, fmt: (n: number) => string): string | null {
+  if (cost != null) return `${fmt(cost)} spent`;
+  if (avoided != null) return `${fmt(avoided)} kept from spending`;
+  return null;
+}

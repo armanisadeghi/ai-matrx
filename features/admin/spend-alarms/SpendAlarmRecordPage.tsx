@@ -39,7 +39,9 @@ import {
   SPEND_ALARMS_PATH,
   alarmActions,
   alarmAgentData,
+  alarmHeadline,
   fetchSpendAlarm,
+  LEVEL_LABEL,
   fetchSpendAlarmOccurrences,
   fetchTaskState,
   refHref,
@@ -57,7 +59,6 @@ const LEVEL_TONE: Record<AlarmLevel, "destructive" | "warning" | "info"> = {
   warning: "warning",
   info: "info",
 };
-const LEVEL_LABEL: Record<AlarmLevel, string> = { critical: "Critical", warning: "Needs a decision", info: "Info" };
 
 type Pending =
   | { kind: "resolve" }
@@ -285,7 +286,7 @@ export function SpendAlarmRecordPage({ id }: { id: string }) {
           { label: "Billing", href: "/administration/billing" },
           { label: "Alarms", href: SPEND_ALARMS_PATH },
         ]}
-        record={{ name: record?.title ?? (loading ? "Alarm" : "Alarm not found") }}
+        record={{ name: record ? alarmHeadline(record.title, record.subject_id, record.subject_name) : loading ? "Alarm" : "Alarm not found" }}
         status={record ? { label: statusLabel, tone: record.status === "open" ? LEVEL_TONE[record.level] : "neutral" } : undefined}
         actions={headerActions}
       />

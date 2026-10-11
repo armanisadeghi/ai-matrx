@@ -1,6 +1,6 @@
 // features/education/classes/constants.ts
 //
-// The Per-Class Hub is SCOPES-NATIVE (W2-class-hub.md): a "class" is a scope
+// The Per-Class Hub is SCOPES-NATIVE (features/education/classes/FEATURE.md): a "class" is a scope
 // value under a per-user "Class" scope type, and class↔content is a
 // platform.associations edge (source=content → target=('scope', classId)).
 // This file holds the reserved identifiers the class layer is built on. It

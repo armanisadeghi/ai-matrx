@@ -2,7 +2,7 @@
 
 // features/education/classes/components/ClassesHome.tsx
 //
-// List-view-first home for the Per-Class Hub (W2-class-hub.md). Lists the
+// List-view-first home for the Per-Class Hub (features/education/classes/FEATURE.md). Lists the
 // student's classes (each a scope) with a New button; click a class → its hub.
 // Matches the education tool-page convention (MemoryHome): centered container,
 // inline header, content floats behind the shell glass. React Compiler on.

@@ -14,7 +14,16 @@ import { readOf } from "@ai-matrx/design-system";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { formatAdminUsd } from "@/components/cost/formatAdminCost";
-import { SPEND_ALARMS_PATH, fetchSpendAlarms, isRinging, spendAlarmHref, type SpendAlarmRecord } from "./spendAlarms";
+import {
+  LEVEL_LABEL,
+  SPEND_ALARMS_PATH,
+  alarmCostLine,
+  alarmHeadline,
+  fetchSpendAlarms,
+  isRinging,
+  spendAlarmHref,
+  type SpendAlarmRecord,
+} from "./spendAlarms";
 
 type StatusFilter = "ringing" | "snoozed" | "resolved" | "all";
 
@@ -55,6 +64,7 @@ export function SpendAlarmsBoard() {
       filter: "select",
       tone: (r) => (r.level === "critical" ? "danger" : r.level === "warning" ? "warning" : "muted"),
       sortValue: (r) => LEVEL_RANK[r.level],
+      cell: (r) => LEVEL_LABEL[r.level],
       kpi: [
         { op: "count", id: "critical", label: "Critical", countWhere: (r) => r.level === "critical", tone: (v) => (v > 0 ? "danger" : undefined) },
         { op: "count", id: "warning", label: "To decide", countWhere: (r) => r.level === "warning", tone: (v) => (v > 0 ? "warning" : undefined) },
@@ -62,15 +72,16 @@ export function SpendAlarmsBoard() {
     },
     {
       id: "title",
-      accessorKey: "title",
+      accessorFn: (r) => alarmHeadline(r.title, r.subject_id, r.subject_name),
       header: "Alarm",
       href: (r) => spendAlarmHref(r.id),
       cell: (r) => (
         <Link href={spendAlarmHref(r.id)} className="text-primary hover:underline">
-          {r.title}
+          {alarmHeadline(r.title, r.subject_id, r.subject_name)}
         </Link>
       ),
     },
+    { id: "fix", header: "What to do", accessorFn: (r) => r.fix ?? "" },
     { id: "kind", accessorKey: "kind", header: "Kind", filter: "select" },
     {
       id: "subject",
@@ -97,7 +108,7 @@ export function SpendAlarmsBoard() {
       id: "cost_usd",
       accessorKey: "cost_usd",
       header: "Cost",
-      cell: (r) => (r.cost_usd == null ? "—" : formatAdminUsd(r.cost_usd)),
+      cell: (r) => alarmCostLine(r.cost_usd, r.cost_avoided_usd, formatAdminUsd) ?? "—",
       kpi: { op: "sum", label: "Cost" },
     },
   ];

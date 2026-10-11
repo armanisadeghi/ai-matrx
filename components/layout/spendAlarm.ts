@@ -1,5 +1,5 @@
 import type { SystemAnnouncement } from "@/types/feedback.types";
-import { spendAlarmHref } from "@/features/admin/spend-alarms/spendAlarms";
+import { alarmHeadline, spendAlarmHref } from "@/features/admin/spend-alarms/spendAlarms";
 
 /**
  * Spend alarms ride the existing super-admin delivery rail: a targeted
@@ -32,6 +32,9 @@ export type SpendAlarm = {
   /** Always the record page (`/administration/billing/alarms/<id>`), or null with no record. */
   link: string | null;
   count: number;
+  /** What the alarm's occurrences spent, or what the refusal kept from being spent (null = not measured). */
+  costUsd: number | null;
+  costAvoidedUsd: number | null;
   lastAt: string;
   /** The person an account alarm is about (a user id), so a name can replace the raw id. */
   subjectUserId: string | null;
@@ -58,10 +61,12 @@ export function toSpendAlarm(a: SystemAnnouncement): SpendAlarm | null {
     severity,
     level,
     fix: typeof meta.fix === "string" && meta.fix ? meta.fix : null,
-    title: a.title,
+    title: alarmHeadline(a.title, typeof meta.subject_id === "string" ? meta.subject_id : null, typeof meta.subject_name === "string" ? meta.subject_name : null),
     detail: a.message.split("\n\nOpen: ")[0].split("\n\nHappened ")[0],
     link: recordId ? spendAlarmHref(recordId) : null,
     count,
+    costUsd: typeof meta.cost_usd === "number" ? meta.cost_usd : null,
+    costAvoidedUsd: typeof meta.cost_avoided_usd === "number" ? meta.cost_avoided_usd : null,
     lastAt: typeof meta.last_at === "string" ? meta.last_at : a.updated_at,
     subjectUserId:
       meta.subject_type === "account" && typeof meta.subject_id === "string" ? meta.subject_id : null,

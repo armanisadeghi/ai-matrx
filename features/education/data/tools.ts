@@ -1,10 +1,9 @@
 // features/education/data/tools.ts
 //
 // APPLICATION TOOLS registry → /education/<slug> (the interactive app layer).
-// All 17 tools are BUILT and render real routes — nothing here renders a
+// Every tool here is BUILT and render real routes — nothing here renders a
 // placeholder. `status: "live"` means a working desktop happy path exists;
-// mobile parity and depth vary per tool (see the education-platform program in
-// common-docs for the measured gaps and the IC-13 claim register).
+// mobile parity and depth vary per tool (status: common-docs/systems/education/STATE.md).
 //
 // `capabilities` is a BUILDER CHECKLIST, not marketing. `visionRef` pins each
 // tool to its source-of-truth section in the canonical vision
@@ -350,7 +349,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
     letter: "Cl",
     status: "live", // W2 Per-Class Hub — scopes-native (class = scope; content↔class = platform.associations); no new tables
     accessTier: "free",
-    visionRef: "W2-class-hub.md (Wave 2 — per-class hub); VISION §14 Collaboration",
+    visionRef: "VISION §14 Collaboration",
     capabilities: [
       "Add the courses you take; each class is a scope in your organization",
       "Tag decks, quizzes, notes, media, and files to a class (ClassPicker → local scope tags)",

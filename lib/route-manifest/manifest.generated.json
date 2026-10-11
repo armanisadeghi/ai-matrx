@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1401,
+  "routeCount": 1403,
   "routes": [
     {
       "pattern": "/",
@@ -552,6 +552,16 @@
       "pattern": "/administration/billing",
       "status": "live",
       "source": "app/(admin)/administration/billing/page.tsx"
+    },
+    {
+      "pattern": "/administration/billing/alarms",
+      "status": "live",
+      "source": "app/(admin)/administration/billing/alarms/page.tsx"
+    },
+    {
+      "pattern": "/administration/billing/alarms/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/billing/alarms/[id]/page.tsx"
     },
     {
       "pattern": "/administration/billing/approvals",

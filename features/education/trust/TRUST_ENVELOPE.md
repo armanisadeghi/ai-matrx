@@ -104,7 +104,18 @@ duplicated result unions (`SpokenResult`, the slice's `GradeResult`, assessment'
 Every **generation** agent emits `trust` per item; every **grounded** agent (source-generation,
 tutor) is instructed to **refuse rather than guess** — return `confidence:"not_in_material"` with
 empty `citations` instead of inventing an answer; agent definitions live in the database behind
-their mandates. The two reference retrofits
+their mandates. Three rules every generation prompt carries (prompt rules, never a client filter):
+
+- **Grounded generation:** each item cites the exact passage it came from. When the source arrives
+  with `### Chunk <chunk_id>` markers, echo that id as `sourceId` (`sourceKind:"chunk"`), the page
+  as `locator`, the supporting sentence as `excerpt`. An item the material cannot support is
+  dropped, never invented.
+- **Ungrounded generation** (cards from a bare topic): `citations:[]`, `confidence:"inferred"`, no
+  `groundedIn`.
+- **Grounded answering:** when the material does not support the question, answer with
+  `not_in_material` and offer general knowledge as an explicit choice.
+
+The two reference retrofits
 are mandates `flashcards.generate_from_source` (real citations) and `flashcards.help_live` (honest refusal).
 
 ## Where it lives on the wire

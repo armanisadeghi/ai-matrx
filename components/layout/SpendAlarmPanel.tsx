@@ -14,6 +14,8 @@ import {
 import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
+import { alarmCostLine } from "@/features/admin/spend-alarms/spendAlarms";
 import { countByLevel, sortSpendAlarms, type AlarmLevel, type SpendAlarm } from "./spendAlarm";
 
 interface SpendAlarmPanelProps {
@@ -97,6 +99,7 @@ export default function SpendAlarmPanel({ alarms, onOpen, onResolve, onSnooze, o
             const style = LEVEL_STYLE[alarm.level];
             const Icon = style.Icon;
             const isResolving = resolving === alarm.id;
+            const cost = alarmCostLine(alarm.costUsd, alarm.costAvoidedUsd, formatAdminUsd);
             return (
               <li
                 key={alarm.ackKey}
@@ -116,7 +119,8 @@ export default function SpendAlarmPanel({ alarms, onOpen, onResolve, onSnooze, o
                     <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{alarm.detail}</p>
                     <p className="mt-1 text-xs font-medium text-foreground">
                       <span className={style.text}>{style.label}</span>
-                      {alarm.fix ? <span>{` - ${alarm.fix}`}</span> : null}
+                      {cost ? <span className="text-muted-foreground">{` · ${cost}`}</span> : null}
+                      {alarm.fix ? <span>{` · ${alarm.fix}`}</span> : null}
                     </p>
                     {isResolving ? (
                       <div className="mt-2 flex flex-col gap-2">
@@ -148,7 +152,7 @@ export default function SpendAlarmPanel({ alarms, onOpen, onResolve, onSnooze, o
                       <div className="mt-2 flex items-center gap-2">
                         {alarm.link ? (
                           <Button
-                            variant="outline"
+                            variant="primary"
                             type="button"
                             icon={<ArrowRight />}
                             title="Open this alarm's record"

@@ -2,7 +2,7 @@
 
 // features/education/classes/components/ClassHubView.tsx
 //
-// The per-class hub (W2-class-hub.md §3 + Convergence C): a course-scoped
+// The per-class hub (common-docs/systems/education/classes-and-creators/STATE.md): a course-scoped
 // workspace that aggregates everything tagged to the class scope, PLUS the
 // membership + access-mode layer — an access badge, the Members/roster panel
 // (owner manages requests + members), and the Join/Request/Enroll surface for a

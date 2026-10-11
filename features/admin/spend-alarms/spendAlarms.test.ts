@@ -73,3 +73,17 @@ describe("spend alarm record doors", () => {
     expect(data.occurrences[0]!.run_id).toBe("run-7");
   });
 });
+
+import { alarmHeadline, hasRawId } from "./spendAlarms";
+
+describe("headlines carry no raw ids", () => {
+  it("swaps the subject id for its name and drops any other id", () => {
+    const id = "6b6b4e45-4699-4860-8dea-d8a60e07d69a";
+    expect(alarmHeadline(`Run held for spend approval: agent ${id}`, id, "Keyword classifier")).toBe(
+      "Run held for spend approval: agent Keyword classifier",
+    );
+    const bare = alarmHeadline(`Run held for spend approval: agent ${id}`, id, null);
+    expect(hasRawId(bare)).toBe(false);
+    expect(alarmHeadline("Spend spike: Platform spend, last hour")).toBe("Spend spike: Platform spend, last hour");
+  });
+});

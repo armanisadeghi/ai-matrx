@@ -1,6 +1,6 @@
 # FEATURE.md — AI Tutor (`features/education/tutor`)
 
-**Status:** `active` · **Tier:** `1` · Product: `app/(core)/education/VISION-education-hub.md` §4.
+**Status:** `active` · **Tier:** `1` · Product: common-docs/systems/education/VISION.md.
 
 One conversational tutor, grounded in the learner's OWN material, remembering across sessions and
 honest about the edge of what it knows. Not a new chat store: the canonical `/chat` agent-execution

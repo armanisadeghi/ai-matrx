@@ -46,6 +46,8 @@ const mk = (over: Partial<SpendAlarm>): SpendAlarm => ({
   detail: "A run was refused.",
   link: "/administration/billing/alarms/rec-x",
   count: 1,
+  costUsd: null,
+  costAvoidedUsd: null,
   lastAt: "2026-10-10T10:00:00Z",
   subjectUserId: null,
   ...over,
