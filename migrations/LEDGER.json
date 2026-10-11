@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-10T22:52:41.461Z",
+  "generated_at": "2026-10-11T00:22:00.894Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -109,6 +109,30 @@
       "filename": "accesssetup_j_memo_hits_answer_first.sql",
       "checksum": "bbf0a4cbcc86943997d4fd7b2b6ac9714b45570bc09415a02763e6af52c11983",
       "applied_at": "2026-10-10 22:18:45.497257+00"
+    },
+    "migrations/campaign/accesssetup_store_a_the_column_answers_are_frozen_as_the_oracle.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_store_a_the_column_answers_are_frozen_as_the_oracle.sql",
+      "checksum": "39cb4b8d003960cbab311a6148ebc8dab4980c0ca698d365e5680da50a7e0832",
+      "applied_at": "2026-10-11 00:14:45.439814+00"
+    },
+    "migrations/campaign/accesssetup_store_b_store_seats_resolve_from_the_row.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_store_b_store_seats_resolve_from_the_row.sql",
+      "checksum": "c66bcd1cd2979c0547189b30c398f50d55923f963d2a57c7d595a7cd11bac6cb",
+      "applied_at": "2026-10-11 00:21:14.282697+00"
+    },
+    "migrations/campaign/accesssetup_store_c_a_column_names_its_part.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_store_c_a_column_names_its_part.sql",
+      "checksum": "76d609de72467a1aeaa8493d07f5558e37a3acf2ab5c4a4c7f0156e1c847a1d9",
+      "applied_at": "2026-10-11 00:21:35.926533+00"
+    },
+    "migrations/campaign/accesssetup_store_d_parts_answer_for_columns.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesssetup_store_d_parts_answer_for_columns.sql",
+      "checksum": "f7e88a6c7c5072f7b4ca08d6a3b08a5ef526d11bca5e4f98f825701dbb0f7de0",
+      "applied_at": "2026-10-11 00:21:51.087704+00"
     },
     "migrations/campaign/agentsondata_a_a_person_allows_an_agent_the_rest_of_one_chat.sql": {
       "source": "matrx-frontend",
