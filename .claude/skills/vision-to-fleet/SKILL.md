@@ -75,7 +75,7 @@ really?* (see the benchmark rule below).
 ## Phase 1 — Vision capture
 
 Draft the VISION document — the single most load-bearing artifact; everything downstream cites
-it. Follow the education example's register (`app/(core)/education/VISION-education-hub.md`):
+it. Follow the education example's register (`common-docs/systems/education/VISION.md`):
 **capability voice, not aspiration voice** — "the platform generates X" not "we hope to build X"
 — covering: who it serves (segments table), the core feature set (numbered sections, one per
 pillar, dense bullets), platform architecture status table (✅ live / 🔲 roadmap — honest),

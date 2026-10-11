@@ -2,7 +2,7 @@
 //
 // Phase 4 stretch (Flashcards Competitive Parity Push) — a cheap/fast-model
 // per-card tip, surfaced right after grading (not just end-of-session). The
-// lane (FC_MANDATES.microCoach, AGENT_SPECS.md §11) resolves through the
+// lane (FC_MANDATES.microCoach) resolves through the
 // mandate — swap the agent behind it at /mandates (the old
 // localStorage agent-id override is RETIRED; bindings replaced it).
 //

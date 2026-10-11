@@ -3,7 +3,7 @@
 // Static configuration for the Education Hub: the discovery axes and the
 // content engine. Registries (data/*) hold the page-level entries; this file
 // holds the structural skeleton everything maps onto. See
-// VISION-education-hub.md for the WHY.
+// common-docs/systems/education/VISION.md for the WHY.
 
 import {
   BookOpen,

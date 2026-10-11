@@ -3,7 +3,7 @@
 // STUDY AIDS axis registry → /education/study-aids/<slug>.
 // These are MARKETING pages for each study-aid TYPE (what it is, who it helps).
 // Each links to its interactive APP tool at /education/<tool> (the content→app
-// conversion bridge). Tracks VISION-education-hub.md §1,2,8,9,10,11.
+// conversion bridge). Tracks common-docs/systems/education/VISION.md §1,2,8,9,10,11.
 
 import {
   Layers,

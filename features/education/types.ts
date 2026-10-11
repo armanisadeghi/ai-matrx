@@ -5,7 +5,7 @@
 // entry (see `features/education/data/*`). Adding a page == adding an entry.
 //
 // SOURCE OF TRUTH for WHAT we build is the vision doc:
-//   app/(core)/education/VISION-education-hub.md
+//   common-docs/systems/education/VISION.md
 // This file only describes the SHAPE of the data, never the strategy. If the
 // content here drifts from the vision, the vision wins — report the drift.
 

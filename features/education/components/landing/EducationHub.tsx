@@ -1,7 +1,7 @@
 // Server component. The Education Hub home (/education). Bespoke landing built
 // from the shared section primitives + axis config — the one entry point that
 // routes users into all five discovery axes, the content engine, and the tools.
-// 100% server-rendered. Tracks VISION-education-hub.md.
+// 100% server-rendered. Tracks common-docs/systems/education/VISION.md.
 import { GraduationCap, Upload, Trophy, ArrowRight, Library, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";

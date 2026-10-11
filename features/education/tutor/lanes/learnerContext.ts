@@ -2,7 +2,7 @@
 //
 // Phase 4 — pure helpers that turn a study surface's already-loaded state
 // (cards, this-session results, mastery) into the REAL learner-context
-// variables `fc_help_live` and `fc_review_batch` expect (AGENT_SPECS.md §6-7)
+// variables `fc_help_live` and `fc_review_batch` expect (agent definition in the DB)
 // — replacing the long-standing `recent_correct: []` / `struggled_topics: []`
 // stubs with actual signal. No network calls in here: due-count and
 // per-card attempt history are fetched by the caller (studyService) since
@@ -66,7 +66,7 @@ export function buildRecentSessionContext(
   };
 }
 
-/** `fc_review_batch`'s `attempts` shape (AGENT_SPECS.md §7). */
+/** `fc_review_batch`'s `attempts` shape (agent definition in the DB). */
 export interface ReviewAttempt {
   front: string;
   result: ReviewResult | null;

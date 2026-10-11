@@ -8,7 +8,7 @@
 //   • College / Graduate & Professional: grouped bands
 // Individual grade pages are `indexHidden` flat siblings, surfaced from the
 // Elementary band via `children`. The AI adapts vocabulary/difficulty/tone to
-// the level (see VISION-education-hub.md "Who We Serve").
+// the level (see common-docs/systems/education/VISION.md "Who We Serve").
 
 import {
   Baby,

@@ -1,7 +1,7 @@
 // features/education/tutor/lanes/reviewSession.ts
 //
 // Phase 4 (Flashcards Competitive Parity Push) — the mode-agnostic
-// end-of-session "professor" review (FC_MANDATES.reviewBatch, AGENT_SPECS.md §7),
+// end-of-session "professor" review (FC_MANDATES.reviewBatch),
 // generalized out of Fast Fire so it can run at the end of ANY completed
 // study session (classic set study, adaptive due review, weak-area drill),
 // not just Fast Fire — writing `study_session.session_review` the same way,

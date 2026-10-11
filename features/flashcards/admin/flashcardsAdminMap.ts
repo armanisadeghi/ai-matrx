@@ -5,7 +5,7 @@
 // surfaces flashcards inline in chat, the canonical data layer (fcService +
 // the study hook over the shared study spine), the education.fc_* tables and
 // study RPCs it writes through, and the AI agents that will author/grade cards
-// (specs in features/education/docs/AGENT_SPECS.md — agents not built yet).
+// (their definitions live in the database; keys in features/flashcards/data/mandates.ts).
 //
 // Keep in sync as routes/components are added — the drift warnings on the
 // rendered page flag anything under app/(core)/education/flashcards not listed.
@@ -16,13 +16,9 @@ export const flashcardsAdminMap: FeatureAdminMap = {
   name: "Flashcards",
   slug: "flashcards",
   description:
-    "The flashcard creation + study tool under /education/flashcards. Canonical content lives in the education schema (fc_set / fc_card / fc_detail); studying writes the shared study spine (study_attempt + item_mastery). Today: a list-first browser + set detail + a classic-flip study surface. Creation / AI generation flows are out of scope until the fc_* agents are built (specs in AGENT_SPECS.md).",
+    "The flashcard creation + study tool under /education/flashcards. Canonical content lives in the education schema (fc_set / fc_card / fc_detail); studying writes the shared study spine (study_attempt + item_mastery). Today: a list-first browser + set detail + a classic-flip study surface.",
   docs: [
-    {
-      label: "Flashcard agent specs",
-      href: "/features/education/docs/AGENT_SPECS.md",
-    },
-    { label: "Education VISION", href: "/education/VISION-education-hub.md" },
+    { label: "Education VISION", href: "/common-docs/systems/education/VISION.md" },
     { label: "Education admin map", href: "/education/admin" },
   ],
 

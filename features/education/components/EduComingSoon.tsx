@@ -15,7 +15,7 @@ interface EduComingSoonProps {
   title: string;
   description: string;
   capabilities?: string[];
-  /** e.g. "VISION-education-hub.md §3 — FastFire". Keeps the stub honest. */
+  /** e.g. "common-docs/systems/education/VISION.md §3 — FastFire". Keeps the stub honest. */
   visionRef?: string;
   status?: EduStatus;
   /** For sub-route placeholders: which surface this is + how it's gated

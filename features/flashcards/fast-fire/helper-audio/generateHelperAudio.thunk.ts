@@ -3,7 +3,7 @@
 // PRE-GENERATED "I'm confused" helper audio — the zero-wait help lane the
 // FastFire spec named as its headline ("fast fire = you never wait on the AI";
 // Arman Q15 ruling 2026-08-20: all five missing FastFire features are wanted,
-// helper audio FIRST). AGENT_SPECS.md §4 (`fc_write_helper`) is the contract:
+// helper audio FIRST). The `fc_write_helper` agent definition in the DB is the contract:
 // for each card, a short spoken-friendly explanation is written ahead of time,
 // TTS-rendered ONCE to a durable file, and cached as
 // fc_detail(kind='helper', audio_file_id) — so tapping "I'm confused" mid-drill

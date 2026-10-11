@@ -17,7 +17,7 @@
 //
 // This file is the SINGLE SOURCE OF TRUTH. The content-IR kind schemas mirror it
 // (so it streams natively inside the same envelope the cards already use) and
-// AGENT_SPECS.md documents the agent-side contract — but the TypeScript here is
+// the bound agent's DB definition holds the agent-side contract — but the TypeScript here is
 // canonical. Do not fork a second citation/confidence shape anywhere.
 
 /**

@@ -2,7 +2,7 @@
 //
 // FEATURES axis registry → /education/features/<slug>.
 // Marketing pages for the platform's differentiators (the "why we win" set).
-// Tracks VISION-education-hub.md §3,4,5,6,9,12,16,17 + "Why We Win".
+// Tracks common-docs/systems/education/VISION.md §3,4,5,6,9,12,16,17 + "Why We Win".
 
 import {
   Flame,

@@ -1,7 +1,7 @@
 // features/education/tutor/lanes/helpLive.ts
 //
 // Phase 4 (Flashcards Competitive Parity Push) — the mode-agnostic "I'm
-// confused" live help lane (FC_MANDATES.helpLive, AGENT_SPECS.md §6),
+// confused" live help lane (FC_MANDATES.helpLive),
 // generalized out of Fast Fire so EVERY study surface (classic set study,
 // adaptive due review, weak-area drill, Fast Fire) can offer the same AI
 // tutor with real learner context, not a stub. The lane resolves through the

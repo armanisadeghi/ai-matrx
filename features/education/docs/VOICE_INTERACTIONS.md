@@ -1,76 +1,31 @@
-# Voice Interactions — the platform behind "speak your answer"
+# Voice interactions — one engine behind "speak your answer"
 
-> 2026-07-04. The single-card "Test me" voice quiz is the FIRST of many voice
-> interaction surfaces (debate practice, role-play classes, oral exams). They are
-> all the same three moves — **capture spoken audio → grade it against a rubric →
-> respond** — so they share one hardened engine. This doc is the map so the next
-> ones are cheap and consistent.
+Every voice surface (single-card Test me, FastFire, spoken practice) is the same three moves:
+capture audio, grade it against a rubric, respond. They share one engine.
 
-## The layers (bottom-up, all reusable)
+**The invariant: a new voice surface is a new prompt/rubric plus new orchestration UI, never a
+new capture or grading path.** Re-implementing audio slicing or grade parsing means extend the
+core instead.
 
-1. **Capture core** — `features/flashcards/fast-fire/audio/continuousCapture.ts`.
-   Web-Audio PCM → sample-accurate WAV clips over one warm mic stream. `startContinuousCapture`
-   / `startCardClip` / `stopCardClip` / `stopContinuousCapture` / `subscribeLevel`.
-2. **Grading core** — `features/flashcards/fast-fire/agents/grading-core.ts`.
-   Slice-DECOUPLED: `uploadResponseClip` (durable file_id) + `runSpokenGrader`
-   (launch grader mandate → pass `variables.answer_audio` → execute → wait →
-   `coerceSpokenGrade` → return a `SpokenGrade`). The no-audio guard lives here.
-   **Every voice surface grades through this** — it is the crown jewel, kept in
-   one place. `messageParts` is not a spoken-grading input path.
-3. **Answer primitive** — `agents/gradeSpokenAnswer.thunk.ts`. `upload → grade →
-   record on the study spine → RETURN the grade` (awaited). Takes an optional
-   `itemType`/`itemId` so any prompt (a card, a debate turn, a role-play beat) can
-   be graded and counted toward mastery.
-4. **Experience** — `voice-test/SingleCardVoiceTest.tsx`. The self-contained state
-   machine + UI: Start → Preparing → ask (spoken if cached) → timed answer
-   (countdown ring + mic glow) → grade → Go again. Owns its mic lifecycle + timer.
-5. **Entry** — `voice-test/VoiceTestButton.tsx` (+ `CardVoiceTestDialog`). One
-   import, give it a card. **This is what goes on any surface.**
+## The layers (all under `features/flashcards/fast-fire/`)
 
-## Built
-- Single-card "Test me" on the classic study surface + the adaptive Review-due
-  surface (via `StudyDeck`'s `voiceTestForCard` prop — passed by
-  `ReviewDueSurface`, `WeakAreaDrillSurface`, `LearnSurface`, `StudySurface` —
-  pulling each card's cached spoken-front so the question is asked aloud).
-  Records a `study_attempt` (`method='voice_test'`) toward mastery.
-- **Chat flashcard blocks** — `<VoiceTestButton>` renders per card in the in-chat
-  renderer (`components/mardown-display/blocks/flashcards/FlashcardItem.tsx:241`).
+1. Capture: `audio/continuousCapture.ts` (PCM to WAV clips over one warm mic stream).
+2. Grading: `agents/grading-core.ts`. `runSpokenGrader` is the only grader call; it sends
+   `front`, `back`, `seconds_allowed`, optional `rubric` and the offered value `answer_audio`
+   (`messageParts` is not a spoken-grading input). Fix output shape in the bound agent's DB
+   definition, never in code.
+3. Answer primitive: `agents/gradeSpokenAnswer.thunk.ts` (upload, grade, record on the study
+   spine, return the grade). Takes an optional `itemType`/`itemId` so any prompt counts toward
+   mastery.
+4. Experience and entry: `voice-test/SingleCardVoiceTest.tsx`, dropped onto any surface via
+   `voice-test/VoiceTestButton.tsx`.
 
-## Next — fan out the button (cheap; it's a drop-in)
-- Set-detail card grid: a "Test me" per card.
-- **Window panels**: render `SingleCardVoiceTest` directly in a panel, or register
-  a `cardVoiceTest` overlay so it's dispatchable from anywhere without a button.
-- A "quiz me on this whole set, one at a time" loop = `VoiceTestButton` walking a
-  card list (a thin wrapper over the same component).
+Grader mandate: `flashcards.grade_spoken`. Spoken questions (TTS) read their text and style
+from `spoken-front/variations.ts`. Spoken practice has its own mode-aware mandates (see
+`../spoken-practice/FEATURE.md`).
 
-## Then — the bigger voice surfaces (same engine)
-- **Debate practice**: two-sided timed turns; each turn is a `gradeSpokenAnswer`
-  with a debate rubric (persuasiveness, evidence, rebuttal). The capture core +
-  grading core are unchanged — only the prompt/rubric + a turn-based state machine
-  are new.
-- **Role-play classes** (student-teaches-student with an AI): a multi-party session
-  where each spoken turn is captured + optionally graded/coached. Reuses capture +
-  grading; adds role/turn orchestration + a live AI participant (the agent stream).
-- **Oral exams** (VISION §6 "grade anything"): the same, with a formal rubric and
-  the full-session review (`fc_review_batch`-style professor pass).
+## Consumers
 
-The invariant: **new voice surface = new prompt/rubric + new orchestration UI, NOT
-a new capture or grading path.** If you find yourself re-implementing audio slicing
-or grade parsing, stop — extend the core instead.
-
-## Grading agent + voice (for tuning)
-- Grader mandate: `flashcards.grade_spoken` (`FC_MANDATES.gradeSpoken`), resolved
-  live from database bindings. `runSpokenGrader` sends `front` / `back` /
-  `seconds_allowed` / `rubric?` plus the guaranteed file offered value
-  `answer_audio`. Fix the bound agent's output in the database, never in code.
-- Spoken questions (TTS): agent `04f69dff` ("Generate custom speech",
-  `gemini-3.1-flash-tts-preview`, voice = `settings.tts_voice`). The text + style
-  are `fast-fire/spoken-front/variations.ts`.
-
-## Change log
-- 2026-08-30 — Reconciled the completed mandate/media migration: every spoken
-  caller routes through `runSpokenGrader`, and audio travels only as the named
-  `answer_audio` offered value.
-- 2026-07-04 — Created with the single-card "Test me" landing. Layered the reusable
-  capture/grading/answer/experience/entry stack so debate + role-play are additive.
-</content>
+Study surfaces pass `voiceTestForCard` to `StudyDeck`; the chat flashcard block renders
+`VoiceTestButton` per card. Not built: a per-card Test me in the set-detail grid, a window
+panel/overlay entry, a whole-set quiz-me loop.

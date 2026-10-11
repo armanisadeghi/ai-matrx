@@ -6,7 +6,7 @@
 // FLAT, exam-keyed slugs. An exam is a CROSS-CUTTING entity that references
 // subjects + a level rather than nesting under them. Course-aligned exams (AP/IB)
 // are dual-listed: canonical content lives with the subject, and also appears
-// here. See VISION-education-hub.md §8 + "Standardized exam support".
+// here. See common-docs/systems/education/VISION.md §8 + "Standardized exam support".
 
 import { Target, Stethoscope, Scale, GraduationCap, Calculator, FlaskConical, Atom, Brain, Landmark, Code2, Globe2, HeartPulse, Briefcase, BookOpen, Sigma, CalendarDays, PenLine, FileText, ListChecks, Pill, ClipboardCheck, Workflow, Microscope, LineChart, TrendingUp } from "lucide-react";
 import type { AxisEntry } from "../types";

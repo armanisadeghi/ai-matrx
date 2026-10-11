@@ -6,7 +6,7 @@
 // separate static route /education/subjects/quick-math (the real, full-
 // functionality math build reserves /subjects/math's tools later).
 //
-// Content here must track VISION-education-hub.md. Flesh entries with sections;
+// Content here must track common-docs/systems/education/VISION.md. Flesh entries with sections;
 // a stub (name/tagline/description) still renders a clean page.
 
 import {

@@ -161,7 +161,7 @@ export async function writePendingEnhancement(
   }
 }
 
-/** fc_detail kinds the enrich agent is allowed to emit (mirrors AGENT_SPECS §3). */
+/** fc_detail kinds the enrich agent is allowed to emit (mirrors the enrich agent's DB definition). */
 const VALID_DETAIL_KINDS = [
   "helper",
   "example",
