@@ -23,8 +23,7 @@ Contract: [`TRUST_ENVELOPE.md`](./TRUST_ENVELOPE.md) (cited by `features/content
 ## Open
 
 - **Page-precise landing for non-RAG files:** `SourceCitation.page` is captured and persisted, but `openFilePreview(fileId)` takes no page and `PreviewPane` is not handed one, so `openCitationSource` opens page 1 (the shared `FilePreview`/`PdfPreview` already accept a controlled `pageNumber`). RAG chunk citations do land on their page via the Source Inspector.
-- **Chat attachments:** the legacy chat store (`users.user_flashcard_sets` via `flashcardPersistenceService`) does not thread the attached file's `file_id`, so a deck saved through it cannot backfill an openable ref; the generating agent should emit `fileId`/`url` per citation or that save path should backfill. The canonical `fc_*` adapter path carries the envelope.
-- Non-RAG plain uploads: `CreateFromSource` is RAG-library-only; an unindexed-upload entry point would reuse `attachSourceRefs`.
+- Non-RAG plain uploads: an entry point for unindexed uploads would reuse `attachSourceRefs`.
 - Quiz/audio/notes consumers wire the envelope per the contract's consumers table.
 
 Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/education/STATE.md — read it before touching this feature in ANY repo.

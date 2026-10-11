@@ -68,6 +68,7 @@ via `flashcards.help_live`, whose answer carries a `TrustEnvelope` (`LiveHelpAns
 
 ## Invariants
 
+- The composer draft is read imperatively inside the surface's `getScope()` (`store.getState()`), never through a selector: a selector would re-render the tutor client on every keystroke.
 - Send is metered, view is access-gated: the composer binds `useEntitlement` (`education.tutor_message`,
   limit shown pre-action, blocked pre-send once capped; limits and enforcement live in
   `billing.capability*`, header of `features/entitlements/registry.ts`). The existing-conversation
