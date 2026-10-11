@@ -4,7 +4,7 @@ Organization-scoped project management system. Projects mirror the Organizations
 
 ## Architecture
 
-Projects are owned by organizations (not users directly). Access is controlled by canonical `iam.memberships` through the `mbr_*` RPC services and role-based RLS policies.
+Projects are owned by organizations (not users directly). Access is controlled by the platform's `iam.memberships` through the `mbr_*` RPC services and role-based RLS policies.
 
 ```
 organizations → projects → iam.memberships → auth.users
@@ -28,7 +28,7 @@ organizations → projects → iam.memberships → auth.users
 
 > **Every project belongs to exactly one organization, and organizations are equal** — law: `common-docs/policies/access-ladder.md`. There is no personal project and no personal organization. `createProject` writes to the organization the person selected (`ensureOrgId` holds and asks when none is selected); nothing substitutes one. Any code that still reads `organizations.is_personal` is a defect against the law and goes with the flag; never build on it.
 
-### Canonical project memberships (`iam.memberships`)
+### Project memberships (`iam.memberships`)
 
 | Column       | Type        | Notes                                     |
 | ------------ | ----------- | ----------------------------------------- |
@@ -36,7 +36,7 @@ organizations → projects → iam.memberships → auth.users
 | `created_at` | timestamptz | Auto-set                                  |
 | `invited_by` | uuid        | FK → auth.users                           |
 
-### Canonical project invitations (`iam.invitations`)
+### Project invitations (`iam.invitations`)
 
 Mirrors `organization_invitations` — email-based, token-based, 7-day expiry.
 
@@ -101,10 +101,10 @@ features/projects/
     ├── ProjectList.tsx
     ├── ProjectCard.tsx
     ├── CreateProjectModal.tsx — Thin compat wrapper over ProjectFormSheet (preserves old isOpen/onClose/onSuccess(CreatedProjectInfo) API); used by ResearchInitForm/ProjectList
-    ├── ProjectFormCore.tsx    — Canonical chrome-less create form (name/slug/desc/owner). Single source of truth — don't fork
+    ├── ProjectFormCore.tsx    — The one chrome-less create form (name/slug/desc/owner). Single source of truth — don't fork
     ├── ProjectCreatePanel.tsx — Two-mode wrapper around the core: "Manual" (ProjectFormCore) + "Use AI" (AgentRunWrapper, agent 917074a0…). The body every create surface wraps
     ├── ProjectFormSheet.tsx   — Dialog (desktop) / Drawer (mobile) chrome over ProjectCreatePanel
-    ├── ProjectPicker.tsx      — Canonical complete-list searchable picker; optional org filter + visible New button; opens CreateProjectWindow
+    ├── ProjectPicker.tsx      — The one complete-list searchable picker; optional org filter + visible New button; opens CreateProjectWindow
     ├── ProjectSettings.tsx    — Tabbed settings (General, Members, Invites, Danger)
     ├── ProjectSidebar.tsx
     ├── GeneralSettings.tsx
