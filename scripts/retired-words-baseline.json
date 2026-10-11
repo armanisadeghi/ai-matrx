@@ -34,7 +34,6 @@
       ".claude/skills/drift-audit/SKILL.md": 2,
       "FOUND_DEFECTS.md": 3,
       "docs/db_changes/CANONICAL_DATABASE_SYSTEM.md": 1,
-      "docs/db_rebuild/proposals/flashcard-legacy-retirement.md": 1,
       "docs/protocol/KIND_DIRECTIVES.md": 2,
       "features/admin/relationships/FEATURE.md": 1,
       "features/admin/relationships/access-planner/types.ts": 1,
@@ -369,7 +368,6 @@
       "docs/db_changes/CANONICAL_DATABASE_SYSTEM.md": 3,
       "docs/db_changes/canonicalization_worklog.md": 3,
       "docs/db_rebuild/proposals/brand-offerings-cutover.md": 2,
-      "docs/db_rebuild/proposals/flashcard-legacy-retirement.md": 17,
       "docs/handoffs/gsc-page-stat-retirement.md": 2,
       "docs/handoffs/mermaid-render-block.md": 1,
       "docs/upgrades/type-debt/2026-07-01-fleet-briefs.md": 4,
@@ -1128,7 +1126,6 @@
     },
     "workspace-schema": {
       "docs/db_changes/REACHABILITY-ROLLOUT.md": 2,
-      "docs/db_rebuild/proposals/flashcard-legacy-retirement.md": 2,
       "docs/handoffs/canonical-stream-and-surface-writeback.md": 2,
       "docs/handoffs/tasks-world-class.md": 3,
       "docs/upgrades/type-debt/2026-07-01-fleet-briefs.md": 1,

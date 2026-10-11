@@ -1336,7 +1336,7 @@ export const fcService = {
    * face. Soft-deletes any prior rows of the kind, then inserts the new one.
    * Exactly one of `file_id` / `url` should be set (stored vs hotlinked web
    * image); `alt` lands in `text` (accessibility is not optional here).
-   * Cross-repo contract: common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md.
+   * Cross-repo contract: common-docs/systems/education/flashcard-images/FEATURE.md.
    */
   async setCardImage(
     cardId: string,
@@ -1378,7 +1378,7 @@ export const fcService = {
    * the soft-delete so the row survives as evidence: judge accuracy for
    * `education.card_image_web_source` / `card_image_qc_judge` is only learnable
    * if every "the agent was wrong here" click is written down somewhere the
-   * verdict ledger can later be reconciled against (VISION_AND_PLAN §2.4).
+   * verdict ledger can later be reconciled against (the images FEATURE rules).
    * A silent delete throws that signal away.
    */
   async reviewCardImage(

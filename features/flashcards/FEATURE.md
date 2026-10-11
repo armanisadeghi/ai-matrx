@@ -1,593 +1,100 @@
 # Flashcards — FEATURE
 
-The largest education subsystem (sets, cards, details, study modes, FastFire, editor,
-public deck pages). 🚨 **Start at the education project home:
-`/Users/armanisadeghi/code/common-docs/systems/education/STATE.md`** — its
-GAP_ANALYSIS supersedes any older status claim. This file holds the durable per-feature
-contracts; it was created by the flashcard-images build (2026-08-18) and is deliberately
-narrow — extend it as other lanes land, don't fork a second doc.
-
-**Related:** deck printing is the canonical `flashcardsPrinter` from `@ai-matrx/print`,
-shared with the markdown-block lane and with `/print/flashcards`. The set-detail deck tools
-carry a "More printing" door to the platform print hub
-([`features/print/FEATURE.md`](../print/FEATURE.md)). Never a second print UI.
+The largest education subsystem: decks, cards, detail layers, study modes, Fast Fire, the editor,
+public deck pages. Product truth, status and open work: `/Users/armanisadeghi/code/common-docs/systems/education/STATE.md`.
+Card images: `/Users/armanisadeghi/code/common-docs/systems/education/flashcard-images/FEATURE.md`.
+This file holds the per-feature contracts a code reader can't see. Print is the platform printer
+(`flashcardsPrinter` from `@ai-matrx/print`, hub in [`features/print/FEATURE.md`](../print/FEATURE.md)) — never a second print UI.
 
 ## Data spine
 
-`education.fc_set` / `fc_card` / `fc_detail` (Supabase, direct client reads via
-[data/fcService.ts](./data/fcService.ts)). Set membership is a `platform.associations`
-edge (`fc_card -member-> fc_set`), NOT a column. A card loads as `CardWithDetails`
-(`{...card, position, details: FcDetailRow[]}`). Detail rows are the per-card layer
-system: text layers (`helper`/`example`/`hint`/…), audio (`spoken_front` and
-`helper` + `audio_file_id`), and images (below). All reads filter
-`deleted_at is null`. A text-only layer gains durable TTS audio via
-`fcService.setDetailAudio` (status → `audio_ready`) — the helper-audio lane
-([fast-fire/helper-audio/generateHelperAudio.thunk.ts](./fast-fire/helper-audio/generateHelperAudio.thunk.ts))
-is its consumer.
+`education.fc_set` / `fc_card` / `fc_detail`, read directly from the client through
+[data/fcService.ts](./data/fcService.ts). Set membership is a `platform.associations` edge
+(`fc_card -member-> fc_set`), not a column. A card loads as `CardWithDetails`; detail rows are the
+per-card layers (text layers, audio, `front_image`/`back_image`). Every read filters `deleted_at is null`.
 
-The authenticated `/education/flashcards/**` tool family stops guests in the global
-route boundary before any owned-deck, category, scope, or study-data client mounts.
-Guests redirect through `loginHref` with the requested destination intact. Set detail
-also gates with `getServerAuth` before mounting `SetDetailView`. Public decks use the
-separate `/p/e/fc_set/[id]` lane and its purpose-built RPC.
+- A detail row carries its CARD's `organization_id` (`addDetail` reads and writes it; a null lets a trigger file it in the writer's personal workspace). Guard: `pnpm check:organization-context`.
+- Removals prove they landed: `softDeleteOne` / `setDetailAudio` / `reviewCardImage` ride `tryWriteOne` (`utils/supabase/writeOne.ts`); a PostgREST update RLS filters to zero rows returns no error, so a bare `update().eq()` toasts success while nothing changed. Guard: `data/__tests__/card-removal-proves-it-landed.test.ts`, `pnpm check:single-record-writes`.
+- `fcService.mergeSetMetadata` is THE compare-and-swap merge for `fc_set.metadata`. Keys written there (`source_set`, `source_names`, `continued_from`, …) must be registered in `platform.metadata_reserved_keys` on live, or `platform._metadata_guard` refuses the save.
+- The `/education/flashcards/**` family is authenticated: the route boundary redirects guests through `loginHref` with the destination intact, and set detail also checks `getServerAuth`. Public decks use `/p/e/fc_set/[id]` and a shared deck `/s/<token>`.
+- Retired, do not revive: the Nov-2024 prototype tables `education.flashcard_*` (data, sets, set_relations, history, images) live in schema `graveyard` and were never migrated onto `fc_*`; the old `users.user_flashcard_sets` / `user_flashcard_reviews` system was ported to `education.fc_*` and its last writer (aidream conversation fork) removed. Never write to either.
 
-## Creating a deck — one page (USI-5, 2026-09-28)
+## Routes (`app/(core)/education/flashcards/**`)
 
-`/education/flashcards/new` is THE way to make a deck ([components/create/CreateDeckPage.tsx](./components/create/CreateDeckPage.tsx)):
-**Sources** (the one Source input, `features/resource-manager/source-input/`, surfaceKey
-`flashcards:new`, with "Just a topic" as a tile) → **Style and details** (count, difficulty,
-depth, grade, deck name, focus — one set of controls) → **Make the deck** (live stream, then the
-deck). The "Import a deck file" start tile opens [DeckFileImport](./components/create/DeckFileImport.tsx)
-(Quizlet / CSV / TSV / pasted pairs with preview, Anki `.apkg`, Matrx JSON, library zip — all
-through `persistImportedDeck`, no AI).
+| Route | Component |
+|---|---|
+| `/flashcards` | `components/home/flashcardSetList.tsx` on `EntityListPage`, over server RPCs via `data/deckListService.ts` (the browser never holds the library) |
+| `/new` | `components/create/CreateDeckPage.tsx` (the ONE creation page); `/new/from-source`, `/new/import`, `/education/flashcards-2` redirect here keeping the query (`createDeckHref.ts`) |
+| `/[setId]` | `components/set-detail/SetDetailView.tsx` |
+| `/[setId]/edit` | `components/editor/EditSetView` |
+| `/[setId]/study` `/learn` `/test` `/write` `/match` | `components/study/{Study,Learn,Test,Write,Match}Surface.tsx` over the shared `StudyDeck` |
+| `/[setId]/sessions` | the deck's Progress page (`set-detail/DeckProgressView.tsx`) |
+| `/review`, `/weak-areas` | `ReviewDueSurface`, `WeakAreaDrillSurface` (all of the learner's decks) |
+| `/sessions`, `/sessions/[sessionId]` | `SessionsBrowser` (mode-agnostic) and `components/sessions/FlashcardSessionDetail` |
+| `/progress` | redirect to `/education/progress` |
+| `/admin` | `admin/flashcardsAdminMap.ts` via `FeatureAdminPage` — add every new route/component there |
+| `/education/fastfire` | Fast Fire, code in [fast-fire/](./fast-fire/); URLs in [routes.ts](./routes.ts) |
+| `/print/flashcards` | the print page |
+| `/education/offline` | download/offline panel; the deck snapshot engine is `data/offlineDeck.ts` (a read cache, never a write-back source) |
 
-- Sources → `useSourceSet().resolve()` (`POST /sources/resolve`) → [data/generateDeckFromSources.ts](./data/generateDeckFromSources.ts):
-  the grounded `### Chunk <real id> (page N)` text goes through `education/convert/segmentedGenerate.ts`
-  with `flashcards__generate_from_source` (unchanged variables; grade rides `focus`, a topic next to
-  Sources becomes "Focus on: …"). Every citation is backfilled from ITS OWN Source (file id read from
-  the document row, page from the segment; a note or pasted text opens its own page). A `source`
-  lineage edge per Source through `recordSourceLineage`; `MadeFromSource` shows every origin.
-- A topic alone → `useGenerateCards` with `flashcards__generate_cards` (live preview via Redux envelope).
-- "Wait for the clean version" holds the run with a visible banner, re-reads the manifest every 5 s,
-  and starts itself when ready ("Start now with what is ready" / "Stop waiting").
-- The picks persist (wizardDraft) and are cleared once the deck is made.
-- Old doors are gone: the header's "New deck from a document" / "Import decks" and the
-  `/education/flashcards-2` concept. `/new/from-source` and `/new/import` redirect here keeping the
-  query (`?document=` / `?source=` / `?file=` / `?topic=` / `?name=` preselect; import → `?start=import`)
-  via [createDeckHref.ts](./components/create/createDeckHref.ts).
-- Every generation here launches with `surfaceOwnsOutput: true` (carried on the conversation record,
-  saved with the row, restored on load — see `features/canvas/FEATURE.md`), so neither the stream's
-  commit nor a reload's reconcile materializes a twin deck — neither one per section of a segmented
-  run (a 6-section deck used to land as 7 decks) nor the race-lost twin of a topic run.
-- The most cards one run may make is the feature knob `flashcards.max_cards_per_run` (default 50,
-  platform-locked, agent-set, review 2026-12-01), read once through `data/useMaxCardsPerRun.ts` by
-  both Create deck and Add more cards. A failed read is said on screen and blocks the run; there is
-  no constant fallback.
+Windows: `features/window-panels/windows/flashcards/` (`FlashcardStudyWindow`, `FlashcardItemWindow`, `FlashcardSubcardsWindow`, `FlashcardsBlockWindow`).
 
-## Agent-generated decks — the single-writer contract (D-WP3-4)
+Deck page: card views are `?view=overview|fronts|backs|list|table` (`set-detail/DeckCardViews.tsx`, in the URL so a reload keeps it). Print, Copy, Export and Transform sit in the deck's content-action menu; the platform print hub is its "print-hub" door. Select-cards mode, Merge, Enrich, Illustrate, Add more cards and the offline download button live in `set-detail/`.
 
-A headless generation run has TWO potential fc_set writers: the surface's explicit
-save (from-topic / from-source / convert deck) and the stream's render-block
-materialization (`FLASHCARDS_CANONICAL_ADAPTER`). The contract that keeps them to
-ONE row, keyed by the run's conversation id (every headless generation runs in its
-own fresh conversation):
+## Creating a deck
 
-- **Surfaces never call `createSetWithCards` directly for a generated deck** — they
-  go through `fcService.createGeneratedSetForConversation(conversationId, input, cards)`,
-  which adopts the adapter's set if the adapter won the race (updating
-  name/topic/difficulty) and otherwise creates the set stamped
-  `metadata.source_system="cx_conversation"` / `source_id=<cid>`.
-- **The adapter links, never twins:** before creating, it looks up the
-  cx_conversation stamp for its `info.conversationId` and returns a link to the
-  surface's set. Ordinary multi-deck chat conversations never carry the stamp, so
-  chat behavior is unchanged.
-- Pinned by [`data/__tests__/generated-set-single-writer.test.ts`](./data/__tests__/generated-set-single-writer.test.ts).
+One page: **Sources** (the one Source input, `features/resource-manager/source-input/`, surfaceKey `flashcards:new`) → **Style and details** → **Make the deck**; "Import a deck file" opens `DeckFileImport` (Quizlet/CSV/TSV/pairs, Anki `.apkg`, Matrx JSON, library zip — all via `persistImportedDeck`, no AI). Picks persist in `wizardDraft` until the deck is made.
 
-- **One run, one deck — Try again continues the stopped run's deck (2026-09-30).** A
-  tab-bound run records every conversation it runs in (`useTabBoundRun` → `attach`); after a
-  reload, Try again passes them as `continues`, and `createGeneratedSetForConversation(…, { continues })`
-  continues a deck already made for them (`findGeneratedSetForConversations` →
-  `continueGeneratedSet`: half-made cards archived, the retry's cards added, renamed, restamped
-  with the retry's conversation + `continued_from`) instead of saving a second one. Pinned by
-  [`data/__tests__/try-again-continues-the-stopped-runs-deck.test.ts`](./data/__tests__/try-again-continues-the-stopped-runs-deck.test.ts).
+- Sources go `useSourceSet().resolve()` → [data/generateDeckFromSources.ts](./data/generateDeckFromSources.ts) → `education/convert/segmentedGenerate.ts`; each citation is backfilled from ITS OWN Source; each Source gets a `source` lineage edge (`recordSourceLineage`). A topic alone uses `useGenerateCards`. Flashcards declare `FLASHCARD_SOURCE_DELIVERIES = ["direct"]` (resolved text only). Previews render through `MarkdownStream`.
+- THE COUNT LAW: an explicit card count is delivered exactly (`convert/coverage.ts` folds sections into at most that many passes; `mergeSectionItems` trims and drops near-duplicates). Mechanism and the no-freeze rule (stalled part retried once, failures shown): `education/convert/FEATURE.md`.
+- The most cards one run makes is the knob `flashcards.max_cards_per_run`, read once through `data/useMaxCardsPerRun.ts` by Create deck and Add more cards. A failed read is said on screen and blocks the run; no constant stands in.
+- A card run is tab-bound: its request (`data/cardRunRequest.ts`) is kept device-local by `lib/wizard-draft/useTabBoundRun.ts`, so a reload mid-run shows "stopped" with Try again (there is no server run to re-attach to).
+- The deck's Source set is saved by exactly two writers (`CreateDeckPage` after generation, `AddMoreCardsButton` after adding) via `data/deckSourceSet.ts`; page loads write nothing. Add more cards seeds from it, falls back to lineage.
+- Add more cards is steerable (card-type chips + focus text ride the run request, `foldSteer`) and undoable: each run stamps `metadata.batch_id` on its cards, and Undo archives exactly that batch (`data/undoCardBatch.ts`, soft delete only).
+- A deck made from chat flashcards is named after its subject, never the placeholder "Flashcards" (`utils/deckName.ts`).
 
-### Known limits (single-writer)
+## Agent-generated decks — the single-writer contract
 
-- The dedupe is look-before-write, not a DB constraint (a global unique on
-  `metadata->>conversation_id` would break legitimate multi-deck chat
-  conversations), so a few-millisecond interleave of both writers could in
-  principle still double-create. Observed writer gap in production was ~500ms;
-  live-verified single-set behavior 2026-08-18.
+A headless run has two possible `fc_set` writers: the surface's explicit save and the stream's render-block materialization (`FLASHCARDS_CANONICAL_ADAPTER`). Keep it to ONE row, keyed by the run's conversation id:
 
-## Images on card faces — cross-repo SoR: `common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md`
+- Surfaces never call `createSetWithCards` for a generated deck; they call `fcService.createGeneratedSetForConversation(conversationId, input, cards)`, which adopts the adapter's set if it won the race, else creates it stamped `metadata.source_system="cx_conversation"` / `source_id=<cid>`. The adapter looks up that stamp and links, never twins.
+- Every generation here launches with `surfaceOwnsOutput: true` (on the conversation record, survives reload), so neither the stream commit nor a reload reconcile materializes a twin (a 6-section run once landed as 7 decks).
+- Try again continues the stopped run's deck (`{ continues }` → `continueGeneratedSet`: half-made cards archived, retry's cards added) instead of saving a second.
+- Pinned by `data/__tests__/generated-set-single-writer.test.ts` and `try-again-continues-the-stopped-runs-deck.test.ts`. Limit: dedupe is look-before-write, not a DB constraint (a global unique would break multi-deck chats), so a few-ms interleave could still double-create.
 
-- **Model:** `fc_detail` kinds `front_image` / `back_image` — one ACTIVE row per face
-  (writers soft-delete prior rows of the kind). `image_file_id` = stored platform file;
-  `image_url` = durable/hotlinked web URL (the PRIMARY lane per Arman's 2026-08-17
-  ruling: agents find expert images on the open web); `text` = real alt text;
-  `metadata` = provenance + the sourcing agent's trust judgment.
-- **ONE renderer:** [`FlashcardFaceImage`](../../components/mardown-display/blocks/flashcards/FlashcardFaceImage.tsx)
-  (file_id → `InlineMediaRef` self-re-mint; url → graceful link-rot fallback that hides
-  instead of breaking, console-warns for re-source sweeps). Never render a face image
-  any other way.
-- **ONE adapter:** [`components/study/cardImages.ts`](./components/study/cardImages.ts)
-  (`getCardImages` / `getFaceImageDetail` / `cardHasImage`) — the image twin of
-  `voiceTestExtra.ts`. Never inline the `details.find(...)` idiom again.
-- **ONE writer:** `fcService.setCardImage(cardId, face, {file_id|url, alt, ...})` /
-  `removeCardImage` — supersede-then-insert. Server-side (agent lanes) writes are
-  aidream `services/education/card_images.py`: web-sourcing through mandate
-  `education.card_image_web_source`, and VERIFIED generation through
-  `education.card_image_prompt_writer` → `card_image_generator` →
-  `card_image_qc_judge` (generate → adversarial vision judge → retry once → refuse).
-- **Per-SET trigger:** "Illustrate this set" on
-  [`components/set-detail/SetDetailView.tsx`](./components/set-detail/SetDetailView.tsx),
-  over the `/education/images/source-set` door. THREE parts, one module each —
-  never fork a second copy: [`illustrateSetRun.ts`](./components/set-detail/illustrateSetRun.ts)
-  (the typed stream contract + pure reducer; wire twin of aidream's
-  `SetImagePlanEvent` / `SetImageProgressEvent`),
-  [`IllustrateSetWindow.tsx`](./components/set-detail/IllustrateSetWindow.tsx) (an
-  `inline-window` that renders the canonical `LiveRunProgress` rows WHILE the batch
-  runs — ~30-60s per card, so never a spinner and never a page-shifting block — then
-  becomes the review pass), and `fcService.reviewCardImage` (the writer).
-  **The review pass is the point:** every attached image shows the sourcing agent's own
-  trust reasoning, its source domain as a real link, and Keep / Reject; a rejection
-  stamps `fc_detail.metadata.human_review` BEFORE the soft-delete so the agent's miss
-  survives as evidence for judge accuracy. The set refetches after the run so badges and
-  thumbnails match.
-- **Editor slot:** [`components/editor/CardImageSlot.tsx`](./components/editor/CardImageSlot.tsx)
-  — one compact icon row per face in `EditSetView` with FIVE actions. Two are FREE
-  (no entitlement guard, no AI spend, added 2026-08-19) and two are METERED:
-  - **Upload** (free) — the learner's own picture through the canonical
-    [`useFileUpload`](../files/handler/hooks/useFileUpload.ts). Uploaded with
-    `visibility:"public"` ON PURPOSE ("images are born public", VISION_AND_PLAN §2.1):
-    cards are shareable and public sets render for anonymous visitors, so the face needs
-    a permanent CDN URL. The lane stamps BOTH `image_file_id` and the durable
-    `image_url`, and **refuses to persist a signed URL** (`isSignedUrl` guard →
-    file_id-only + a console warning + an honest toast, never silent rot).
-  - **Photo** (free) — Unsplash stock via
-    [`UnsplashPickDialog`](./components/editor/UnsplashPickDialog.tsx) on THE shared
-    primitive [`lib/media/unsplash.ts`](../../lib/media/unsplash.ts) (`/api/unsplash`
-    proxy; the slide-deck `slide-images.ts` is a thin re-export of the same module —
-    never fork a second Unsplash client). Stores Unsplash's permanent CDN URL plus
-    `metadata.credit {name,url}`, and fires `trackUnsplashUse` on ATTACH (ToS: on use,
-    not on browse).
-  - **Find** / **Generate** (metered) — stream the aidream doors
-    `/education/images/source-card|generate-card`. Agent refusals surface with their
-    reasoning; never forced, never silent. **Remove** soft-deletes the face's rows.
-  - **ALT TEXT IS REQUIRED on both free lanes** — pre-filled (Unsplash's own description,
-    else the face text) in a dialog the user confirms; the attach button stays disabled
-    while it is empty. Education is unusable without it.
-- **Attribution renders, it is not just stored:** `metadata.credit` flows
-  `cardImages.toCredit` → `FaceImageRef.credit` → a small "Photo: <name>" caption under
-  the face image (linked, UTM-tagged). Unsplash requires the photographer to be credited
-  wherever the photo is displayed.
-- **Metered, structurally (Arman 2026-08-18):** capabilities
-  `education.card_image_source` / `card_image_generate` — FE
-  `useEntitlementGuard` (guard before spend, commit on success, paywall on cap);
-  server checks `billing.resolve_capability` BEFORE any spend and records
-  `usage_ledger` rows even while unenforced; `source_set_images` pre-flight-trims a
-  batch to the plan's remaining allowance. Numbers live in the admin plan UI.
-- **Wired surfaces:** FlashcardItem flip faces (+ open-in-window forwarding),
-  FlashcardMobileView slides (via `toFlashcardMobileCardsFromStudy`), StudyDeck,
-  CanvasFlashcardsView, FastFire live card (`DrillCard.frontImage*`), SetDetailView
-  CardPeek (badge + thumbnail), public anon pages (`get_public_flashcard_set` RPC emits
-  `front_image_url`/`back_image_url` + alt — anon can only use durable URLs, never a
-  bare file_id), and print (cut-cards / both-sides / study-sheet / front-only /
-  back-only variants; the fixed-geometry variants — landscape / 6-up / Avery — are
-  text-only by design), reachable from BOTH lanes: the markdown block and — since
-  2026-08-19 — the DB-backed deck (SetDetailView **Print**, beside Export, same
-  10-variant dialog). The DB deck's `CardWithDetails[]` reaches the printer through ONE
-  mapper, [`utils/deckPrintData.ts`](./utils/deckPrintData.ts) (`buildDeckPrintData`):
-  faces via the shared `studyFaces` (cloze prints occluded front / revealed back, never
-  raw `{{c1::}}`), images via `getCardImages`. Print honours a **Print face images**
-  setting (default ON, offered only on the 5 image-capable variants).
+## Images on card faces
 
-### Known limits (images)
+Rules, status and open work live in the common-docs images FEATURE; the frontend shape is: **one renderer** ([`FlashcardFaceImage`](../../components/mardown-display/blocks/flashcards/FlashcardFaceImage.tsx)), **one adapter** ([`components/study/cardImages.ts`](./components/study/cardImages.ts) — never inline `details.find(...)`), **one writer** (`fcService.setCardImage` / `removeCardImage`, supersede-then-insert; server lanes in aidream `services/education/card_images.py`). Editor lanes: `components/editor/CardImageSlot.tsx` (Upload, Photo via the shared `lib/media/unsplash.ts`, Find, Generate, Remove); per-set "Illustrate this set" is `set-detail/illustrateSetRun.ts` + `IllustrateSetWindow.tsx` (live rows while it runs, then the keep/reject review pass; `fcService.reviewCardImage` stamps `metadata.human_review` before a soft delete).
 
-- The set run is not durable across a page refresh: every attached image is already
-  committed to the DB card by card, but the REVIEW pass lives in page state, so a
-  refresh mid-run loses the keep/reject list (the images stay, and per-card Remove in
-  the editor still reaches them). Making the run itself resumable needs a server-side
-  run record.
-- The review pass records `fc_detail.metadata.human_review`; wiring those verdicts into
-  `platform.judge_verdict` accuracy for `education.card_image_web_source` is the
-  follow-on (see `docs/handoffs/flashcard-images.md`).
-- A print window is a fresh, UNAUTHENTICATED document, so only a durable `image_url`
-  can travel into it. A `file_id`-only face image is skipped and counted
-  (`skippedImageCount` → a toast naming how many), never silently dropped — the same
-  constraint the anon public-deck lane lives under. New uploads no longer create such
-  rows (the upload lane stamps the public URL beside every `image_file_id`), but rows
-  written before 2026-08-19 still can — no backfill sweep exists yet.
-- Hotlinked `image_url` rot has a graceful render fallback but no re-source sweep yet —
-  chipped.
-- The anon public-deck RPC and print lanes can only use `image_url`, so any face image
-  carrying a bare `image_file_id` is invisible to them. Every writer stamps both today;
-  the residue is historical rows, which have no backfill sweep yet.
-- Attribution reaches the face renderer through the `cardImages` adapter only. Surfaces
-  fed the flattened `front_image_url`/`back_image_url` shape (the anon public-deck RPC,
-  print) carry the URL and alt text but not the credit caption.
+Frontend-only traps: alt text is required on both free lanes; a signed URL is never persisted (`isSignedUrl` guard); `metadata.credit` renders as a caption (adapter → `FaceImageRef.credit`); the print window is unauthenticated, so a `file_id`-only face is skipped and counted in a toast (`utils/deckPrintData.ts` `buildDeckPrintData`, the one deck-to-printer mapper).
 
-## Change log
+## Enrichment (detail layers)
 
-- `2026-10-09` — Scopes cutover (lane SCOPES-WEB-CONSUMERS): deck association results use `isAssociationsRpcErr` from `@ai-matrx/associations`.
+- ONE reader [`data/cardDetailLayers.ts`](./data/cardDetailLayers.ts) defines "this card is enriched" (excludes audio, image and memory-aid rows); ONE renderer `components/study/CardDetailLayers.tsx` ("More on this card" strip + "Explain more"); ONE lane `data/enrichCardLane.ts` (`enrichAndSaveCard`: generate → `fcService.addDetail` → clear the pending proposal). Kind `card_enrichment` renders agent PROPOSALS (dialog preview), not stored rows.
+- Bulk: `set-detail/bulkEnrichRun.ts` `planBulkEnrich` is the one place that decides the work AND the button label ("Enrich selected (3)" / "Enrich all cards (5)"); an explicit pick beats the skip-already-enriched heuristic and is reported separately. Each in-flight card is an `EnrichingCardTile` reading its own `selectKindEnvelope(requestId, "card_enrichment")` live (no second parser); concurrency 3; cancel stops the cursor, in-flight cards land. Guarded once on `education.card_enrichment`, committed per card, COPPA before billing.
+- Tests: `data/__tests__/card-detail-layers.test.ts`, `set-detail/__tests__/bulk-enrich-run.test.ts`.
 
-- `2026-10-09` — Living-kit W2 (decks): **Add more cards is steerable and undoable.** The dialog gains card-type chips (basic/cloze/matching/formula, none = Any) and a `ProTextarea` "What should the new cards focus on?"; both ride the tab-bound run request (`cardRunRequest` `cardKinds`/`instruction`) so Try again repeats them, and reach the generator as `steer` — `generateCardsFromSources` folds it through the one `foldSteer` (`cardsFocusText`), the existing fronts included. Each run mints a `batchId` stamped on every card (`metadata.batch_id`; a run covering exactly one outline section also stamps `topic` + `metadata.outline_section_id` — `stampRunCards`). The success toast offers Undo, which archives exactly that batch through `fcService.deleteCard` (`data/undoCardBatch.ts`; soft delete only). `GenerateCardsDialog` now dedupes against the deck's cards (`looseKey`/`isNearDuplicateQA`), starts after them, and stamps a batch id. Test: `data/__tests__/steered-card-run.test.ts` (red on a planted any-section stamp).
+## Study modes
 
-- **2026-10-06** — **The study modes describe the card in view (Applets AP-6).** `/study`, `/learn`, `/write` and the study window register `matrx-user/education-flashcard-study` through ONE hook, `components/study/useFlashcardStudySurface.ts`: deck name/topic/count, the card in view (number, kind, side shown, front, back, whether the answer was seen, history), time on page and session score. Before, the study routes resolved to the LIBRARY surface with no values, and an agent asked "I'm stuck on this card" made 20 tool calls to find it. The server renders the surface's situation sentence from these values and puts it first. Guard: `__tests__/study-surface-describes-the-card.test.ts` (red → green).
-- **2026-10-04** — The deck page reads its deck, mastery, access, consent verdict and lineage once per tab (Redux `storeReads`), so a Board tile wake or a remount reads nothing. The deck surface `matrx-user/education-flashcard-set` declares the Edit page's five write targets; both pages register them from `components/editor/deckWriteHandlers.ts`. Board notes: `features/board/FEATURE.md` Open 8.
+- Every grade funnels through `useFlashcardStudy().grade` (writes `study_attempt`, advances `item_mastery`, offline-aware via `recordAttemptOfflineAware`); mobile and desktop both use `FlashcardConfidenceRow` (1–5, `confidenceToResult` in `lib/srs/fsrs.ts`) — never a fork.
+- Round size for Test / Write / Match: `data/roundSize.ts`, saved per learner at `userPreferences.flashcard.testQuestionCount` / `writeCardCount` / `matchPairCount` (0 = every card); distractors come from the whole deck. Cloze/formula cards always render through `studyFaces` / `CardFaceBlock`, never raw markup.
+- Collapse-on-mastery: one pure resolver `data/collapse.ts` folds mastered `expands_into` sub-cards; the per-learner decision is `item_mastery.collapse_state` (`studyService.setCollapseState`). Wired into the Fast Fire launcher only; classic study is the named next step.
+- The public deck page (`components/public/PublicFlashcardDeck.tsx`) studies the real deck signed out with the SAME `StudyDeck`; progress is device-local (`data/useLocalFlashcardStudy.ts`) because `study_record_attempt` would file a signed-in visitor's attempts under the deck OWNER's organization. Matching/formula cards study as plain flips there (the public read has no `dynamic_content`).
+- Formula cards (`dynamic_content.formula`, composed by `studyFaces`), a generation Depth tier (`foldDepthIntoRequest`), and semantic Write grading (`gradeTypedSemantic` on `flashcards.grade_typed_answer`; Levenshtein stays the instant verdict) are live.
+- Give-away fixer: `components/giveaway/FixGiveawayCardsAction.tsx` (editors only, mounted on Match) runs `flashcards.fix_giveaway_cards`; it answers `list_change_proposal_v1` (target `flashcard_deck`) and accepted rewrites save via `fcService.updateCard` (`features/list-change-proposals/applyListChange.ts`).
 
-- `2026-10-02` — **The public deck page studies the real deck, signed out.** `/p/e/fc_set/<id>` and a shared deck at `/s/<token>` both render ONE component, `components/public/PublicFlashcardDeck.tsx`: hero (title, count, description, Study / Learn, "Studied N of M on this device" + Start over, a flippable `FlashcardItem` preview), the full card list server-rendered for search, and the sitting — the SAME `StudyDeck` as a full-screen layer (`PublicStudySessionImpl`, its one dynamic edge, `#study` / `#learn` deep links, Back closes it). The driver is `data/useLocalFlashcardStudy.ts`: progress per set + mode in localStorage (try/catch'd; a blocked store studies without remembering), Learn's queue step shared with `useFlashcardStudy` (`requeueAfterGrade`), in-sitting Shuffle keeps grades. `StudyDeck` gains `deviceOnly` (no streak/age-band, due-list or attempt-history reads; no unrequested per-grade micro-coach — Ask AI, tutor, memory aid still call the server) and `onExit` (the phone deck's close leaves the layer). Signed-in visitors study on the device too: `study_record_attempt` would file their attempts under the deck OWNER's organization; Save a copy is the path to account mastery. `data/publicDeck.ts` owns the public card shape and the adapter; matching/formula cards study as plain flips because the public read carries no `dynamic_content`. Test: `data/__tests__/local-study-keeps-progress-on-device.test.tsx` (red with persistence removed).
+## Fast Fire (`fast-fire/`)
 
-- `2026-10-02` — **Test and Write redesigned.** Both deal a shuffled round (`data/roundSize.ts`: 5 / 10 / 20 / All, clamped to the deck) saved per learner at `userPreferences.flashcard.testQuestionCount` (default 20) and `writeCardCount` (default 10), picked from a header menu or the end screen; distractors still come from the whole deck (`buildQuizQuestions(round, pool)`). Questions, options and answers render through `CardFaceBlock` (new `size="card"` / `align` props) via `studyFaces`, so cloze/formula cards never show raw markup and bulleted backs stay left-aligned. Test: equal-size option tiles (1 column on phone, 2 from sm), keys 1–4 + Enter, the last answer's feedback shows before results. Write: Don't know, one verdict banner (by meaning / by spelling) with the suggested grade highlighted, Enter accepts it, 1–3 pick a grade. Shared end screen (`components/study/round-controls.tsx`): score, Retake missed, New round, round size. `useFlashcardStudy` gains an optional `round` option (absent = unchanged whole deck in order).
+- The spoken grader takes the clip as the mandate's NAMED offered value `variables.answer_audio = <durable file_id>` (declared `kind="file"`, guaranteed — the server refuses a no-audio run before any spend). `runSpokenGrader` (`fast-fire/agents/grading-core.ts`) is the only launch path; with no clip the learner sees `NO_ANSWER_HEARD`, never a blank "skipped". Same conversion for `education.spoken_practice_grade` and `education.grade_handwritten`.
+- Microphone capture starts BEFORE the durable study session is created (a refusal can't orphan a session). The coach review waits for every launched card grade to settle before snapshotting Redux. Spoken-front/variation hashes stay unsigned (a negative index silently drops TTS offers).
+- The local QA audio fixture activates only in a dev build on `localhost`/`127.0.0.1` with the exact `matrxQaAudio=fastfire-browser-spoken-answer-fixture-v2` query value.
+- Helper audio: `flashcards.enrich_card` writes `helper` text, `flashcards.helper_tts` renders it once to `audio_file_id` on that `fc_detail` row (`fast-fire/helper-audio/`); "I'm confused" plays the cached clip instantly while `flashcards.help_live` deepens it. Missing cache = old behavior. The session transcript (`fast-fire/session-transcript.ts`) feeds the end review and persists to `study_session.session_transcript`; review pills include Best and a Play-all playlist.
+- The education layout owns header clearance once; the page adds no second offset. The initial load has a terminal retry boundary (20 s).
 
-- `2026-10-02` — **Fix cards that give the answer away** (Arman, on Match: "have the ai modify the cards so that no card gives away the back of the card"). A deck editor's header action on Match (`components/giveaway/FixGiveawayCardsAction.tsx`, absent for viewers) runs mandate `flashcards.fix_giveaway_cards` (`FC_MANDATES.fixGiveaways`, disclosed in the Agents menu) with `deck_name`, `set_id` and `cards` (input kind `flashcard_deck_cards_v1`, `content-ir/kinds/flashcard-deck-cards.ts`). It streams into the LiveRunWindow and answers `list_change_proposal_v1` with target `{kind:"flashcard_deck"}`, so the one proposal component shows each rewrite as current → proposed with Accept / Reject / Accept all; accepted rewrites save through `fcService.updateCard` (`features/list-change-proposals/applyListChange.ts`). Agent "Flashcard Give-Away Fixer" (`f438328c…`) was built by the agent-generation agent from `common-docs/systems/education/STATE.md`.
+## AI jobs and agent surfaces
 
-- `2026-10-01` — verify-7: (2) the deck list's Archive confirms (row and bulk) name the list's own control, "Filters → Archived" (`archiveConfirmSentence(…, { restoreFrom: "list_filters" })`), not Trash; (3) Add more cards' button repeats exactly the number the count field shows and pluralises ("Make 1 more card", "Make more cards" while the field is empty or out of range — `ClampedNumberInput.onDraftChange`, `makeMoreCardsLabel`); Create deck's summary line likewise (`cardCount`).
-- `2026-09-30` — **A card run never freezes.** The progress line shows from the first tick ("Making 4 cards — 0 ready"), a stalled or failed part is retried once and shown ("· retrying 1 part"), a part that still fails is shown at once ("· 1 part missed"); when every part failed the error says "The AI did not answer in time, so no cards were made. Try again." (Create deck and Add more cards). Mechanism: THE NO-FREEZE RULE in `education/convert/FEATURE.md`. Guards: `convert/__tests__/stalled-section.test.ts`, `components/create/cardProgressLine.test.ts`.
-- `2026-09-30` — **The deck's Source set is saved, and never on a load.** The refused `source_set` save (`[flashcards/deckSourceSet]`) was the metadata gate (`platform._metadata_guard`): `source_set`/`source_names` were registered in `platform.metadata_reserved_keys` on live at 2026-09-29 23:22Z, after the nightly clone was cut (07:40Z), so every Create deck / Add more cards on the clone preview was refused (live was fine). A sibling key was refused everywhere: `continued_from` (Try again restamps the stopped run's deck via `continueGeneratedSet`) — now registered on live and clone. Only two writers exist (`CreateDeckPage` after generation, `AddMoreCardsButton` after the cards are added); a page load, opening Add more cards, and the stopped-run toast write nothing (clone deck `d6b05957…` stayed version 1 through all three). Proof: an `authenticated`-role update of the three keys refused → accepted on the clone.
-- `2026-09-30` — V5-A.2: **a card run stopped by a reload is never lost in silence.** Root cause: Make the deck and Add more cards run in the TAB — `segmentedGenerate` fans out over sections, then the merge and `fcService.addCards`/`createGeneratedSetForConversation` save from the browser — and nothing recorded that a run had started, so a reload mid-run left no progress, no notice and no cards. There is no server run to re-attach to (that would be `lib/durable-run/useDurableRun`), so the run's REQUEST (count, topic, Sources exactly as chosen — `data/cardRunRequest.ts`) is kept device-local by the shared `lib/wizard-draft/useTabBoundRun.ts` (wizardDraft slice; beat every 3s, `closedAt` on beforeunload, kept even when the closing page aborts its streams). The new-deck page shows `RunStoppedNotice` ("Making N cards stopped when the page closed." + Try again); a deck page raises one toast ("Adding N cards stopped when the page closed." + Try again) and Try again reopens Add more cards with the same material and count and starts it. Another tab's live run is never called stopped. Tests: `lib/wizard-draft/__tests__/tab-bound-run.test.tsx` (red without the marker; red without the abort guard), `data/__tests__/card-run-request.test.ts`.
-- `2026-09-30` — V5-A copy (R9): new decks are no longer written "Made from N of your sources" (the Made-from strip names every Source); the strip reads "Made from" + source names + "Related" (kit door); "Making N cards from your sources" → "Making N cards"; "Cards appear below.", "Every card cites the part it came from.", the "1–50" / "Between 1 and 50." helpers (the inputs carry min/max), "This deck's material. Existing cards stay." and the name placeholder are gone; an empty card-layers row shows only "Explain more"; the restored-draft notice says "From last time" (one line at 375). Guard: `components/create/cardProgressLine.test.ts` (count never past the request).
-- `2026-09-30` — **A deck made from chat flashcards is named after its subject, never "Flashcards".** Root cause: the `<flashcards>` text format (---/Front:/Back:) had no title slot while the `flashcard_set` kind requires `title`, so the platform itself wrote the placeholder "Flashcards" (`features/content-ir/surfaces/flashcards-legacy-text.ts`; server `adapt_block_data`) and `FLASHCARDS_CANONICAL_ADAPTER` saved it as `fc_set.name` (conversation `10d796b4…`, a 39-card polyatomic-ions deck; 24 agents teach that format in their own instructions). Two layers: (1) the format takes an optional `Title: <name>` line before the first card, parsed by `flashcard-parser.ts` and its server port (`FlashcardsBlockData.title`); (2) a placeholder title is never a name — `utils/deckName.ts` `deriveFlashcardDeckName` keeps a real title as written and replaces a placeholder with, in order, the topic the cards share, the subject of the request that asked for them (the adapter reads the preceding user message only in that case), the cards' own terms. The block's "Open in canvas" passes the set's own title instead of a hardcoded "Flashcards". Existing decks are not renamed. Not done, by design: no agent instructions or `skill.render_definition` templates were edited (agents never author agents), so agents are not yet TOLD about the `Title:` line; the canvas item title still comes from the set's own title. Tests: `utils/deckName.test.ts`, `data/__tests__/chat-deck-name.test.ts` (fails against the previous adapter: received "Flashcards").
-- `2026-09-30` — V4-F copy + count: the segmented progress line is one plain line, "Making 5 cards — 3 ready" (`components/create/cardProgressLine.ts`, shared by Create deck and Add more cards); "Section n of m — N cards so far" and "Last done: Part (7/10)" are gone, and the count can never pass the request (THE COUNT LAW on progress, `convert/segmentedGenerate.ts progressItemCount`). Study sidebar metrics read "Tries / Right / Streak / Known" (not Att/Cor/Str/Mst) and are absent before the first review. Deck page: Class picker is one self-labelled select ("No class"), the row control reads "Default" with a "Shown to" menu heading.
-- `2026-09-29` — /education/flashcards opens on **Mine** through its own landing knob `lists.landing_tab/fc_set`; a new deck's "Shown to" default stays **everyone** (`access.shown_to_default/fc_set`), so it is visible to the organization and appears in Mine. The two used to be one knob, which is why a lane had set decks to "only me" (reverted by the chair). Same for `/education/quizzes` (`assessment`).
-- `2026-09-29` — V3-C copy: progress second line "Last done: <part>" / "Cards appear below."; waiting-for-clean one line; Add more cards description one line ("This deck's material. Existing cards stay."); depth "Exam-level" blurb "Fine detail & tricky cases" (no longer restates its label); MadeFromSource "Open the kit" → "Everything made from it".
-
-- `2026-09-29` — A3-F: (1) surface ownership moved from a module-level Set to the launch option `surfaceOwnsOutput` on the conversation record (survives reload/resume). (2) Add more cards is a plain `Dialog` (bottom sheet on mobile by itself); the hand-rolled Drawer switch is gone. (3) The card-count ceiling `COUNT_MAX = 50` (Create deck + Add more cards) is the knob `flashcards.max_cards_per_run`, one shared read `data/useMaxCardsPerRun.ts`; a failed read is shown and blocks the run.
-- `2026-09-29` — V2-F: (1) flashcards declare `FLASHCARD_SOURCE_DELIVERIES = ["direct"]` (the segmented generator reads only resolved text) on Create deck and Add more cards; a looked-up Source can no longer reach the generator, and if one ever does the error names it instead of the false "none had any text". (2) THE DECK'S SOURCE SET — `data/deckSourceSet.ts`: Create deck and every top-up record the exact `SourceSet` (parts, form, cap) plus card names on `fc_set.metadata.source_set` / `source_names` (registered in `platform.metadata_reserved_keys` as system provenance) through `fcService.mergeSetMetadata`; Add more cards seeds from it (`topUpSeed`), falling back to lineage (whole Sources, said in the dialog) for older decks. Test `data/__tests__/deck-source-set.test.ts` (red on a scratch copy of the old lineage-only seed). Live: deck `d553a142…` from 3 of 73 parts → Add more cards opened at "3 of 73 parts · 15k characters".
-- `2026-09-28` — V1-B fixes from the independent verify of USI-5: (1) THE COUNT LAW — an explicit card count is delivered exactly: `convert/coverage.ts` folds neighbouring sections into at most that many balanced passes (`foldPacked`, `apportionItems`), `convert/segmentedGenerate.ts` asks each pass for one spare and `mergeSectionItems` keeps each section's share, fills gaps from spares and trims to the total; near-duplicates across sections are dropped (`isNearDuplicateQA`, e.g. "What is osmosis?" twice). Fixes every segmented caller (Start's kit included). Live: asked 5 → 5 (was 10). (2) Section runs are `initiation: "auto"` → server `client_auto` → Auto lane, and the live sidebar insert honours it (`lanes.ts laneOfClientMintedRow`), so "…section 3 of 6" chats no longer land in the chat sidebar. (3) "Add more cards" opens the ONE Source input (`AddMoreCardsButton`) holding the deck's lineage Sources — or, for an imported deck with none, says so and lets the person pick; cards come from `generateCardsFromSources` (shared with Create deck), never repeat existing cards, and every Source used is linked. (4) Citations speak plain words (`education/trust/plainWords.ts`): no chunk ids in "Grounded in", "Page 22" not "22", "Open the source" not "Open web source" for a note. (5) Create deck holds the ambient ask-anything dock away (`useSuppressAmbientAssistant`) and keeps Style and details across a reload via `useWizardDraft` with the put-back notice. "My Orgs" list error root cause: `platform.shown_to_context` called `iam.teammate_user_ids` for archived-org memberships — fixed live the same day by the page-pass lane (archived filter); verified desktop + 375.
-
-- `2026-09-28` — USI-5 (one Source input, Flashcards first): `/education/flashcards/new` is one Create deck page (Sources → Style and details → Make the deck, or Import a deck file); `CreateFromTopic`, `CreateFromSource`, `ImportSetView` deleted; `/new/from-source`, `/new/import` redirect with the query kept; `/education/flashcards-2` retired; header's secret doors removed. Sources resolve server-side and run through the segmented generator; citations open the right file and page per Source; lineage for every Source; `MadeFromSource` lists all origins. Fixed on the way: resolver text is never re-chunked (`markForGrounding`), and generation runs no longer materialize twin decks. Verified headless as admin@admin.com: PDF (2 of 73 parts) + note → 5 cards citing pages 22/25 that open the PDF at that page; topic → 6 cards with live stream; CSV → 5 cards; redirects; 375px.
-
-- `2026-09-27` — desktop regression reverted (Arman: "a mobile fix was applied on desktop as well, so many features are now missing on desktop"): the deck page's desktop action row again shows History, Export, Print, Download for offline, Enrich all cards, Illustrate this set and Convert; Select cards and the audio buttons are back on the page on desktop (`AudioOverviewSection statusOnly={isPhone}`). Deck tools is the PHONE's sheet only. The tool header (EducationToolHeader) no longer puts secondary actions in a fixed "More" menu on desktop — every action stays on the header and RouteHeader folds by real width.
-- `2026-09-27` — page-pass round 4, part 2 (pp4-flashcards): the row menu gains Rename, Duplicate (Make a copy on others' decks), Move to folder and Who can see it, with agent twins `update_decks` (+ `visibility`, `folder_ids`) and a new `duplicate_decks`, all through `data/deckOperations.ts`; ticked rows (bulk Archive) reach agents as `selected_deck_ids`, `search_query` is always supplied and `selection` carries selected text; the deck page is one action row (Study, Fast Fire, Edit / Make a copy, Add more cards, Deck tools) with everything else in the Deck tools dialog (a bottom sheet on phones), Fast Fire one color; FastFire gains a typed-answer mode (`answerMode`, graded on meaning by `flashcards.grade_typed_answer`, no microphone — the Speaking choice is absent when the mic is missing or blocked), a standard Start button, the standard error alert, no camera controls, a two-column setup, and the ambient chat dock is held away for the whole surface (`ambientAssistantSuppression.ts`); list skeletons keep the last fitted column widths across visits.
-- `2026-09-27` — page-pass round 4 (pp4-flashcards): type list, posture ui-sharp after Linear, fixed — header: "Review due" is the one labelled action, the other seven live in one labelled "More" menu as real links (EducationToolHeader, every education tool home inherits it); the section nav says "Education" instead of "Menu" and is not drawn when it cannot fit beside the title (RouteModeNav `fallbackLabel` / `none`); Study sits right after Name so it stays on screen at 800px; phone cards carry labelled Study and Fast Fire buttons (the list shell no longer judges an action column "empty"); no "0 rows" under the loading skeleton and the skeleton keeps the last fitted widths; opening a deck, Progress, Review or Weak areas shows a route loading state at once.
-- `2026-09-27` — page-pass 2026-09-27: type list, posture ui-sharp after Linear's issue list, fixed — `/education/flashcards` moved from a hand-built card list onto the canonical `EntityListPage` (`components/home/flashcardSetList.tsx`) over the server-side `education.fc_set_list_scoped` / `fc_set_list_counts` / `fc_set_list_facets` RPCs (`data/deckListService.ts`, `migrations/fc_set_list_scoped.sql`) — the browser never holds the whole library: lanes Mine / My Orgs (my memberships only) / Shared (grants) / Public, sort + filter on every column, saved view prefs, the archive axis, Folders / Difficulty / Who-can-see-it facets, per-row right-click menu with Open / Study / Fast Fire / Edit / Archive / Restore through Trash's one archive, Copy / Copy for AI, phone cards. The double header offset (a 60px empty band) is gone; the streak chip rides the tab row. Agent surface gained `create_decks` / `update_decks` / `delete_decks` (pure parsers in `components/home/deckAgentWrites.ts`, tested) and a `deck_list` XML bundle (~4,000). Education tab titles now lead with the tool name; the header says Flashcard Studio like the tab and nav, and the Create pages say "deck" (New flashcard deck), never "set"; the Name column gets the width. The list's Filters & Sort panel no longer offers columns that declared `sortable: false` (`lib/entity-list/__tests__/panel-sort-options.test.ts`).
-- `2026-09-25` — **The removal check became the platform primitive.** `softDeleteOne`, `setDetailAudio` and `reviewCardImage` now ride `tryWriteOne` (`utils/supabase/writeOne.ts`), the shared single-record write that returns the written row and refuses zero rows in words; `pnpm check:single-record-writes` ratchets the class repo-wide.
-- `2026-09-25` — **A removal proves it landed.** `deleteCard`, `deleteSet`, `softDeleteDetail` and `mergeCards`' loser removal soft-deleted with a bare `update().eq()`, and a PostgREST update that RLS filters to zero rows returns no error — so a refused removal toasted "Card deleted" while the card stayed. They now go through `softDeleteOne` / a counted `.select("id")` and fail in plain words on zero rows. The editor's confirm no longer claims "permanently… cannot be undone" for what is an archive. Guard: `data/__tests__/card-removal-proves-it-landed.test.ts` (red on the old code, green now).
-
-- `2026-09-17` — **A card's detail layer carries its card's organization.** `fcService.addDetail` omitted `organization_id` on `education.fc_detail` and leaned on the `_inherit_org` trigger, but `public._stamp_org_default` fires on a NULL first and files the layer in the writer's personal workspace. The service now reads the parent card's `organization_id`, writes it, and refuses in plain words when the card cannot be read. Guard: `pnpm check:organization-context`.
-
-- `2026-09-17` — **The Flashcard-set agent surface is registered and has production run and binding evidence, but is not fully certified.** Commit `b19524edf9` wired the route and manifest but did not synchronize its runtime registration; the live database was missing that one parent surface out of 200. The transactional repair seeded the complete 12-key mirror at 06:33:55Z. Run `a8c5bdb0-9640-4075-9630-70426bbf0083` completed around 06:38Z with two completed `chat.request` rows, `card_count=50`, the correct deck title and first question, and only the deferred context tool. Independent production proof then bound Badass Agent at User/Me scope with empty mappings: the success receipt appeared, the Agents menu showed Run/Settings/Remove controls, and the exact association carried the expected user-tier role before cleanup. Broader full surface certification is still required, so the surface remains `partial`.
-
-- `2026-09-16` — **Flashcard set detail is now a real agent surface, not a
-  library fallback.** `/education/flashcards/[setId]` had no
-  `SurfaceRuntimeProvider`; route resolution therefore named the library
-  surface while the Agents menu launched with no live values — zero of the
-  title, 50 cards, detail layers, or study signal reached the agent. The
-  dedicated `matrx-user/education-flashcard-set` manifest, exact dynamic-leaf
-  route resolver, and detail-page runtime now supply the loaded deck at launch.
-  The regression test pins the library/detail/editor split: never let a broad
-  prefix claim a child route whose vocabulary it cannot emit. Study-mode routes
-  remain intentionally separate until each has its own complete contract.
-
-- `2026-09-16` — Flashcard generation previews now use the same `MarkdownStream`
-  path and the same shared `max-w-3xl` reading column as an assistant message.
-  Both topic and source generation inherit the repair; the old direct
-  `FlashcardsBlock` mount and narrower `max-w-2xl` page constraint are gone.
-
-- `2026-09-14` — **FastFire discloses every fixed mandate job in the shared
-  Agents menu.** The spoken answer grader, spoken-question TTS, and cached
-  instant-help TTS are registered as surface roles only; the drill page gains
-  no disclosure chrome. Its retry resets now happen in the learner's Retry
-  event instead of synchronously inside request effects, satisfying React's
-  effect contract without weakening the terminal loading boundary.
-
-- `2026-09-13` — **FastFire initial loading has an explicit terminal boundary.**
-  The client chunk reaches a visible retry state after 20 seconds, while the
-  setup deck read uses the same boundary to abort its direct Supabase request
-  and offers Retry. A late chunk or read cannot leave the initial skeleton on
-  screen indefinitely; the shared helper's forcing tests cover timeout and
-  successful cleanup.
-
-- `2026-09-12` — **FastFire owns header clearance once.** The education layout is the
-  single owner of shell-header offset; the FastFire page no longer adds a second top
-  offset, eliminating the large blank runway before set selection. Card controls keep
-  icon/title on the first row and full-width content below.
-
-- 2026-09-08 — `StudyDeck` completion screen renders the settled session review through `BatchReviewBlock` (the `batch_review` kind's component) instead of a summary-only paragraph that dropped strengths, weaknesses and the score; the loading face now points at the floating run window.
-- 2026-09-02 — The authenticated `/education/flashcards/**` tool family now stops
-  guests at the global route boundary before owned-deck, category, scope, or study-data
-  clients mount. The anonymous deck funnel remains `/p/e/fc_set/[id]`.
-
-- 2026-09-01 — FastFire spoken-front variation selection keeps its FNV-1a
-  hash unsigned while decorrelating each style lane. Cards whose hash has the
-  high bit set can no longer index the variation banks with negative numbers
-  and silently omit guaranteed TTS offer values.
-
-- 2026-09-01 — FastFire's local QA audio fixture now preloads and sequences real bounded spoken answers through the production capture/grading path instead of untranscribable oscillator tones.
-
-- 2026-08-31 — **FastFire Coach review waits for every launched card grade to
-  settle before snapshotting Redux.** Card progression remains concurrent, but
-  the terminal batch review can no longer describe a partial deck while the
-  final background grades are still resolving.
-
-- 2026-08-31 — The shared spoken-grading boundary retries one transient
-  malformed structured response with the same durable `answer_audio`; only the
-  final failed attempt reaches Error Inspector. FastFire and every other
-  `runSpokenGrader` caller inherit the repair, so one malformed provider answer
-  cannot persist a result-less study attempt.
-
-- 2026-08-31 — FastFire starts microphone capture before creating its durable
-  study session, so permission denial or capture startup failure cannot leave an
-  orphaned active session. Expected permission refusal stays visible with the
-  browser-settings remedy and no longer pollutes the system-error console. The
-  isolated Browser certification can replace only the physical audio source at
-  `getUserMedia` with the canonical FastFire QA fixture. Activation requires a
-  development build, a `localhost` or `127.0.0.1` origin, and the exact
-  `matrxQaAudio=fastfire-browser-spoken-answer-fixture-v2` query value; production,
-  non-local origins, and ordinary local sessions keep native media permissions.
-  The fixture preloads bounded spoken-answer WAVs before granting the microphone and
-  feeds one through the same warm `MediaStream` after each card clip begins, so the
-  real capture, clip, upload, transcription, grading, persistence, and terminal-result
-  paths remain under test without a first-card decode or capture race.
-
-- 2026-08-30 — FastFire's React 19 audit is clean: card-local help now resets
-  through a keyed card boundary, the deadline loop updates committed refs in an
-  effect rather than during render, and voice-test hydration uses `useIsMounted`.
-
-- 2026-08-30 — FastFire surface-check candidate repairs: `/education/fastfire`
-  now uses the shared `EducationToolHeader`, keeps one bounded body scroll owner
-  below the glass header, replaces generic setup/chunk spinners with contextual
-  loaders, routes exit through a transition, and restores 44px mobile reachability
-  for audio disclosure, result filters, and the two setup exit doors. Live matrix
-  remains verifier-gated under the surface-certification Work Loop.
-
-- 2026-08-30 — Set detail now stops guests at the server auth boundary before any
-  `education.fc_set` client read, preserving the requested deck through login.
-
-- 2026-08-25 — 🚨 **Bulk enrichment rebuilt as a LIVE CASCADE, and driven by the selection
-  that already existed.** The version shipped hours earlier was mechanically right and
-  experientially wrong, and both defects were things that already existed being ignored.
-  **(1) It was all-or-nothing.** Set detail has had full multi-select since WP3 gap 5
-  (`selectedIds` + `CardPeek`'s `selectable`/`selected`/`onToggleSelected`), and the batch
-  ignored it — a user with 83 cards who wanted 10 enriched had no way to say so. The bar is now
-  a general **"Select cards"** mode with two actions over the SAME `selectedIds` (no second
-  selection UI): `planBulkEnrich` in
-  [`components/set-detail/bulkEnrichRun.ts`](./components/set-detail/bulkEnrichRun.ts) is the
-  one place that decides the work, and the same plan writes the button
-  (`bulkEnrichActionLabel` → "Enrich selected (3)" / "Enrich all cards (5)"), so the label can
-  never promise cards the run won't touch. An **explicit pick beats the skip heuristic**: a
-  selected card that already has layers is enriched anyway and reported separately ("1 you
-  picked already had layers and got more") — never a silent second spend. F3's text-mergeable
-  restriction moved off `selectable` (every kind can be _enriched_) and onto the Merge button,
-  which now judges the selection. **(2) It showed a progress bar instead of the platform's own
-  showcase.** `card_enrichment` is an ACTIVE registered kind with a default DB component
-  (`card_enrichment_stack`); the window was rendering `LiveRunProgress` rows next to it. Now
-  each card's run publishes its own `requestId` mid-stream (new `onRequestId` seam threaded
-  through `enrichCard` → `enrichAndSaveCard` → the runner's `card_request` event), and
-  [`EnrichingCardTile`](./components/set-detail/EnrichingCardTile.tsx) subscribes to
-  `selectKindEnvelope(requestId, "card_enrichment")` — the SAME accumulator session whose
-  extracted JSON the runner persists, exactly the `LiveGenerationPreview` / `CreateFromTopic`
-  architecture, no second parse anywhere. The card's real front and back are on screen from
-  frame one and the layers materialize inside it one at a time;
-  [`data/cardEnrichmentEnvelope.ts`](./data/cardEnrichmentEnvelope.ts) is the mid-stream reader
-  (a layer with no text yet is withheld, a layer whose `kind` hasn't arrived is NOT guessed into
-  a bucket). At settle the tile switches to the persisted `fc_detail` rows and the runner
-  destroys that card's instance — `keepInstance: true` with nobody destroying was a leak the
-  headless version carried. Concurrency dropped 4 → 3: every in-flight card now owns a visible
-  tile drawing live text, and four at once on a phone is motion nobody can read. Cancel, the
-  per-card fault isolation, the truthful summary and the failure-truthfulness fix are unchanged.
-  `toBulkEnrichProgressState` is deleted with its `LiveRunProgress` dependency.
-  **Live-verified** on `/education/flashcards/<set>`: 3 of 8 cards selected → both entry points
-  read "Enrich selected (3)" → exactly those 3 ran, streaming layer text on screen while the
-  others were still writing; re-selecting an enriched card produced the "you picked this one"
-  chip and summary line; verified again at 375px (single-column feed, zero horizontal overflow).
-
-- 2026-08-25 — 🚨 **Card enrichment is finally VISIBLE, and enrichable in one click.**
-  `education.enrich_card` had been writing `fc_detail` text layers
-  (helper/example/detailed/hint/mnemonic/simplified) that **no surface rendered**: StudyDeck
-  read `details` only for the `spoken_front` audio id, set detail turned helper/example into a
-  boolean badge, and the streamed text vanished with the dialog. Three parts, one module each:
-  **ONE reader** — [`data/cardDetailLayers.ts`](./data/cardDetailLayers.ts)
-  (`selectCardDetailLayers` / `cardHasDetailLayers`): the only definition of "this card is
-  enriched", used by the study strip, the set-detail badge, and the bulk planner, so they can
-  never disagree. It excludes audio/image rows and memory-aid rows (`metadata.source ===
-"memory_hint"` — `MemoryAidButton` renders those). **ONE renderer** —
-  [`components/study/CardDetailLayers.tsx`](./components/study/CardDetailLayers.tsx): a
-  collapsed-by-default "More on this card (N)" strip under the card in BOTH study forms
-  (desktop card body + the mobile tools panel), each layer labelled in learner words, plus an
-  in-place "Explain more" that runs the card's own enrichment and appends the new layers
-  immediately. Bespoke, not the `card_enrichment` kind component: that kind renders an agent
-  PROPOSAL through the DB-routed dynamic renderer (right for the dialog preview, wrong for an
-  always-mounted strip); this renders STORED rows. **ONE lane** —
-  [`data/enrichCardLane.ts`](./data/enrichCardLane.ts) (`enrichAndSaveCard`): generate →
-  persist via `fcService.addDetail` → clear the D151 pending proposal, shared by the on-card
-  button and the batch. **The batch:** set detail's "Enhance" (a modal LIST of every card you
-  scrolled and picked from — nonsense at 80 cards) is replaced by **Enrich all cards** plus the
-  set-detail grid's existing multi-select for **Enrich selected**, running
-  [`bulkEnrichRun.ts`](./components/set-detail/bulkEnrichRun.ts) (pure reducer + hook, shaped
-  like `illustrateSetRun`) into [`BulkEnrichWindow`](./components/set-detail/BulkEnrichWindow.tsx):
-  a live cascade of the real card fronts, backs, and registered `card_enrichment` kind output as
-  each layer streams in; an honest "N of M cards enriched" count; cancellation (cancel stops the
-  CURSOR; in-flight cards land and are counted); per-card fault isolation; and a summary that
-  names every bucket ("68 enriched, 2 failed, 10 already had layers"). In all-cards mode, cards
-  that already carry layers are skipped and never re-billed. An explicitly selected card is the
-  user's instruction to add more even when it already has layers, and the summary says so.
-  Guarded ONCE for the batch on `education.card_enrichment`, committed per successful card;
-  COPPA before billing. Per-card enrich/deepen still exists but is now initiated **from a
-  specific card tile** (the tile's lamp icon), and the study surface's dialog is `modes=["deepen"]`
-  only — one door per room. Pinned by `data/__tests__/card-detail-layers.test.ts` and
-  `components/set-detail/__tests__/bulk-enrich-run.test.ts`.
-
-- 2026-08-24 — **Mobile study's fallback grade row is now the canonical 1–5 confidence tap**
-  (STATE item 22). `FlashcardMobileView`'s two internal fallback grade rows — used whenever a
-  study caller doesn't inject its own `bottomBar` (matching cards' manual override in
-  `StudyDeck.tsx`, and `CanvasFlashcardsView.tsx` / `FlashcardStudyWindow.tsx`, which never wired
-  IC-4 confidence) — hard-coded the 3-way `FlashcardGradeButtonRow`, so a learner on those paths
-  never saw the 1–5 confidence scale desktop feeds FSRS. Both fallbacks now render the SAME
-  `FlashcardConfidenceRow` desktop uses, via `confidenceToResult` (`lib/srs/fsrs.ts`) — never a
-  fork. `onGrade` widened to carry an optional `confidence` (`components/mardown-display/blocks/
-flashcards/FlashcardMobileView.tsx`); `CanvasFlashcardsView.tsx` and `FlashcardStudyWindow.tsx`
-  forward it into `useFlashcardStudy().grade(result, { confidence })`, which already runs the
-  offline-aware FSRS path (`recordAttemptOfflineAware`) — no new write path, no bypass. The
-  in-grid duplicate compact row (cramped into a 3-column action-grid cell) was removed in favor
-  of the existing full-width row below the grid, which now carries the confidence tap; the grid
-  cell always offers "Jump" instead. Flip / swipe / audio behaviors untouched.
-
-- 2026-08-30 — **Fast Fire now actually uses the canonical spoken-grading wire.** The
-  2026-08-22 conversion correctly moved `runSpokenGrader` to the guaranteed named
-  `answer_audio` offered value, but the older fire-and-forget `gradeCard` path still carried
-  its pre-conversion `messageParts` copy. Live surface certification caught the resulting
-  `mandate_unfulfilled` failure on all four canary cards. `gradeCard` now dispatches
-  `runSpokenGrader` itself, deleting the second launch path; its online regression test pins
-  `variables.answer_audio` and the absence of `messageParts`.
-
-- 2026-08-22 — 🚨 **The spoken grader can no longer grade a silence.** A live bench run proved
-  `flashcards.grade_spoken` with NO audio attached invented a transcript and returned
-  `correct` — a learner who said nothing was marked right. Both halves are fixed. **Wire:**
-  `runSpokenGrader` (`fast-fire/agents/grading-core.ts`) now delivers the clip as the mandate's
-  NAMED offered value — `variables.answer_audio = <durable file_id>` — instead of smuggling it
-  onto the turn as a message part (`fileHandler.toContentPart` + `messageParts`, both gone;
-  the two-step attach path with them). aidream declares `answer_audio` as `kind="file"`,
-  **guaranteed**, so the server REFUSES a no-audio run before the agent is resolved and before
-  a token is spent (`assert_offer_complete`; `aidream/services/mandates/FEATURE.md` § THE
-  GUARANTEE IS A PROMISE). Same conversion for `education.spoken_practice_grade` and, on the
-  vision side, `education.grade_handwritten` / `runVisionGrader`. **Product:** the learner is
-  now TOLD — `NO_ANSWER_HEARD` ("We didn't hear an answer — try again.") is one exported
-  constant returned by `gradeSpokenAnswer` and `gradePracticeAnswer` whenever there is no clip,
-  so SingleCardVoiceTest, AudioReviewSession and Spoken Practice all show it instead of a blank
-  "skipped". A failed UPLOAD keeps its own distinct, retryable message.
-- 2026-08-22 — **Agent Manifest Campaign wave 1 (consumer step).** The 11 `flashcards.*` mandates
-  now point at builtin agents that emit registered kinds; this wave cleaned the consumers: ONE
-  card reader (`data/coerce-card.ts` — topic gen, from-source, kit deck, top-up, envelope save),
-  ONE typed-grade reader (`coerceGradeVerdict`, now also the spoken adapter's core), ONE review
-  reader (`parseSessionReview` reads all six `batch_review` keys for the live lane AND the
-  persisted row); kind components mounted through `KindInstanceRender` — `live_help_answer`
-  (`tutor/components/LiveHelpAnswerBlock`: StudyDeck, FastFireLiveCard, flashcard-app Ask AI),
-  `card_enrichment` / `card_expansion` (EnhanceSetDialog previews; accept rail unchanged),
-  `answer_grade` (`fast-fire/components/AnswerGradeBlock`: voice test + audio review; the
-  FastFire scoreboard stays custom). Dead inputs: `remaining_cards` is real (StudyDeck passes
-  the unreached fronts; FastFire/detail page honestly empty), FastFire `struggled_topics` derives
-  from missed cards' topics; both `generate_from_source` callers send the full offer
-  (`source_content, document_id, count, difficulty, title, focus`). Parser tests added for every
-  reader against the new agents' real `__kind` payloads. TTS: `flashcards.helper_tts` /
-  `flashcards.spoken_front_tts` have NO generated offer entry — both thunks type their variables
-  against `FlashcardsTtsRenderOffer` (`flashcards.tts_render`); `@ai-matrx/agents/generated/
-provision-offers.ts` is generated from aidream (`pnpm db-types`), never hand-edited. Plan:
-  `common-docs/systems/intelligence/mandates/REGISTER.md`.
-- 2026-08-22 — Generated-set title reads the `flashcard_set` kind's `title` only: the mandate
-  `flashcards.generate_from_source` (v6) dropped `set_title` from its output_schema and declares
-  `output_kind="flashcard_set"`, so the `title | set_title` coercion is gone from
-  `useGenerateCards` (`GeneratedCardSet.title`), `generated-set-from-envelope`, the
-  from-topic/from-source creators, and `education/convert/generators/deck.ts` (no legacy twin).
-- **2026-08-19 — The editor's two FREE image lanes shipped (upload + Unsplash stock).**
-  `CardImageSlot` is now a compact 5-icon row per face. Upload goes through the canonical
-  `useFileUpload` at public visibility and stamps BOTH `image_file_id` and the durable CDN
-  `image_url` (signed URLs are refused, loudly). Unsplash goes through the new SHARED
-  primitive `lib/media/unsplash.ts` — `slide-images.ts` was collapsed into a re-export of
-  it, so one client, one cache, one ToS contract — stores `metadata.credit {name,url}`,
-  and fires the download event on attach. Both lanes require alt text. Credit now RENDERS
-  under the face image (`cardImages` → `FaceImageRef.credit` → `FlashcardFaceImage`).
-  Neither free lane is metered. Live-verified in the browser on the Volcanology set: an
-  Unsplash attach (durable `images.unsplash.com` URL + credit row) and an upload attach
-  (public `cdn.matrxserver.com` URL + `image_file_id`, file visibility `public`).
-
-- **2026-08-21 — Collapse-on-mastery (Q15 #4b, spec 26a).** The other half of
-  `expands_into`: ONE pure resolver ([data/collapse.ts](./data/collapse.ts), pinned by
-  8 tests) folds mastered sub-cards out of a queue and steps a parent aside while its
-  sub-cards are still active — when every child folds, the concept collapses back into
-  the parent. Durable per-learner decision on `education.item_mastery.collapse_state`
-  (`auto` derives from streak≥3 + mastery≥0.8; `collapsed`/`expanded` overrides win —
-  writer: `studyService.setCollapseState`, owner-scoped RLS update). The expansion
-  edge gained its first reader (`fcService.getExpansionEdges`). Wired into the
-  FastFire launcher (best-effort, never folds a deck to nothing) with a
-  "N mastered sub-cards folded in" receipt on card 1. Classic-study wiring is the
-  named next step (interacts with D-WP3-2's fixed-pass ruling).
-
-- **2026-08-21 — Review modes + play-all (Q15 #4a, spec 26b).** The scoreboard's
-  filter pills gained **Best** (top-5 scored answers WITH audio — a rank, not a
-  predicate, in `selectReviewRows`) and a **Play all** transport
-  (`fast-fire/components/FastFireReviewPlaylist.tsx`): one persistent `<audio>`
-  element whose src swaps inside `ended` with a lookahead-of-1 URL resolve, so the
-  chain honors the iOS unlock rule the per-row player documents. Keyed on the
-  filter so switching resets the chain.
-
-- **2026-08-21 — Session-level transcript review (Q15 #3, spec 26c).** FastFire now
-  assembles the SEGMENTED full-session transcript (per card, in presented order, with
-  question + grade — `fast-fire/session-transcript.ts`, capped at 20k chars) and the
-  end-of-session professor review receives it as `transcript` instead of the old
-  unlabeled per-attempt join; it persists to `study_session.session_transcript`
-  (column existed, never written) and renders collapsed on the session detail page.
-  The DB-held "Flashcard Batch Reviewer" agent (v4) is instructed to use the sequence
-  for cross-card confusion, consistency, and in-session improvement — the three
-  payoffs the spec named.
-
-- **2026-08-21 — Pre-generated "I'm confused" helper audio (Q15 lane #1).** The
-  FastFire spec's zero-wait help headline shipped by composing live primitives:
-  `flashcards.enrich_card` writes the spoken-friendly helper text (kind
-  `helper`), the new `flashcards.helper_tts` mandate (declared in aidream
-  `client_mandates.py`, same TTS holder as spoken fronts, independently
-  rebindable calm voice) renders it ONCE to a durable `audio_file_id` on the
-  same `fc_detail` row. Prep is on-demand + cached
-  (`ensureHelperAudioForSet`, "Instant help" card on FastFire setup, N/M
-  progress, never re-generates); mid-drill, "I'm confused" plays the cached
-  clip + shows the text INSTANTLY while the live `flashcards.help_live` lane
-  still deepens the answer in the background. No cached helper → behavior
-  unchanged.
-
-- **2026-08-19 — DB-backed decks can print.** `SetDetailView` gained a **Print** action
-  (beside Export) on the SAME canonical printer/dialog the markdown lane uses, fed by the
-  new `buildDeckPrintData` mapper (studyFaces + getCardImages). Added the printer's
-  `showImages` setting (default ON, image-capable variants only). Browser-verified on a
-  live deck: both face images render in the print document, a cloze card prints occluded
-  front / revealed back, and the one file_id-only image is skipped with a toast.
-
-- **2026-09-17 — Flashcards jobs are disclosed in the existing header Agents menu.**
-  Every action-bearing Flashcards surface now registers only the mandates it can actually
-  launch: topic/source generation, set enrichment/expansion/top-up, study help/coaching/
-  review, quiz fallback, typed semantic grading, and the lazy voice tutor. FastFire's
-  static manifest also declares its missing instant-help job. The registration is UI-free;
-  the shell remains the one visible disclosure and mandate-opening surface.
-
-- **2026-08-18 — "Illustrate this set" (the per-SET image lane).** Set detail can now run
-  the whole deck through the web-sourcing agent in one action, entitlement-guarded with the
-  meter shown before the click. aidream's `source_set_images` was extended to stream typed
-  per-card progress, which this surface renders as live rows in a floating window; when the
-  run settles the same window becomes a review pass (thumbnail + the agent's trust
-  reasoning + source link + Keep/Reject), and rejections are recorded on the detail row
-  before the image is removed.
-- **2026-08-18 — Image lanes completed to the acceptance bars:** editor `CardImageSlot`
-  (Find/Generate/Remove per face, streaming, metered), verified generation lane on
-  mandates (adversarial judge, retry-once, refuse), structural entitlements with batch
-  pre-flight, aidream `/education/images` streaming router. Live-verified in the
-  browser end to end (including a correct, explained agent refusal).
-- **2026-08-18 — Duplicate-deck bug fixed (D-WP3-4).** Every surface generation was
-  creating TWO identical fc_set rows (explicit save + render-block materialization,
-  ~500ms apart). Single-writer contract above; 20 historical duplicate pairs
-  soft-deleted in the live DB (canvas links repointed to the kept twins).
-- **2026-08-18 — Inline voice tutoring is closed to the current card.**
-  `VoiceTutorPanel` still resolves `education.voice_tutor` and appends the exact
-  front/back/topic/revealed state, but no longer equips a hidden `web_search`
-  tool. The database-held Holder now treats that card as its complete ground
-  truth, coaches Socratically, and gives a loud handoff to the full uploaded-
-  material tutor when the question is unsupported.
-
-- 2026-08-18 — `fcService.mergeSetMetadata` is now the canonical compare-and-swap merge for
-  `fc_set.metadata`. Public-library classification and grounding provenance no longer need a blind
-  read/spread/write that can erase import, folder, or concurrent metadata keys. First consumer:
-  WP11's grounded exam-content pipeline (`exam_slug`, curation state, retrieved chunk ids).
-- 2026-08-18 — WP3 gaps 4/8/12/14 closed. **Formula card kind** (VISION §17: latex +
-  variable definitions + worked example in `dynamic_content.formula`; composed by
-  `studyFaces` so every surface renders it; editor Add→Formula + FormulaFields; fixing it
-  exposed and fixed the platform-wide `\(…\)` inline-math promotion defect in
-  `ConfigurableMarkdownContent`). **Generation-time depth tiers** (Depth picker on both
-  create surfaces; `foldDepthIntoRequest` carries the tier through the agents' declared
-  `user_request`/`focus` variables; 5 forcing tests; exam-tier proven live). **Semantic
-  Write grading** (`gradeTypedSemantic` lane on the `flashcards.grade_typed_answer`
-  mandate; Levenshtein stays instant, verdict+reason upgrade it; live-proven on a
-  paraphrase). **Deck-level card-audio prep** ("Prepare card audio" on set detail,
-  batch generator with N/M progress). Known limit: D213 — AI generation currently
-  persists duplicate sets (surface save + stream-end artifact materialization); fix
-  owned by chip `task_a876e306`.
-- 2026-08-18 — Fast Fire spoken-front generation dispatches every missing card at
-  once. Provider admission, cooldowns, and rate-limit adaptation belong to the
-  central matrx-ai dispatch boundary; this feature no longer maintains a five-call
-  worker pool that serializes large decks.
-- 2026-08-17 — `/education/flashcards` route chrome (IC-5): the six secondary actions
-  (drill weak areas, review due, progress, new-from-document, import, export library) moved out
-  of the body button row — which could not wrap and overflowed the viewport at 375px — into the
-  shell header via `EducationToolHeader actions={…}` → `HeaderActions`. Export is offered only
-  when the library has decks (`HeaderAction` has no disabled state). "New" stays in the body as
-  the one labelled primary action. Verified at 1280/820/375 in both themes.
-- 2026-08-18 — Created with the images-on-faces contract (flashcard-images P0 + web
-  sourcing lane shipped; see the cross-repo SoR for the full determination).
+- The list of AI jobs is [data/mandates.ts](./data/mandates.ts) (`FC_MANDATES`, 14 keys); declarations are in aidream `aidream/services/education/mandates.py` plus the TTS ones in `aidream/services/mandates/client_mandates.py`. Never copy the list here or hardcode an agent id or prompt. Consumers read results through ONE reader each (`data/coerce-card.ts`, `coerceGradeVerdict`, `parseSessionReview`) and mount kind components via `KindInstanceRender`; the generated-set title is the `flashcard_set` kind's `title` only.
+- Each surface registers only the mandates it can launch (`data/mandate-disclosure.ts`, `intelligence-places.ts`), UI-free: disclosure is the shell's Agents menu, never page chrome. Fast Fire declares its instant-help job in its static manifest. Plan: `common-docs/systems/intelligence/mandates/REGISTER.md`.
+- Surface manifests: `features/surfaces/manifests/education-flashcards`, `-flashcard-set`, `-flashcard-editor`, `-flashcard-study`. Study routes register through ONE hook, `components/study/useFlashcardStudySurface.ts` (the card in view, side shown, history, score). Deck and Edit pages register the five write targets from `components/editor/deckWriteHandlers.ts`. The list surface exposes `create_decks` / `update_decks` / `delete_decks` / `duplicate_decks` (`components/home/deckAgentWrites.ts`, `data/deckOperations.ts`). A broad route prefix must never claim a child route whose vocabulary it can't emit.
+- The deck page reads deck, mastery, access, consent verdict and lineage once per tab (Redux `storeReads`).
+- Inline voice tutoring (`VoiceTutorPanel`, `education.voice_tutor`) is closed to the current card: no web_search tool; it hands off to the full tutor for anything outside the card.

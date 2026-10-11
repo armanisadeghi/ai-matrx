@@ -11,7 +11,7 @@
 //             face needs a permanent CDN URL, never a signed one. We stamp
 //             BOTH `image_file_id` (our identity) and `image_url` (the durable
 //             public URL) — the anon RPC and print lanes can only use the URL.
-//             ("Images are born public" — VISION_AND_PLAN §2.1.)
+//             ("Images are born public" — the images FEATURE rules)
 //   Photo   → the free Unsplash stock lane (`UnsplashPickDialog` on the shared
 //             `lib/media/unsplash` primitive). Stores the permanent Unsplash
 //             CDN URL plus `metadata.credit` {name,url}, which renders under
@@ -33,7 +33,7 @@
 //
 // ALT TEXT IS REQUIRED on every lane — education is unusable without it, so
 // both free lanes confirm it with the user (pre-filled, never empty).
-// Cross-repo contract: common-docs/systems/education/flashcard-images/VISION_AND_PLAN.md.
+// Cross-repo contract: common-docs/systems/education/flashcard-images/FEATURE.md.
 
 import { useRef, useState } from "react";
 import {
