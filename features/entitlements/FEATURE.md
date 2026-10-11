@@ -552,9 +552,9 @@ real (F6, 2026-07-13).
 
 | Capability | Consumer surface | Owner |
 |---|---|---|
-| `education.generate_cards` | flashcards create-from-source/topic — guard + commit on success (`CreateFromTopic.tsx:166`, `CreateFromSource.tsx:261`) | flashcards agent |
-| `education.card_enrichment` | flashcards enrich/enhance — guard + commit on success (`EnhanceSetDialog.tsx:180,200`; single-unit commit — per-card `commit({ quantity })` metering NOT implemented) | flashcards agent |
-| `education.live_grade` | flashcards live grader — guard + commit once per started session (`FastFireSetup.tsx:476`) | flashcards agent |
+| `education.generate_cards` | flashcards create-from-source/topic — guard + commit on success (`AddMoreCardsButton.tsx`, `GenerateCardsDialog.tsx` under `features/flashcards/components/set-detail/`) | flashcards agent |
+| `education.card_enrichment` | flashcards enrich/enhance — guard + commit on success (`EnhanceSetDialog.tsx`, `SetDetailView.tsx`; single-unit commit — per-card `commit({ quantity })` metering NOT implemented) | flashcards agent |
+| `education.live_grade` | flashcards live grader — guard + commit once per started session (`features/flashcards/fast-fire/components/FastFireSetup.tsx`) | flashcards agent |
 | `education.notes_generate` | notes generation (shared `ConvertContentDialog`) — commit on success | notes agent |
 | `education.ingest_document` | onboard `StartHero` (`useKitGeneration.run` → bool) — commit on success | this feature |
 | `education.mindmap_generate` | `MindMapNew` — commit on success | this feature |

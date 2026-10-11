@@ -611,7 +611,7 @@ context.context_items` → **`42703: column context_items.visibility does not ex
     returns a path that matches nothing. Documentation could not have prevented this — nothing
     connected the DB column to the filesystem; this test does. Proven to bite by reinjecting the
     `/apps/{id}` regression. (It initially did **not** bite: the scan flattened `_`-prefixed
-    Next.js private folders instead of excluding them, turning `app/_flashcard/[category]/[id]`
+    Next.js private folders instead of excluding them, turning a route under a `_`-prefixed folder
     into a root-level `/[category]/[id]` that matched almost anything. Fixed, with an explicit
     assertion guarding that shape.)
   - Migration `migrations/sharing_registry_route_truth_d138.sql` (applied + ledgered); TS mirror +

@@ -1,6 +1,6 @@
 # React Render Contract — Block Streaming Protocol
 
-> **This directory (`components/mardown-display/`) is the RICH DOCUMENT rendering engine** — the "basement" of the Rich Document system. It is NOT a thin markdown wrapper; it is the multi-thousand-line runtime that turns text + JSON into interactive components (flashcards, diagrams, task lists, tool-call traces, code, plans, …). The front door is `<RichDocument>` (`features/rich-document/RichDocument.tsx`), which wraps this engine and adds the action toolkit. See [`features/rich-document/FEATURE.md`](../../features/rich-document/FEATURE.md) and the `rich-document-actions` skill.
+> **This directory (`components/mardown-display/`) is the RICH DOCUMENT rendering engine** — the "basement" of the Rich Document system. It is NOT a thin markdown wrapper; it is the multi-thousand-line runtime that turns text + JSON into interactive components (flashcards, diagrams, task lists, tool-call traces, code, plans, …). The front door is `<RichDocument>` (`src/rich-document/RichDocument.tsx` in `@ai-matrx/rich-content`), which wraps this engine and adds the action toolkit. See [`features/rich-document/FEATURE.md`](../../features/rich-document/FEATURE.md) and the `rich-document-actions` skill.
 
 > This document is the **React team's counterpart** to `aidream/ai/processing/streaming-constitution.md`.
 > It describes what Python guarantees, what React must handle, outstanding gaps, and the render pipeline.
@@ -97,7 +97,7 @@ BlockRenderer (switch on block.type)
 
 ### GAP-1: `transcript` and `tasks` missing `serverData` path (TASK-009)
 
-`BlockRenderer.tsx` lines 189–192 always pass `block.content` to the component and never check
+`BlockRenderer.tsx` (the `block.content` pass-through) always pass `block.content` to the component and never check
 `block.serverData`. Python now sends structured data. Add the fast path:
 
 ```tsx
@@ -199,4 +199,4 @@ environments so existing flows using legacy `content`-based parsing still work.
 | `components/mardown-display/chat-markdown/types.ts` | Now re-exports `isNewProtocol` (was missing, caused TS error) |
 | `components/mardown-display/blocks/flashcards/FlashcardItem.tsx` | `back` prop now `string \| null`; renders loader spinner when `null` |
 | `components/mardown-display/blocks/flashcards/FlashcardsBlock.tsx` | Accepts `serverData` prop; uses it instead of re-parsing when available |
-| `components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx` | `flashcards` case now has `serverData` fast path + `strictServerData` error |
+| `src/display/chat-markdown/block-registry/BlockRenderer.tsx` (`@ai-matrx/rich-content`) | `flashcards` case now has `serverData` fast path + `strictServerData` error |
