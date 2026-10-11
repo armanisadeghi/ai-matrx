@@ -126,7 +126,24 @@ On the 100-stream stress board: 58 fps standing still, 21–24 fps panning (soft
 - Native tiles for the features that are Page tiles today. A census of what people actually put on
   boards as Page tiles would choose the order.
 
+### Regressions found on 2026-10-10
+
+Command: `npx jest features/board lib/working-copy lib/kept-answer lib/redux/store-reads styles/__tests__`.
+Result: 97 of 102 suites and 820 of 825 tests pass. A second run was invalidated when someone else's
+`pnpm install` swapped `@ai-matrx/kit` partway through, so if many suites fail with ENOENT, re-run.
+
+| Failing test | What broke | Who owns the fix |
+|---|---|---|
+| `remount-safety.work.test.tsx`, chat: "waking and remounting reach the network not at all" | A remounted chat tile calls RPC `block_state_list_staged` again, so it breaks the quiet law. Something added since 2026-10-04 reads in the view, not once per conversation | Find the hook that calls `block_state_list_staged` (chat package or `features/`); move it to a record-keyed store read (`useStoreRead` or the package's own store) |
+| `remount-safety.data.test.tsx`, data-table | The tile now logs `[cost] … billing.points_per_usd could not be read`: no `platform.feature_knob` row exists for `billing / points_per_usd`, and the harness treats unexpected console errors as failures | Seed the knob (the error message names the fix), or add the knob to `remount-safety/platform-fixtures.ts` if it already exists live. Check live first |
+| `styles/__tests__/no-style-attribute-descendant-selectors.test.ts` | New trap-(a) selector: `features/spaces/spaces.css` `.spaces-media-frame[data-media-kind="pdf"] .spaces-media-body:not([style]) .spaces-iframe-pdf`. `:not([style])` followed by a descendant part brings the whole-subtree restyle back | Replace it with a data attribute or class set by the component |
+| `features/board/__tests__/boards-list-front-door.test.tsx`, "has ONE 'Boards' row" | The nav no longer has the row this test looks for (Board menu changed 2026-10-09/10) | Check `/board` is still one nav click away. Fix the nav if it isn't, otherwise update the test to the current nav shape |
+| `styles/__tests__/no-overlay-layout-reservation.test.ts` | Reads `components/ui/toast.tsx`, which no longer exists | Point it at the current toast host |
+
 ### Known issues / risks
+
+- **The 2026-10-10 check read code and ran unit tests only; no browser was used.** The shared
+  preview reported that `node_modules` had changed under it and needed a restart.
 
 - **Page tiles share the app's origin and session.** That is intended: the page runs signed in as
   the person. But a framed page can still navigate itself; only the parent's navigations are
@@ -173,6 +190,8 @@ The camera is per viewer (localStorage plus `#cam=`), never saved to the board.
 
 ## 4. Next steps (in priority order)
 
+0. **Clear the five red tests above**, with the chat quiet-law regression and the CSS trap first.
+   Both are the exact classes this program closed. About an hour of work.
 1. **Re-measure the scale target on today's code.** Run Playwright headless and sign in with
    `pnpm dev-login /board` as admin@admin.com. Build a board with 12–15 heavy tiles: long chats (one
    streaming), a table, a document, a note, a meeting, a project. Record pan, drag, resize and
