@@ -18,8 +18,8 @@ primitives in `features/flashcards/fast-fire/agents/grading-core.ts` (`uploadRes
 (upload → grade → record) and `data/reviewPracticeSession.ts` (writes `session_review`).
 
 **Dedicated mode-aware mandates** (`mandates.ts`, `SPOKEN_PRACTICE_MANDATES`; the DB picks the
-agent). Never reuse the FastFire flashcard grader or review lane: they leaked flashcard and
-tool-narration framing into oral-exam reviews. Designer (`design`) and, for `pronunciation`,
+agent). Never reuse the FastFire flashcard grader or review lane: they carry flashcard and
+tool-narration framing. Designer (`design`) and, for `pronunciation`,
 `design_language` (same plan shape, target-language phrase in guillemets + English gloss);
 grader (`grade`, mode rides as FACTUAL data on the first line of `rubric`; persona rules live in the
 DB agent) and `grade_pronunciation` (same `SpokenGrade` plus an optional `pronunciation` object

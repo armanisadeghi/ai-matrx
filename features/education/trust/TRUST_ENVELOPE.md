@@ -1,8 +1,8 @@
 # TrustEnvelope — the P0 grounded-AI contract
 
-> **The contract every education AI project (P1–P4, P6, P9) builds against.** Mechanics: [`FEATURE.md`](./FEATURE.md).
-> Typed definition: [`types.ts`](./types.ts). At **Convergence A, any education AI output
-> without this envelope is a defect.**
+> **The contract every education AI feature builds against.** Mechanics: [`FEATURE.md`](./FEATURE.md).
+> Typed definition: [`types.ts`](./types.ts). Any education AI output
+> without this envelope is a defect.
 
 ## What it is
 
@@ -71,7 +71,7 @@ That's the whole consumer surface: one field pass-through + one component + one 
 
 ## Grade-on-meaning (the grading half of trust) — ONE verdict core
 
-Grading judges **meaning, not exact strings** (Knowt is hated for exact-string grading). There is
+Grading judges **meaning, not exact strings**. There is
 **ONE canonical verdict core** every grading path resolves to — typed/short-answer AND spoken:
 
 ```ts
@@ -94,10 +94,8 @@ never a second verdict shape:
 | Spoken (FastFire / voice) | `SpokenGrade` (`fast-fire/agents/grading-core.ts`) | `score`, `rubric`, `transcript`, `missing`, optional `pronunciation` |
 
 Shared helpers live beside the core in [`types.ts`](./types.ts): `verdictResult(v)` (→ `GradeResult`),
-`gradeResultScore(result)` (→ 0..1), `resultFromScore(score)`, `verdictFromResult(...)`. The
-duplicated result unions (`SpokenResult`, the slice's `GradeResult`, assessment's `AttemptResult`,
-`ReviewResult`) are all now aliases of the one `GradeResult`; the coercer is the single
-`coerceSpokenGrade`. Persisted shapes: `study_attempt.score` jsonb is `{ rubric, missing, feedback }`; `result` / `score_value` and `assessment_result.detail` as before.
+`gradeResultScore(result)` (→ 0..1), `resultFromScore(score)`, `verdictFromResult(...)`. Every result union (`SpokenResult`, `AttemptResult`, `ReviewResult`) aliases the one `GradeResult`; the spoken coercer is the single
+`coerceSpokenGrade`. Persisted: `study_attempt.score` jsonb is `{ rubric, missing, feedback }`.
 
 ## Agent-side contract
 

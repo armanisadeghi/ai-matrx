@@ -39,8 +39,7 @@ Source input ─SourceSet─▶ POST /sources/resolve ─useIngest─▶ { text,
   continues by itself (≤30 min, then one Continue), keeps the anchor, adopts outputs whose lineage
   edge landed, and reads finished sections back (`convert/sectionJournal.ts`) instead of paying again.
 - `kitTitle.ts` names the kit ONCE between ingest and fan-out and that value is every generator's
-  `source.title` (multi-section runs resolve `source.title` first, which used to stamp the raw
-  filename on every artifact). Floor: `humanizeSourceTitle` (deterministic, always runs); on top,
+  `source.title`. Floor: `humanizeSourceTitle` (deterministic, always runs); on top,
   the `education.kit_title` mandate (bounded 20 s; a late answer still renames). Naming never
   blocks a kit.
 - The converter (`../convert/FEATURE.md`) owns generation; targets are listed in
@@ -67,7 +66,7 @@ Source input ─SourceSet─▶ POST /sources/resolve ─useIngest─▶ { text,
 
 ## Invariants
 
-- 🚨 Kit size follows the MATERIAL: `StartHero` passes `depth` (`quick|standard|thorough`) and an
+- Kit size follows the MATERIAL: `StartHero` passes `depth` (`quick|standard|thorough`) and an
   optional exact `count`; the coverage planner spreads it across the whole document. Law and knobs:
   `../convert/FEATURE.md` § THE COVERAGE LAW.
 - A document we could not read all of is a WARNING (amber banner naming how much was read), never

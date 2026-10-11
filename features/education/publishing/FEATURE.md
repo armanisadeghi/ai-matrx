@@ -45,7 +45,7 @@ any doc): `edu_learn_doc_upsert`, `edu_learn_doc_set_status` (publish/unpublish)
 
 ## Invariants
 
-- No dual content path: the DB is the only source (the `LEARN_DOCS` registry is gone).
+- No dual content path: the DB is the only source.
 - Never a raw per-slug `unstable_cache` with static keyParts — it collapses every slug onto one
   entry. Derive from the list or put the arg in keyParts.
 - Writes never bypass the RPCs (no direct `.from('learn_doc').insert()`).

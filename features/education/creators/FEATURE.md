@@ -22,7 +22,7 @@ Creator columns on `users.profiles`: `creator_handle`, `creator_tagline`, `creat
 
 ## Public education origin
 
-Every public education canonical/OG/sitemap URL is built from `EDU_ORIGIN` (`features/education/constants.ts`, env `NEXT_PUBLIC_EDU_ORIGIN`, default the main site). `proxy.ts` rewrites `/` to `/education` on the edu host and 302s every path outside its allowlist to the main host (it no-ops if the env is unset or equals the main host). Serving `learn.aimatrx.com` needs the domain added in Vercel and DNS plus that env set (UNVERIFIABLE here: Vercel project state); status in the classes-and-creators STATE.
+Every public education canonical/OG/sitemap URL is built from `EDU_ORIGIN` (`features/education/constants.ts`, env `NEXT_PUBLIC_EDU_ORIGIN`, default the main site). `proxy.ts` rewrites `/` to `/education` on the edu host and 302s every path outside its allowlist to the main host (it no-ops if the env is unset or equals the main host). Serving `learn.aimatrx.com` needs the domain added in Vercel and DNS plus that env set; status in the classes-and-creators STATE.
 
 ## Where it lives
 

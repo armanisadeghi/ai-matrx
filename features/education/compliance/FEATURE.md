@@ -36,7 +36,7 @@ Find the live consumers with `grep -rl useAiComplianceGate`. Never re-implement 
 
 ## Rules specific to this code
 
-- Undeclared signed-in = ALLOW with a nudge (`age_undeclared`); a guest with no band = refuse (`guest_age_undeclared`). Reality is the DB function, not any earlier doc claiming mandatory declaration.
+- Undeclared signed-in = ALLOW with a nudge (`age_undeclared`); a guest with no band = refuse (`guest_age_undeclared`).
 - `edu_set_age_band` returns `{status, age_band, reason}` and does NOT raise on a blocked `under_13 → 13_17|adult`; callers must read `status` (raising would roll back the audit row). The route out is `edu_guardian_set_age_band` by a verified adult guardian (`family/components/StudentAgeBandControl.tsx`).
 - `ensureAllowed()` fails CLOSED for the minor path on a resolver error (signed-in with no already-resolved allowed verdict is blocked); an already-resolved allow and a not-signed-in visitor keep the soft allow. Always loud (`console.error`). Concurrent `ensureAllowed()` calls all resolve when the prompt is answered.
 - The COPPA gate runs BEFORE the entitlement gate: "may this account collect data" precedes "can the plan afford it".
