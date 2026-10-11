@@ -1,7 +1,6 @@
 # TrustEnvelope — the P0 grounded-AI contract
 
-> **Status:** Published 2026-07-07 (Wave 1, day-1 contract). Owner: P0 — Trust Layer.
-> **This is the contract every education AI project (P1–P4, P6, P9) builds against.**
+> **The contract every education AI project (P1–P4, P6, P9) builds against.** Mechanics: [`FEATURE.md`](./FEATURE.md).
 > Typed definition: [`types.ts`](./types.ts). At **Convergence A, any education AI output
 > without this envelope is a defect.**
 
@@ -38,15 +37,8 @@ source"**, which opens the real file in the canonical file-preview window (`open
 or the web page in a new tab. Consumers get this for free — no wiring. Resolver:
 [`open-source.ts`](./open-source.ts) (`openCitationSource`, `citationIsOpenable`).
 
-### Source-agnostic grounding (works for ANY source)
+Backfill of those refs (`attachSourceRefs`) and the open rules live in [`FEATURE.md`](./FEATURE.md).
 
-Grounding is **not** RAG-specific. Any surface that creates a grounded card backfills durable
-refs onto its citations with the shared helper [`grounding.ts`](./grounding.ts)
-(`attachSourceRefs`) — passing the `fileId` behind a RAG doc, a user-uploaded/attached file,
-or a web url, plus the page for each cited chunk. Wired today in the RAG from-source flow
-(`CreateFromSource`) and the chat/canvas materialization path
-(`flashcards-canonical-adapter` carries the envelope through). A plain uploaded file (not
-RAG-indexed) grounds the same way once its `fileId` is passed to `attachSourceRefs`.
 ```ts
 
 interface TrustEnvelope {
@@ -99,29 +91,27 @@ never a second verdict shape:
 | Path | Adapter | Extras it wraps around `GradeVerdict` |
 |---|---|---|
 | Typed / short-answer (assessment) | `GradedAnswer` (`assessment/data/grading.ts`) | `scoreValue`, `gradedBy` |
-| Spoken (FastFire / voice) | `SpokenGrade` (`fast-fire/agents/grading-core.ts`) | `score`, `rubric`, `transcript`, `missing` |
+| Spoken (FastFire / voice) | `SpokenGrade` (`fast-fire/agents/grading-core.ts`) | `score`, `rubric`, `transcript`, `missing`, optional `pronunciation` |
 
 Shared helpers live beside the core in [`types.ts`](./types.ts): `verdictResult(v)` (→ `GradeResult`),
 `gradeResultScore(result)` (→ 0..1), `resultFromScore(score)`, `verdictFromResult(...)`. The
 duplicated result unions (`SpokenResult`, the slice's `GradeResult`, assessment's `AttemptResult`,
 `ReviewResult`) are all now aliases of the one `GradeResult`; the coercer is the single
-`coerceSpokenGrade` (FastFire's inline duplicate `coerceGrade` was deleted). The persisted shapes
-are unchanged — `study_attempt.score` jsonb stays `{ rubric, missing, feedback }`, `result` /
-`score_value` unchanged, `assessment_result.detail` unchanged.
+`coerceSpokenGrade`. Persisted shapes: `study_attempt.score` jsonb is `{ rubric, missing, feedback }`; `result` / `score_value` and `assessment_result.detail` as before.
 
 ## Agent-side contract
 
 Every **generation** agent emits `trust` per item; every **grounded** agent (source-generation,
 tutor) is instructed to **refuse rather than guess** — return `confidence:"not_in_material"` with
-empty `citations` instead of inventing an answer. The per-agent addendum lives in
-[`../docs/AGENT_SPECS.md`](../docs/AGENT_SPECS.md) § "Trust addendum". The two reference retrofits
-are `fc_generate_from_source` (real citations) and `fc_help_live` (honest refusal).
+empty `citations` instead of inventing an answer; agent definitions live in the database behind
+their mandates. The two reference retrofits
+are mandates `flashcards.generate_from_source` (real citations) and `flashcards.help_live` (honest refusal).
 
 ## Where it lives on the wire
 
 - **Streaming:** rides the same content-IR envelope as the item, under the `trust` field (the IR
-  residue channel carries it losslessly even before the kind schema declares it; the
-  `trust_envelope` / `citation` content-IR kinds make it first-class — see the shape-system work).
+  residue channel carries it losslessly; `trust_envelope` and `citation` are registered content-IR
+  kinds, compiled mirror in `features/content-ir/kinds/trust-envelope.ts`).
 - **At rest (flashcards reference):** persisted on `fc_card.metadata.trust`; source lineage also
   survives as the existing `fc_card → file` association edge (`role: source`).
 
@@ -135,18 +125,3 @@ are `fc_generate_from_source` (real citations) and `fc_help_live` (honest refusa
 | P4 notes | generated/converted notes carry `trust` |
 | P6 exam hub | AI-graded FRQs use `GradeVerdict`; published items show grounding |
 | P9 ingest | the one-upload kit fan-out stamps `groundedIn` + citations on every artifact |
-
-## Change log
-- **2026-07-10** — **Verdict unification + verify-hub-wide (final certification).** ONE grading
-  verdict core: `GradeVerdict` + shared `GradeResult` vocabulary + helpers (`verdictResult`,
-  `gradeResultScore`, `resultFromScore`, `verdictFromResult`) in `types.ts`. `SpokenGrade` now
-  embeds `verdict: GradeVerdict` (dropped its `result`/`feedback` in favor of the core); the four
-  duplicate result unions collapsed to `GradeResult`; FastFire's inline `coerceGrade` deleted (reuses
-  `coerceSpokenGrade`). Behavior-identical refactor — persisted shapes untouched. The "Verify against
-  source" affordance was extracted from `CardTrustFooter` into the shared
-  [`<VerifyAgainstSourceButton/>`](./components/VerifyAgainstSourceButton.tsx) and mounted hub-wide:
-  quiz items (QuestionView post-grade + AssessmentResults review), summaries (SummaryDetail), and
-  mind-map node panels (linked card verified against the map's cited sources). `CardTrustFooter` now
-  consumes the same shared affordance.
-- **2026-07-07** — Contract published (types + doc + coercers). Primitives, kind registration,
-  reference retrofits, and grade-on-meaning tests land during Wave 1.

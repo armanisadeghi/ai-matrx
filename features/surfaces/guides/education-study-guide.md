@@ -7,8 +7,8 @@ once before your first write.
 ## What the page is
 
 A study guide is a note in the person's "Study Notes" folder, shown in a reader: the guide's text
-in the middle, the guide picker and outline on the left, and two tabs on the right — **Notes &
-comments** and **Key Terms**. The person can mark passages, write private notes, and discuss the
+in the middle, the guide picker and outline on the left, and three tabs on the right — **Notes &
+comments**, **Resources** (linked flashcards and related study material) and **Key Terms**. The person can mark passages, write private notes, and discuss the
 guide with others in comment threads. Everything you change goes through this page's write
 targets, which run the same code as the page's own buttons.
 
@@ -27,7 +27,7 @@ targets, which run the same code as the page's own buttons.
   A comment with `suggested_text` proposes replacing its quoted passage.
 - `key_terms`: `{ id, term, definition }` flashcards from the decks linked to the guide. Read-only
   here — they are edited in the flashcard editor.
-- `outline`, `available_guides` (the person's other guides as `{ id, title }`), `reader_mode`,
+- `outline`, `available_guides` (the person's guides as `{ id, title, version }`), `reader_mode`,
   `active_details_tab`, `load_error`, `details_error`.
 
 `study_guide`, `personal_annotations` and `guide_comments` together are the record: each is shown
@@ -99,6 +99,17 @@ it). Resolve, don't delete, to close a discussion.
 **`delete_guide_comments`** — `["<id>", …]`, the person's own comments or replies only. The
 comment disappears for everyone; its author can restore it from Trash.
 
+**`create_study_guides`** — `[{ "title": "…", "content": "…" }]` (1-10; title required and
+single-line, content optional markdown) creates Notes-backed guides in the person's Study Notes
+folder; it asks which organization when none is selected.
+
+**`update_study_guides`** — `[{ "id": "<from available_guides>", "expected_version": 3, "title": "…", "content": "…" }]`
+(1-10). `expected_version` is required and must equal that guide's version in `available_guides`;
+a stale version refuses instead of overwriting a later save. This is how you rename a guide.
+
+**`delete_study_guides`** — `["<id>", …]` ids from `available_guides` (1-10). Each guide goes to
+Trash and can be restored; its annotations and comments are not changed.
+
 ## Rules
 
 - Every list is checked whole before the approval card: any bad entry refuses the whole write and
@@ -108,8 +119,7 @@ comment disappears for everyone; its author can restore it from Trash.
   result, not the (older) lists.
 - Never change this guide, its notes or its comments with generic note, document, comment or scope
   tools: they skip the page's anchoring, privacy and version checks.
-- You cannot rename the guide or link flashcard decks from here; tell the person to use Edit or
-  "Manage linked flashcards".
+- You cannot link flashcard decks from here; tell the person to use "Manage linked flashcards".
 
 ## When you are stuck
 

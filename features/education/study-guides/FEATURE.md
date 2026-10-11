@@ -1,42 +1,13 @@
 # Education study guides
 
-Additive study reader at `/education/study-guides` and `/education/study-guides/[id]`. Existing Notes remain the source of truth; the Education note action bar opens the same note in this reader.
+Additive reader at `/education/study-guides` and `/education/study-guides/[id]`. Notes stay the source of truth (a guide is a platform note, see `../notes/FEATURE.md`); the Education note action bar opens the same note here.
 
-## Ownership and composition
+## Where it lives and rules
 
-- `components/StudyGuideReader.tsx` composes the existing shell, `RichDocument`, Notes outline parser, registered resizable panels, tutor, feedback, and flashcard window openers.
-- `service.ts` reads the personal guide library — my notes in the Education study folder (`STUDY_NOTES_FOLDER`, `features/education/notes/study-notes-folder.ts`, where the notes generator writes) — and canonical note records. An ordinary draft is a note, not a guide; any note still opens here by direct link. Direct links keep the usual record-access gate. Failed reads stay distinct from absent records.
-- Highlights, private notes, comments, suggestions and passage links come from the ONE annotation sidecar (`features/rich-document/annotations/`, RC-B11): the reader wraps `RichDocument` in `<AnnotatedContent>` and the Notes tab is `<AnnotationPanel>`. The guide is the source `note:<id>` at its `version`. Private highlights/notes are `content.document` annotation rows + an `annotates` edge filed under the reader's OWN organization (chair ruling 2026-09-25), comments are parent-governed `platform.comments`. The tutor and "Report an issue" ride the sidecar toolbar as study-only passage actions. The source content is never rewritten to paint.
-- Passage writes (highlights, passage comments, suggestions, passage links) are ON since 2026-09-26 (RC-A5 + the RC-B11 comment doors applied). A first private highlight asks which workspace to file it in. Suggestion Accept needs a splice-save path the Notes source does not have yet, so a guide offers Reject only.
-- The transitional Notes adapter (`custom_fields.studyAnnotation` notes + note→note `source` edges) is removed from code; its existing rows still exist and belong to the storage migration census.
-- Key terms come from flashcard sets associated with the note and their canonical card membership edges. Clicking a term opens the existing flashcard item window.
-- Complete collection reads use `readAllRows` with exact counts. Association collection RPCs are paginated at the shared host port in `features/scopes/host/readAssociationPages.ts`.
-
-## Checks
-
-Focused tests cover missing organization, partial-save retry, annotation ownership, paginated association results beyond 1,000 rows, later-page failure, and strict note-read errors. **2026-09-26 local browser acceptance pass (education fleet):** guide picker popover (search + select), heading/outline nav, Key Terms tab, and the flashcard-link panel (typing, attach, detach) verified live against real `admin@admin.com` data. Still not exercised in this pass: independent panel scrolling/resizing/collapse and annotation reload/selection actions on desktop, and the mobile Drawer presentation.
-
-## Changelog
-
-- 2026-09-27: The library surface now declares create/update/delete over its loaded guide list. Create persistence is separate from navigation so an agent batch cannot unmount mid-write; updates reload the accessible note and compare its emitted version before the canonical Notes CAS save. The manual door lands straight in the canonical editor with an editable title.
-- `2026-10-10` — page-pass: type workspace, fixed: with no guide open (or one that failed to load) the sidebar drew a phantom bold "Untitled guide" outline row that looked like a guide and did nothing when clicked; the outline now renders only for a loaded guide. The real guide list is the "Current guide" picker above it.
-- 2026-09-27: Collection updates carry the approved `available_guides` version as required `expected_version`; reparsing after any intervening save refuses instead of silently adopting a newer version. The embedded canonical editor now exposes its Notes label control, and returning to reading removes `?edit=1` after the save.
-- 2026-09-27: Added the library's direct **New study guide** door and the reader's Trash-confirmed archive control. Both use the canonical Notes create/archive paths and keep the Study Notes folder marker; the detail agent surface now exposes matching `create_study_guides` and `delete_study_guides` targets.
-- 2026-09-27: `/education/study-guides/[id]` is its own agent surface, `matrx-user/education-study-guide`
-  (the library route keeps `matrx-user/education-study-guides`). The guide is one record value at the
-  `record` inline tier; private highlights/notes and comment threads are read from the sidecar through
-  `components/StudyGuideAgentBridge.tsx`; write targets `guide_content` (patchable, the reader's
-  splice-save) and create/update/delete for personal notes and comments, validated by
-  `studyGuideAgentWrites.ts` (+ test). Agent guide: `features/surfaces/guides/education-study-guide.md`.
-- 2026-09-26: Local browser acceptance pass done (education fleet). `StudyFlashcardLinks`'s
-  "Manage linked flashcards" hosted its `UniversalAssociationPicker` in a blocking
-  `@ai-matrx/design-system` `Sheet` (default `modal=true`) — the same untypeable-picker class as
-  the `/education/classes` fix. Converted to `MatrxDynamicPanelHost` (docked, non-blocking);
-  live-verified typing into the picker's search box and attach/detach both land. List, new/topic
-  generation, detail reader, outline nav, Key Terms tab, and the guide picker popover all verified
-  live with real data (own admin@admin.com notes).
-- 2026-09-25: Adopted the canonical annotation sidecar (RC-B11); removed the transitional Notes annotation adapter and its tests.
-
-- 2026-09-20: Added the Education study reader alongside Notes, using existing content and association primitives.
-- 2026-09-25: The guide library lists only study-folder notes (it listed every draft and chat save); guard in `service.test.ts` (RC-B1 verify D1).
-- 2026-09-27: Note and comment write refusals list EVERY problem at once (`collectProblems`); `personal_annotations` and `guide_comments` moved to `INLINE_TIER.record` (a record's own sub-lists are part of the record, Arman 2026-09-27).
+- `components/StudyGuideReader.tsx` composes the shell, `RichDocument`, the Notes outline parser (`outline.ts`), registered resizable panels, tutor, feedback and flashcard window openers. The outline renders only for a loaded guide.
+- `service.ts` — the library is `listEducationNotes({ owner: "mine" })` (only notes marked for Education; an ordinary draft or chat save is a note, not a guide). Any readable note still opens by direct URL through the usual record-access gate. Failed reads stay distinct from absent records. Create / update / archive use the canonical Notes paths (`NotesAPI`) with `EDUCATION_NOTE_CREATE_FIELDS`; updates are version- and organization-guarded.
+- Highlights, private notes, comments, suggestions and passage links are the ONE annotation sidecar (`features/rich-document/annotations/`): the reader wraps `RichDocument` in `<AnnotatedContent>`; the Notes tab is `<AnnotationPanel>`; the guide is source `note:<id>` at its `version`. Private rows are filed under the reader's OWN organization; the first private highlight asks which workspace. The source content is never rewritten to paint. Suggestion Accept needs a splice-save the Notes source lacks, so a guide offers Reject only. Tutor and "Report an issue" ride the toolbar as study-only passage actions.
+- Key terms come from flashcard sets associated with the note and their card membership edges; a term opens the flashcard item window. Pickers in this reader use `MatrxDynamicPanelHost`, never a modal `Sheet` (it makes search fields untypeable).
+- Complete collection reads use `readAllRows` with exact counts; association collection RPCs paginate in `features/scopes/host/readAssociationPages.ts`.
+- Agent surfaces: the library is `matrx-user/education-study-guides` (create/update/delete over the loaded list; create persists separately from navigation so a batch cannot unmount mid-write; updates carry the approved version as required `expected_version`); the reader is `matrx-user/education-study-guide`, validated by `studyGuideAgentWrites.ts`. Contract: `features/surfaces/guides/education-study-guide.md`.
+- Note and comment write refusals list every problem at once (`collectProblems`).

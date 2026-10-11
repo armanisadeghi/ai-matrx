@@ -1,168 +1,30 @@
-# Trust Layer (P0) — grounded-AI primitives for the Education Hub
+# Trust Layer — grounded-AI primitives for the Education Hub
 
-> **Status:** Wave 1 shipped 2026-07-07. Owner: P0. Contract:
-> [`TRUST_ENVELOPE.md`](./TRUST_ENVELOPE.md). This is the cross-cutting layer every
-> education AI feature consumes — at Convergence A, any AI output without the envelope
-> is a defect.
+Contract: [`TRUST_ENVELOPE.md`](./TRUST_ENVELOPE.md) (cited by `features/content-ir/kinds/trust-envelope.ts`; keep the name). Every education AI output without the envelope is a defect. Three guarantees as shared primitives: **citations** (every output grounded in the learner's own material, tap to read the passage), **honest confidence + refusal** (`grounded | inferred | not_in_material`; a grounded answerer refuses instead of fabricating, with general knowledge as an explicit choice), **grade-on-meaning** (paraphrases pass, misconceptions are named).
 
-## What this is
+## Where it lives
 
-Trust as a _product surface_, not an implicit RAG detail. Three guarantees, shipped as
-shared primitives:
+- `types.ts` — THE contract: `TrustEnvelope`, `SourceCitation`, `TrustConfidence`, `GradeVerdict`, `VerifyResult`, the non-throwing coercers (`coerceTrustEnvelope`, `coerceGradeVerdict`) and `readStoredVerification`/`VERIFICATION_KEY`. `coerceGradeVerdict` is THE ONE verdict reader (accepts the boolean contract or a `result`/`grade` token; `explanation` falls back through `feedback`/`reason`); `readTypedGradeVerdict` and the spoken `coerceSpokenGrade` adapt from it.
+- `components/` — `ConfidenceBadge`, `SourceCitations` (chips via the shared `CitationChip` primitive), `RefusalNotice`, `CardTrustFooter` (flashcard drop-in), `VerifyAgainstSourceButton` (mount on ANY cited item; renders nothing without a verifiable citation), `SeeSourceButton`.
+- `open-source.ts` (`openCitationSource`), `sourceRef.ts` (the ONE citation→Source Inspector mapping, `inspectorArgsForSourceRef`; a card's provenance from its envelope or its `fc_card --source--> file` edge), `grounding.ts` (`attachSourceRefs`, `attachRefsToCitation`), `useCitationPlace.ts`, `useVerifyAgainstSource.ts`, `plainWords.ts`, `recordCitation.ts`, `documentPassage.ts`.
+- Mandates: `flashcards.generate_from_source`, `flashcards.help_live`, `flashcards.verify_against_source`, `flashcards.grade_typed_answer` (keys in `features/flashcards/data/mandates.ts`, `FC_MANDATES`; the DB picks the agent). Generators emit per-item `trust` and drop cards they cannot ground; grounded agents refuse with `not_in_material` and empty citations.
+- Brand pages: `/education/features/how-we-stay-honest` and `/education/features/data-security` (`../data/features.ts`).
 
-1. **Citations** — every AI output is grounded in the learner's own material and shows the
-   exact passages (tap to read them).
-2. **Honest confidence + refusal** — outputs are labeled `grounded | inferred |
-not_in_material`; grounded answering refuses ("that isn't in your material") instead of
-   fabricating, with a general-knowledge escape hatch as an explicit choice.
-3. **Grade-on-meaning** — grading judges the idea, not the exact string; paraphrases pass and
-   misconceptions are named.
+## Rules
 
-## Parts
+- **Wire and rest:** `trust` rides inside the same content-IR payload as the item. `trust_envelope` and its child `citation` are registered kinds (`features/content-ir/kinds/trust-envelope.ts`); flashcard kinds declare `trust.confidence`/`groundedIn` first-class and `citations[]` rides the residue channel. Persisted on `fc_card.metadata.trust` (`fcService.addCards`). Both coercion paths (`useGenerateCards.coerceCard`, `generated-set-from-envelope`) must carry it.
+- **Source-agnostic grounding:** every creation surface backfills durable openable refs with `attachSourceRefs` at persist time (wired in `CreateFromSource` and `flashcards-canonical-adapter`). The Source's REAL name (`refs.title`) wins over the agent's citation title; the agent's title stays only when the surface does not know the name; `locator` is kept.
+- **Opening the source:** RAG `chunk` citations open the canonical Source Inspector at the exact chunk/page (`useOpenCitation`); other files use `openFilePreview(fileId)`, URLs a new tab. Only canonical chunk citations can authorize `grounded` (seed/weak-card context stays `inferred`; tutor turns reconcile agent-emitted ids against same-turn retrieval).
+- **One place name per Source kind** (`useCitationPlace`, `citedPlace` in rag `source-inspector/citedAnchor.ts`): web section heading, recording time, "Page N", nothing for pasted text; the agent's `locator` is never shown for an openable citation. A recording's citation opens the Source Inspector with the Source's own player at the cited moment (`recordingInspectorArgs`), never a new tab. A transcript picked as a record (citation `<record id>:<n>`) resolves via `portionForExcerpt`; no match means no place, never a guess.
+- **Plain words** (`plainWords.ts`): never show chunk ids (`plainGroundedIn`), locators read "Page 22" (`plainLocator`), the open action says "Open the web page" only for a real web URL (`openSourceLabel`). Grounded-in names drop the repeated "Grounded in" beside the badge. Guard: `__tests__/plain-words.test.ts`.
+- **Verify verdicts are stored, not re-bought:** with a `subject` (`fc_card` only today) the verdict persists to `fc_card.metadata.trust_verification` via the primitive's `onResult`; the button shows the stored verdict with its date ("Check again"), and "Use this correction" writes `suggestedFix` as the answer and stamps `status='verified'` plus `appliedAt`. A stored verdict about text the card no longer has is stale. Other surfaces (assessment, mind maps, summaries) stay transient until they get a subject kind; never a second verification shape. `VerifyVerdict` renders `card_verification` through its kind component. The run streams in the floating `LiveRunWindow` (`useFloatingAgentRun`).
+- **Card-level "See source"** (`SeeSourceButton`) renders nothing without an openable ref; FastFire threads `sourceRef` onto `DrillCard`.
 
-| Part                           | Path                                                                                     | Role                                                                                                                                                                                          |
-| ------------------------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contract (types + coercers)    | [`types.ts`](./types.ts)                                                                 | `TrustEnvelope`, `SourceCitation`, `TrustConfidence`, `GradeVerdict`, `VerifyResult` + non-throwing coercers. THE source of truth.                                                            |
-| Contract doc                   | [`TRUST_ENVELOPE.md`](./TRUST_ENVELOPE.md)                                               | Consumer-facing contract (P1–P4, P6, P9).                                                                                                                                                     |
-| `<ConfidenceBadge/>`           | [`components/ConfidenceBadge.tsx`](./components/ConfidenceBadge.tsx)                     | The honest-confidence chip.                                                                                                                                                                   |
-| `<SourceCitations/>`           | [`components/SourceCitations.tsx`](./components/SourceCitations.tsx)                     | Tappable citation chips → exact passage popover + source door. RAG chunks open the shared Source Inspector at the exact chunk/page; other files/URLs use the canonical fallback.              |
-| Open-source resolver           | [`open-source.ts`](./open-source.ts)                                                     | `openCitationSource` → canonical `openFilePreview(fileId)` / new-tab url.                                                                                                                     |
-| Grounding backfill             | [`grounding.ts`](./grounding.ts)                                                         | `attachSourceRefs` — source-agnostic durable-ref backfill (RAG / uploads / chat).                                                                                                             |
-| `<RefusalNotice/>`             | [`components/RefusalNotice.tsx`](./components/RefusalNotice.tsx)                         | Honest-refusal callout + explicit general-knowledge opt-in.                                                                                                                                   |
-| `<CardTrustFooter/>`           | [`components/CardTrustFooter.tsx`](./components/CardTrustFooter.tsx)                     | One-line flashcard drop-in: badge + citations + the shared Verify affordance.                                                                                                                 |
-| `<VerifyAgainstSourceButton/>` | [`components/VerifyAgainstSourceButton.tsx`](./components/VerifyAgainstSourceButton.tsx) | THE shared "Verify against source" affordance (button + verdict). Mount on ANY cited item — flashcards, quiz items, summaries, mind-map nodes. Renders nothing without a verifiable citation. |
-| `useVerifyAgainstSource`       | [`useVerifyAgainstSource.ts`](./useVerifyAgainstSource.ts)                               | Re-checks a card against its cited passage; flags drift.                                                                                                                                      |
+## Open
 
-## Agents (authored + live-verified via agent_author, 2026-07-07)
+- **Page-precise landing for non-RAG files:** `SourceCitation.page` is captured and persisted, but `openFilePreview(fileId)` takes no page and `PreviewPane` is not handed one, so `openCitationSource` opens page 1 (the shared `FilePreview`/`PdfPreview` already accept a controlled `pageNumber`). RAG chunk citations do land on their page via the Source Inspector.
+- **Chat attachments:** the legacy chat store (`users.user_flashcard_sets` via `flashcardPersistenceService`) does not thread the attached file's `file_id`, so a deck saved through it cannot backfill an openable ref; the generating agent should emit `fileId`/`url` per citation or that save path should backfill. The canonical `fc_*` adapter path carries the envelope.
+- Non-RAG plain uploads: `CreateFromSource` is RAG-library-only; an unindexed-upload entry point would reuse `attachSourceRefs`.
+- Quiz/audio/notes consumers wire the envelope per the contract's consumers table.
 
-| Mandate                              | Output kind         | What it does                                                                                                   |
-| ------------------------------------ | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `flashcards.generate_from_source`    | `flashcard_set`     | Emits per-card `trust` (real citations w/ verbatim excerpts, `grounded` confidence); drops cards it can't ground. |
-| `flashcards.help_live`               | `live_help_answer`  | Emits `trust`; refuses honestly on out-of-corpus questions (`not_in_material` + escape-hatch phrasing).         |
-| `flashcards.verify_against_source`   | `card_verification` | front+back+source_excerpt → `{status: verified\|drifted\|unverifiable, explanation, suggested_fix}`.            |
-| `flashcards.grade_typed_answer`      | `answer_grade`      | question+expected+learner → `GradeVerdict` core (paraphrase-tolerant, names misconceptions).                   |
-
-Mandate keys live in [`features/flashcards/data/mandates.ts`](../../flashcards/data/mandates.ts) (`FC_MANDATES`); the agents behind them are DB-bound (swap at `/mandates`).
-
-## Data flow (flashcards reference retrofit)
-
-`generateFromSource` emits `trust` per card → both coercion paths carry it
-(`useGenerateCards.coerceCard` + `generated-set-from-envelope` — the latter previously
-**dropped** source/trust) → persisted on `fc_card.metadata.trust` (`fcService.addCards`) →
-`StudyDeck` renders `<CardTrustFooter/>` on the revealed card. On the content-IR wire, the
-`flashcard`/`enhanced_flashcard` kinds declare `trust.confidence` + `trust.groundedIn`
-first-class; `trust.citations[]` rides the zero-loss residue channel (the same mechanism the
-bridge already uses for every undeclared card field — proven in the envelope test).
-
-## Source-agnostic grounding + opening the real source
-
-Grounding is not RAG-specific and citations open the actual source, not just an excerpt:
-
-- **Backfill:** every creation surface calls `attachSourceRefs(env, {fileId, documentId, url,
-pageForCitation})` at persist time, stamping durable openable refs onto each citation.
-  Wired in `CreateFromSource` (RAG: `docDetail.source_id` file + per-chunk `page_numbers`) and
-  the chat/canvas `flashcards-canonical-adapter` (carries the envelope through). Uploaded /
-  attached files ground identically once their `fileId` is passed in.
-- **Open:** `<SourceCitations/>` shows **"Open full source"** for any citation with a
-  `fileId`/`documentId`/`url`. RAG `chunk` citations reuse `useOpenCitation` and land the shared
-  Source Inspector on the exact chunk/page; other files use `openFilePreview`, and URLs open in
-  a new tab. The user can always reach the cited record.
-- **Page deep-link (follow-up):** `SourceCitation.page` is captured and persisted; landing the
-  file viewer ON that page needs `pageNumber` threaded through
-  `openFilePreview → filePreviewWindow overlay → PreviewPane → FileTabsBody → FilePreview →
-PdfPreview` (the `PdfPreview`/`PdfDocumentRenderer` already accept a controlled `pageNumber`).
-  Opening the full file works today; page-precise landing is the next increment.
-
-## Verification (real, no mocks)
-
-- **Contract (deterministic):** `features/education/trust/__tests__/types.test.ts` +
-  `features/flashcards/data/__tests__/generated-set-from-envelope.test.ts` — 22 tests, the
-  second proving trust survives a real content-IR parse via residue.
-- **Live agent evals (2026-07-07, gemini-3.5-flash):**
-  - _Citations:_ `generateFromSource` on a 2-chunk source → 3 cards, each `confidence:grounded`
-    with the exact `chunk_id` and a verbatim `excerpt`.
-  - _Refusal:_ `helpLive` asked a cricket question mid cell-biology drill → `not_in_material`,
-    empty citations, "That isn't in your study material. Want me to answer from general
-    knowledge?"; in-corpus question → grounded answer with citation (no over-refusal).
-  - _Verify:_ `verifyAgainstSource` — a card claiming chlorophyll absorbs green → `drifted`
-    with a corrected `suggested_fix`; a faithful paraphrase → `verified`.
-  - _Grade-on-meaning:_ `gradeTypedAnswer` — "the mitochondria make energy" vs "the
-    mitochondrion" → correct; "water and CO2" vs "carbon dioxide and water" → correct (Knowt's
-    exact-string failure mode absent); location-only answer → partial; "absorbs green" → wrong
-    with misconception "Confuses absorbed light with reflected light".
-
-## Brand surface
-
-Two content-only pages under the Features axis
-([`features/education/data/features.ts`](../data/features.ts)):
-`/education/features/how-we-stay-honest` (the marketing page — the citation chips ARE the
-marketing) and `/education/features/data-security` (the T5 posture statement).
-
-## Open / follow-ups
-
-- **Page-precise deep-link:** thread `pageNumber` through the file-preview stack so a citation
-  lands the PDF on its cited page (wiring path documented above). Opening the full file works now.
-- **Chat attachment → citation file:** the legacy chat store (`users.user_flashcard_sets` via
-  `flashcardPersistenceService`) doesn't thread the attached file's `file_id`, so a deck saved
-  through THAT path can't backfill an openable file ref. The canonical `fc_*` materialization
-  path (adapter) carries the envelope; for chat attachments the generating agent should emit the
-  `fileId`/`url` in each citation (or the save path should backfill it from the attachment).
-- Non-RAG plain uploads: `CreateFromSource` is RAG-library-only; a "generate from an uploaded
-  file not yet indexed" entry point would reuse `attachSourceRefs` with that file's `fileId`.
-- Standalone activatable `trust_envelope` / `citation` content-IR kinds with dedicated render
-  components (currently: field declared on card kinds + residue-carried citations + the
-  `<SourceCitations/>` component render it — functionally complete, not a separate kind).
-- Quiz/audio/notes consumers wire the envelope during their own waves (P1–P4) per the contract.
-
-## Change log
-
-- **2026-09-30 (V5-A.6)** — One citation experience for every kind: a recording's citation (YouTube, an uploaded talk, a transcript picked as a record) no longer opens a new browser tab — `useCitationPlace` opens the canonical Source Inspector window (`recordingInspectorArgs`: the document, the portion, `seekMs`, the chip's own `placeLabel`), and `SourceInspectorPane` shows the Source's own player (`OriginalPane`) as its viewer, started at the cited moment; the viewer names the place through `openedPlace` so chip and viewer agree. The Source page at `?t=` stays the inspector's "Open source" link. Grounded-in census: the tutor strip and the per-turn tutor trust drop the repeated "Grounded in" beside the "Grounded" badge (book icon + the name, as `CardTrustFooter`); audio, memory-aid and mind-map trust panels head "Sources" (was "Grounded in" + badge, with a second "Sources" label under it). Tests: `citation-place-open.test.ts` (3 red on the pre-fix opener) + rag `citedPlace.test.ts` (`openedPlace`, 2 red). Shots: common-docs `projects/unified-source-input/recon/v5a/8-*`, `9-*`.
-- **2026-09-30 (V5-A.4/5)** — One place name for every Source kind. The citation popup named the place from the agent's own `locator` ("Page 2992") while the viewer named it from the section ordinal ("Page 31") for a web page's References section (verify-5 shots 33/34-c4). `useCitationPlace` (new) reads the cited chunk/part through the viewer's own `useCitedChunk` and names it with `citedPlace` (rag `source-inspector/citedAnchor.ts`): a web section → its heading ("References", "Mechanism › Substrate binding"), a recording → its time, a real page → "Page N", pasted text → nothing; the agent's locator is never shown for an openable citation. A recording's citation (YouTube) now opens THE Source page at `?page=<portion>&t=<ms>` — its existing seekable player ("Play from") — instead of transcript text; the chip's action reads "Play from here". A transcript picked as a RECORD (citation `<record id>:<n>`, no document id — it opened `/transcripts/processor`, text only) finds the record's processed document and the segment its quote begins in (`portionForExcerpt`: longest opening run of 10→3 words; no match = no place, never a guess). `SeeSourceButton` shares the same opener. `CardTrustFooter`: the "Grounded" badge's neighbour is just the grounded-in name with a book icon (no repeated "Grounded in", copy law R9). Tests `__tests__/citation-place-open.test.ts` + rag `citedPlace.test.ts` (3 of 5 red on the pre-fix naming, all green after).
-- **2026-09-30 (V4-F)** — `attachRefsToCitation`: the Source's REAL name (`refs.title`) now wins over the agent's citation title (agents invented "Industrial applications", "Enzyme Basics Transcript"); the agent's title stays only when the surface does not know the name; `locator` is kept. `quizGenerator` passes only the Source's title (was falling back to the quiz title). Test `__tests__/grounding.test.ts` fail→pass.
-- **2026-09-28 (V1-B)** — `plainWords.ts`: every trust surface renders "Grounded in" without chunk ids (`plainGroundedIn`), locators as "Page 22" (`plainLocator`), and the open action as "Open the web page" only for a real web URL (`openSourceLabel`) — `SourceCitations`, `CardTrustFooter`, tutor strips. Guard `__tests__/plain-words.test.ts`.
-- **2026-09-08** — `VerifyVerdict` renders the `card_verification` kind through its component (`card_verification_callout`); the host keeps only the checked-at line and the D151 *Use this correction* apply control.
-- **2026-08-22** — `coerceGradeVerdict` is THE ONE verdict reader (`answer_grade` core): accepts the
-  boolean contract AND a `result`/`grade` token, `explanation` falls back through `feedback`/`reason`;
-  `readTypedGradeVerdict` and the spoken `coerceSpokenGrade` adapt from it. Agent-id table replaced
-  by the mandate/kind table (ids never live in code).
-
-- **2026-08-21** — Card-level "See source" (FastFire spec 26e). New `sourceRef.ts` owns the ONE
-  citation→inspector mapping (`inspectorArgsForSourceRef`, hoisted out of `SourceCitations` so
-  chips and buttons share it) plus `CardSourceRef` — a card's provenance resolvable from either
-  channel: the trust envelope (`sourceRefFromTrust`) or the `fc_card --source--> file` lineage
-  edge (first-ever reader: `features/flashcards/data/cardSource.ts:readCardSourceRefs`, one batch
-  RPC). `SeeSourceButton` is the shared door — thin over `useOpenCitation`, renders nothing
-  without an openable ref. FastFire threads `sourceRef` onto `DrillCard` (trust first, edge
-  fallback) and mounts the button in the live-card action row. Classic study/editor already had
-  the door via the citation chips.
-
-- **2026-08-18** — IC-3 RAG chunk citations now open the canonical Source Inspector with their
-  durable chunk, file/document and page coordinates. `citationIsOpenable` includes
-  `documentId`; the existing preview/web fallbacks remain unchanged for non-RAG citations. Tutor
-  turns reconcile agent-emitted ids against same-turn retrieval and a compact persisted coordinate
-  ledger, so a reload keeps the source door without trusting regenerated search results. Only
-  canonical chunk citations can authorize `grounded`; seed/weak-card context remains inferred,
-  stale pointer slots are blanked each turn, and historical answers without an envelope receive no
-  reconstructed claim.
-
-- **2026-08-14** — **A verify verdict is now stored on the card, and `suggestedFix` finally has an apply affordance (FOUND_DEFECTS D151).** `useVerifyAgainstSource` held its verdict in component state: the same card was re-verified — and re-paid for — on every visit, and a `drifted` verdict's corrected answer was a paid result the user could read but not use. `VerifyAgainstSourceArgs` takes an optional `subject` (`VerifySubject`, `fc_card` only today — the only verified item with a durable row AND an editable answer); with it the verdict is persisted through the primitive's `onResult` seam to `fc_card.metadata.trust_verification` (`readStoredVerification` / `VERIFICATION_KEY` in `types.ts`) the instant it lands. `VerifyAgainstSourceButton` takes `subject` + `stored`, renders the stored verdict with its check date instead of re-running (the button becomes "Check again"), and — the real fix — offers **"Use this correction"**, which writes `suggestedFix` as the item's new answer via `applyFix` and durably stamps `status='verified'`, the corrected `verifiedBack`, and `appliedAt`. A stored verdict about text the card no longer has is treated as stale, never shown as a live claim. `CardTrustFooter` threads `cardId` + `cardMetadata`; StudyDeck and EditSetView pass them. Surfaces without an `fc_card` subject (assessment, mind maps, summaries) are unchanged and stay transient until their own subject kind is added — never a second verification shape.
-- **2026-08-11** — **"Verify against source" streams (THE FLOATING LAW).** `useVerifyAgainstSource` runs through `useFloatingAgentRun`: the re-check of the cited passage is watched in the floating `LiveRunWindow` instead of behind the button's spinner. `reset()` closes the window and clears the last run.
-- **2026-08-08** — `<SourceCitations/>` chips now render through the shared presentational
-  primitive `CitationChip` (`components/official/citation-chip/CitationChip.tsx` — same chip +
-  excerpt popover the chat Sources footer uses). Behavior-identical: this file stays the
-  TrustEnvelope-aware consumer (label/icon mapping, `openCitationSource` wiring); the primitive
-  knows nothing of TrustEnvelope.
-- **2026-07-10** — **Verdict unification + verify hub-wide (final cert).** ONE grading verdict core
-  (`GradeVerdict` + shared `GradeResult` + helpers; `SpokenGrade`/`GradedAnswer` are thin adapters;
-  four duplicate result unions collapsed; FastFire's inline `coerceGrade` deleted). "Verify against
-  source" extracted into the shared `<VerifyAgainstSourceButton/>` and mounted on quiz items
-  (QuestionView + AssessmentResults), summaries (SummaryDetail), and mind-map node panels;
-  `CardTrustFooter` now consumes it. Behavior-identical refactor; persisted shapes untouched. See
-  `TRUST_ENVELOPE.md` change log for detail.
-- **2026-07-07 (b)** — Source-agnostic grounding + open-the-real-source: `SourceCitation` gains
-  durable `fileId`/`documentId`/`url`/`page`; `attachSourceRefs` backfill wired in
-  `CreateFromSource` + the chat/canvas adapter; `<SourceCitations/>` "Open full source" opens the
-  real file/PDF/web via `openCitationSource`. 27 passing tests.
-- **2026-07-07 (a)** — P0 shipped: contract + coercers, 4 UI primitives, verify + grade-on-meaning
-  hooks/agents, generateFromSource/helpLive reference retrofits, flashcards end-to-end, brand
-  pages, tests + live agent evals.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/education/STATE.md — read it before touching this feature in ANY repo.

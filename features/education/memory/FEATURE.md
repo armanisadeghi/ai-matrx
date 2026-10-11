@@ -1,70 +1,48 @@
-# Education Hub — Memory Tools (FEATURE.md)
+# Education Memory Tools (FEATURE.md)
 
-**Status:** live · **Tier:** 2 (Education Hub tool) · **Vision:** [`VISION-education-hub.md` §11](../../../app/(core)/education/VISION-education-hub.md) · **Last updated:** 2026-07-13
-
-> 🔴 The Education Hub source of truth is the VISION doc. This file documents only HOW the Memory Tools are built. Drift → the vision wins; report it.
+**Status:** live · **Tier:** 2 · Product: [`VISION-education-hub.md` §11](../../../app/(core)/education/VISION-education-hub.md) (the vision wins on drift)
 
 ## Purpose
 
-VISION §11 "Memory Tools — Mnemonics, Analogies & Associations." From a deck / notes / topic, generate the aids that make hard material stick:
+From a deck, note or topic, generate memory aids: mnemonics, analogies with the mapping spelled
+out, an optional memory palace, and an opt-in per-card "Give me a memory aid" hint in StudyDeck.
 
-- **Mnemonics** — acronyms, acrostics, rhymes, sentence mnemonics, keyword/sound-alike images, chunking — for difficult lists, sequences, and terminology.
-- **Analogies & memory bridges** — a relatable everyday analogy for each abstract concept, with the mapping spelled out.
-- **Memory-palace scaffolding** — a method-of-loci journey for large ordered sets (only when the material warrants one).
-- **Proactive suggestions** — an opt-in per-card "Give me a memory aid" affordance that surfaces alongside flashcards while studying.
+## Where it lives
 
-## Why it reuses, not forks
+- Routes (`app/(core)/education/memory/`): `/` library · `/new` · `/new/manual` · `/[id]` viewer
+  (also reached via `/education/media/[id]` → `MediaRouter` → `MemoryDetail`) · `/[id]/edit`
+  (structured editor, EDIT-gated by `requireAccess`).
+- Rows are `education.study_media` with `media_kind='memory_aid'`; the aid lives in `ir_envelope`
+  (no memory-specific table or column). Service: `studyMediaService` (`../media/service.ts`).
+- Mandates (`mandates.ts`, `EDU_MEMORY_MANDATES`; the DB picks the agent): `education.memory_generate`
+  (tool + converter target), `education.memory_hint` (per-card, cheap/fast).
+- Generation: `useGenerateMemoryAid.ts` over `useFloatingAgentRun`; hint lane `lanes/memoryHint.ts`;
+  converter target `../convert/generators/memoryAid.ts`; `MemoryAidButton` mounts in
+  `features/flashcards/components/study/StudyDeck.tsx` (prop `enableMemoryAids`, default on).
+- Entitlement `education.memory_generate`: limits and enforcement live in `billing.capability*`
+  (header of `features/entitlements/registry.ts`). The New page shows `EntitlementMeter` and guards
+  the click with `useEntitlementGuard` — never a mid-generation ambush.
 
-Memory Tools is a **thin tool over the existing study-media substrate** — it introduces almost no new infrastructure:
+## Invariants
 
-- **Content model:** `education.study_media` with `media_kind='memory_aid'` (widened the CHECK; migration `migrations/edu_study_media_memory_aid_kind.sql`, ledger-recorded). The structured aids ride the existing `ir_envelope` jsonb column (exactly like a mind map's `diagram_spec`); generation config rides `config`; trust rides `trust`; visibility + versioning + org + RLS + sharing registration are already on the table. **No new table, no new columns.**
-- **Service:** reuses `studyMediaService` (`features/education/media/service.ts`) — `create` / `getById` / `listByKind('memory_aid')` / `softDelete`, plus version-guarded updates for authored content. `EduMediaKind` includes `'memory_aid'`.
-- **Generation:** authored via `agent_author` (DB-only agents, no Python) and run through the canonical agent-execution pipeline. The tool page uses `useGenerateMemoryAid` → the shared `runAgentExtraction` primitive (NOT a re-implemented launch/poll). Source resolution reuses `resolveDeckAudioSource` / `resolveTopicAudioSource` (generic despite the `audio` name — the mind-map tool reuses them too).
-- **Trust:** every generated set carries a P0 `TrustEnvelope` — a deck source → `grounded` + a citation; a free-text topic → `inferred`, labelled honestly (built by `buildSourceTrust` / `resolveDeckAudioSource`). Rendered by the shared `ConfidenceBadge` + `SourceCitations`.
-- **Entitlements:** metered `education.memory_generate` (registry entry + `billing.capability` + `billing.capability_limit` rows: 15/month, 5/rolling_5h, free). The New page shows the limit BEFORE the action (`EntitlementMeter`) and guards the spend (`useEntitlementGuard` → `CapabilityPaywallDialog` on a cap hit — never a mid-generation ambush). `enforced:false` until the FYI-with-veto pass.
-- **Converter:** registers the `memory_aid` target on the ONE converter dispatch (`features/education/convert`), so note→memory-aid and the `/education/start` upload-kit fan-out produce memory aids; lineage via the shared `recordSourceLineage`.
-- **Sharing / access:** `useAccess('study_media', id)` for edit access and owner-only sharing / whole-set deletion; `requireAccess(... 'edit')` server gate on `[id]/edit`; `ShareButton resourceType="study_media"`. The shared viewer `/education/media/[id]` dispatches `memory_aid` → `MemoryDetail`.
+- `memory_aid` and `memory_hint` are registered kinds: the shape contract and the ONE set of types
+  and coercers live in `features/content-ir/kinds/memory-aid.ts` (a new aid family extends that
+  schema + `pnpm shape:emit` + `MemoryAidBlock`, never a column). Render through the canonical
+  `MemoryAidBlock` / `MemoryHintBlock`; never hand-render either shape.
+- The agent returns structure, not trust: the `TrustEnvelope` is built from the known source
+  (`buildSourceTrust` / `resolveDeckAudioSource`; deck → `grounded`, topic → `inferred`). Never
+  persist `trust: null` for a grounded source.
+- `memory_palace.applicable=false` (empty theme/loci) when the material doesn't warrant one; never
+  force a palace.
+- The per-card hint is persisted as an `fc_detail` layer (kind `mnemonic`,
+  `metadata.source='memory_hint'`) from inside `runHeadlessAgentJson`'s `onResult`, so advancing a
+  card never loses a paid run. It is opt-in, non-blocking, and streams inline (not in a window).
+- Saves of the whole set are version-guarded (`updateVersioned`); inline add/edit/delete of one
+  child uses the same save, and a set may end empty so a child delete never deletes its parent.
+  Whole-set removal is "Move set to Trash" (soft delete).
+- Agent write targets are approval-gated; `change_memory_item` edits one child by 1-based position,
+  validated before approval and again on apply.
+- Generation source-feature tags reuse `education-ingest` and `education-flashcards-coach`.
+- Source-title eyebrows use `distinctSourceTitle` (`../components/EducationCollectionSearch.tsx`).
 
-## Entry points
-
-- **Routes** (`app/(core)/education/memory/`): `/` (library) · `/new` (generate) · `/new/manual` (write an aid) · `/[id]` (shareable viewer) · `/[id]/edit` (structured editor, EDIT-gated).
-- **Detail editing:** `/[id]` keeps Edit all and also offers inline add/edit/delete for one mnemonic, analogy, or memory-palace stop. Each child change uses the same version-guarded `studyMediaService.updateVersioned` save as Edit all; the other children, source identity, and trust remain intact. The whole-set archive lives behind the clearly named “Move set to Trash” action (soft delete; restorable from Trash). A saved set may be empty after its final child is removed so a child delete never silently deletes its parent.
-- **Agent item writes:** `change_memory_item` is an approval-gated detail-only target for one add/update/delete by 1-based position. It validates before approval and again on apply, then uses the same guarded save. `update_memory_aids` and `delete_memory_aids` remain the whole-set operations.
-- **Shared viewer:** `/education/media/[id]` → `MediaRouter` → `MemoryDetail` (kind dispatch).
-- **Feature dir** (`features/education/memory/`):
-  - `mandates.ts` — the two mandate keys (`EDU_MEMORY_MANDATES`).
-  - `types.ts` — `MemoryAidPayload` / `MemoryHintPayload` + non-throwing coercers.
-  - `useGenerateMemoryAid.ts` — the generation hook (over `runAgentExtraction`).
-  - `lanes/memoryHint.ts` — the proactive per-card hint thunk (mirrors the tutor `microCoach` lane).
-  - `components/` — `MemoryHome`, `MemoryNew`, `MemoryDetail`, `MemoryEditor`, `MemoryAidButton` (the StudyDeck affordance).
-- **Converter generator:** `features/education/convert/generators/memoryAid.ts`.
-- **Proactive surface:** `MemoryAidButton` mounted in `features/flashcards/components/study/StudyDeck.tsx` (opt-in prop `enableMemoryAids`, default on; nothing fires until tapped).
-
-## Mandates (keys in `mandates.ts`; the DB decides which agent fulfils each — swap at `/mandates`)
-
-- **`education.memory_generate`** (Study Memory Aid Generator) — `source_content, title, focus` → `memory_aid` envelope `{ __kind, title, strategy_note, mnemonics[], analogies[], memory_palace }`. Grounded strictly in the supplied material. Powers the tool + the converter target.
-- **`education.memory_hint`** (Flashcard Memory Hint) — `front, back, topic` → one `memory_hint` `{ __kind, technique, aid, explanation }`. Cheap/fast; powers the proactive StudyDeck affordance.
-
-## Invariants & gotchas
-
-- 🚨 **`memory_aid` and `memory_hint` are REGISTERED KINDS (2026-08-17) — the shape contract lives in `features/content-ir/kinds/memory-aid.ts`, and rendering goes through the canonical kind components** `MemoryAidBlock` / `MemoryHintBlock` (`components/mardown-display/blocks/memory-aid/`). Never re-declare the types/coercers here and never hand-render either shape — the hand-rolled `MemoryAidView` and the inline hint JSX in `MemoryAidButton` are deleted (THE CANONICAL COMPONENT LAW). Both kinds are ACTIVE in `content_ir.kind_definition` (dual gate passed; migration `migrations/kind_memory_aid_full.sql`, ledger-recorded), so they stream as components in the LiveRunWindow and chat instead of raw JSON.
-- **The aid content lives in `ir_envelope`, never a new column.** A new aid family = extend the kind schema + coercer in `features/content-ir/kinds/memory-aid.ts` (then re-emit the DB row payloads with `pnpm shape:emit`) + `MemoryAidBlock`, not a schema change.
-- **The agent returns structure, not a trust envelope** (like `diagram_spec`) — the `TrustEnvelope` is built from the KNOWN source (`buildSourceTrust` / `resolveDeckAudioSource`). Never persist `trust: null` for a grounded source.
-- **`memory_palace.applicable`** — the agent sets this false (empty theme/loci) when the material doesn't warrant a palace. The renderer + coercer both respect it; don't force a palace onto small/unordered material.
-- **Source-feature tags are reused, not added** (the `features/agents` source-feature union was off-limits during this build): generation uses `education-ingest` (converter one-shot generation) and the per-card hint uses `education-flashcards-coach` (a study-surface background lane). A dedicated `education-memory` tag is a tiny future follow-up (telemetry granularity only).
-- **Proactive affordance is opt-in + non-blocking** — a collapsed ghost button; nothing runs until tapped; it never awaits before advancing a card; skipped for matching cards.
-
-## Change log
-
-- **page-pass 2026-09-28 (wave 4c)** — type single-record (detail), posture sharp after Linear. `/education/memory/[id]` (desktop-dark, phone light+dark): the mnemonic technique pill ("Acrostic"/"Keyword"/"Rhyme") rendered at 11px — not an all-caps label, so it needed the 12px floor. Bumped `TechniquePill` in the shared canonical kind component (`components/mardown-display/blocks/memory-aid/MemoryAidBlock.tsx`) to `text-xs`. Dark mode contrast checked clean, no other defects found. Verified live against production (signed in as admin). Commit `361d533049`.
-- **page-pass 2026-09-27**: type single-record (detail) / list — fixed. **"Add mnemonic" / "Add analogy" / "Add stop" on the detail page's inline item editor were dead controls**: `beginItem` correctly appended a blank draft item and opened its editor, but `MemoryAidBlock` re-derives its displayed list by re-coercing the draft through `coerceMemoryAidPartial`, which (correctly, for streaming) drops an item with no text yet — so the brand-new item had no map slot left to render its editor into, and the click visibly did nothing. Fixed in the shared canonical kind component (`components/mardown-display/blocks/memory-aid/MemoryAidBlock.tsx`): each section now appends the open editor as an extra row when its index is beyond the coerced array, independent of what survived coercion. Live-verified: added a mnemonic on the detail page, saved, read the row back via SQL (`ir_envelope.mnemonics` had 2 entries), then removed the test entry. Also fixed: the list rows and the detail header's "from <source>" eyebrow duplicated the title verbatim on any topic-generated aid (source == title) — added `distinctSourceTitle` (`features/education/components/EducationCollectionSearch.tsx`, shared with mind-maps and audio-study) and an empty "Memory palace" section rendering a bordered card with nothing in it (now one compact line with its "Add stop" action, matching "Empty is compact").
-- **2026-09-27** — The saved aid now has a structured editor for its title, strategy, mnemonics, analogies and palace stops, plus a manual creation route. List/detail/editor surfaces expose approval-gated create/update/delete collection targets to page agents; the generator retains its metered human Generate action. Whole-content saves compare the row version so another edit cannot be silently overwritten. A disposable aid was created, edited, and soft-deleted through localhost. Collection agent writes still need a representative agent-run proof before surface readiness can be raised.
-
-- **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted (`agents.ts` → `mandates.ts`, `EDU_MEMORY_MANDATES`).
-- **2026-08-17** — **`memory_aid` + `memory_hint` became registered kinds, and the window stopped auto-opening over the per-card aid.** Arman generated a memory aid and watched the page render it fine while a floating LiveRunWindow showed the same payload as raw JSON — because both shapes were unregistered `__kind`s with hand-rolled renderers (the exact gap logged in `docs/handoffs/canonical-component-sweep.md`). Fixed on the paved road: compiled bridge `features/content-ir/kinds/memory-aid.ts` (schemas for `memory_aid`/`mnemonic`/`analogy`/`memory_palace`/`locus`/`memory_hint`, streaming serverData bridges, toMarkdown facets, and the ONE implementation of the types + coercers — `features/education/memory/types.ts` now keeps only `MemoryGenConfig`/`memoryAidCounts`); canonical components `MemoryAidBlock` (exports `MnemonicsSection`/`AnalogiesSection`/`MemoryPalaceSection`/`TechniquePill`) + `MemoryHintBlock`, registered in `BlockComponentRegistry` + `block-dispatch`; DB rows applied live via the Supabase MCP (`migrations/kind_memory_aid_full.sql` — definitions, edges, examples all trigger-validated `passed`, bundled `kind_component` rows, `kind_memory_aid`/`kind_memory_hint` skills + render blocks), both roots activated through `set_kind_activation` (children stay inactive — nested_only_child). `MemoryAidView` and `MemoryAidButton`'s inline hint card are DELETED; `MemoryDetail` renders `MemoryAidBlock`. **Window posture:** `MemoryAidButton` no longer floats a window at all — the hint streams INLINE in the exact spot the finished aid occupies (`useLiveRunHandle` + `LiveRunDisplay`; the deck page only grows downward, the earned inline exception), and a "Chat" button opens the run's conversation in the LiveRunWindow on demand. `MemoryNew` keeps the float (no inline render target — it navigates to the detail page), and its window now streams the real component instead of JSON. Note for the next DB-connected session: `pnpm check:shapes:crosswalk:refresh` (this container's egress blocks the DB hostname; the rows are live so the refresh is mechanical).
-
-- **2026-08-14** — **The per-card memory aid is PERSISTED, and no longer dies on the next card (FOUND_DEFECTS D151).** The `memory_hint` lane was a paid run whose payload lived only in `MemoryAidButton` state, wiped by the button's own reset effect the moment the learner advanced — so the same card could be charged for the same mnemonic indefinitely. The lane now passes `onResult` to `runHeadlessAgentJson` (the new persistence seam) and writes the aid as an `fc_detail` layer on the card — kind `mnemonic`, `metadata: {source:'memory_hint', technique, explanation}` — the instant it arrives, from INSIDE the primitive, so an unmounted button cannot intercept it. `memoryHintFromDetail` reads it back; `MemoryAidButton` takes `cardId` + the card's `existingDetails` and shows the stored aid, so returning to a card shows what was already paid for and the button reads "Another memory aid". The reset effect is keyed on `cardId` now and only clears LIVE run state. Browser-verified on `/education/flashcards/[setId]/study`: generated, reloaded, signed out and back in — the aid is still on the card, with no second model call.
-
-- **2026-08-13** — **The tool is now a real surface: `matrx-user/education-memory` has a manifest and all three views emit live scope.** `route-to-surface.ts` mapped `/education/memory` to that surface from day one and `ui.ui_surface` carried the row, but no manifest and no `SurfaceRuntimeProvider` existed — so agents run from the header Agents popover here were listed, launched, and handed an EMPTY application scope ("Running without live page context"). `MemoryHome` / `MemoryNew` / `MemoryDetail` each mount the provider now, discriminated by a `view` value (`list` | `new` | `detail`, the only guaranteed value on the surface); `/[id]/edit` loads the structured editor and reports `detail`. 5 groups, 30 values, DB-synced; `data-surface-value` anchors on the library list, the composer's three inputs, and the detail title / aid body / grounding block. **Two write targets on the create form**, matching the `education-mind-maps` sibling so the two near-identical generator forms do not drift: `generation_source` (a partial `{source_kind?, topic?, deck_id?}` whose combination is validated — topic and deck_id are alternative sources, and an unknown deck_id is refused with a pointer to `available_decks`) and `generation_focus`, kept separate because the angle is an independent decision from the source. Both are `draft`/`ask` and stage through the same `setSourceKind` / `setDeckId` / `setTopic` / `setFocus` the learner's own typing drives, so nothing is generated or saved and **pressing Generate stays human** — that is where the COPPA gate, the entitlement guard and `studyMediaService.create` run. `MemoryHome` and `MemoryDetail` now register approval-gated collection handlers for saved aids; trust and sharing remain separate evidence and permissions. `MemoryNew` now imports `MEDIA_GENERATOR_SOURCE_KINDS` from `media/types.ts` rather than keeping a private `type SourceKind`, so the picker, the manifest prose and the handler cannot drift. Verified with live agent runs on all three views: the popover named "Memory Aids", the list run reported the exact live `aid_count`, the detail run matched the `study_media` row field for field (title / source kind / source title / `inferred` confidence / ownership), and the composer run quoted the typed topic and focus back verbatim.
-- **2026-08-11** — **Both memory-aid runs stream (THE FLOATING LAW).** `useGenerateMemoryAid` moved off `runAgentExtraction` onto `useFloatingAgentRun` (same coercion, one fewer hop) and the per-card `MemoryAidButton` floats the `memory_hint` lane through `useFloatingRunWindow`; the lane gained an optional `onConversationCreated` and keeps its background posture when none is passed.
-- **2026-07-13** — **Built + shipped LIVE** (VISION §11 — the last vision section with zero code). `tools.ts` `memory` entry live; `/education/memory` home/new/[id]/[id]/edit; `study_media` `memory_aid` kind (migration + ledger); two authored agents; `education.memory_generate` capability + limits; `memory_aid` converter target; proactive `MemoryAidButton` in StudyDeck; admin map + this doc.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/education/STATE.md — read it before touching this feature in ANY repo.
